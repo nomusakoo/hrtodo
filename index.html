@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style>
   :root {
@@ -71,7 +73,6 @@
     font-weight: 600;
     letter-spacing: -0.3px;
   }
-  .app-header .brand i { color: var(--accent-light); font-size: 18px; }
   .app-header .header-meta {
     display: flex;
     align-items: center;
@@ -87,6 +88,23 @@
     font-family: var(--font-mono);
     font-size: 12px;
   }
+  /* DB 상태 표시 */
+  .db-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.5);
+  }
+  .db-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #6b7280;
+    transition: background 0.3s;
+  }
+  .db-dot.connected { background: #22c55e; }
+  .db-dot.error { background: #ef4444; }
 
   /* ── MAIN LAYOUT ── */
   .app-layout {
@@ -287,12 +305,16 @@
   .task-table tr.done td { color: var(--gray-400); }
   .task-table tr.done .task-title { text-decoration: line-through; }
 
-  .col-check { width: 36px; }
-  .col-date { width: 80px; }
-  .col-member { width: 90px; }
-  .col-cat { width: 90px; }
-  .col-status { width: 90px; }
-  .col-action { width: 80px; }
+  /* 칼럼 너비: 업무명 55% 축소, 나머지 조정 */
+  .col-check  { width: 36px; }
+  .col-date   { width: 68px; }
+  /* 업무명: 나머지 공간을 차지하되, min-width로 가독성 확보 */
+  .col-title  { min-width: 140px; } /* flex 대신 table-layout:fixed이므로 나머지를 넓게 */
+  .col-member { width: 100px; }
+  .col-cat    { width: 88px; }
+  .col-status { width: 88px; }
+  .col-note   { width: 150px; }
+  .col-action { width: 76px; }
 
   /* ── STATUS BADGE ── */
   .badge {
@@ -488,7 +510,6 @@
     align-items: center;
     gap: 7px;
   }
-  .dash-card-title { gap: 7px; }
 
   /* progress bar */
   .prog-item { margin-bottom: 12px; }
@@ -616,6 +637,64 @@
   }
   .toast.show { opacity: 1; transform: translateY(0); }
 
+  /* loading overlay */
+  .loading-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(255,255,255,0.85);
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+  }
+  .loading-overlay.hidden { display: none; }
+  .spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid var(--gray-200);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 13px; color: var(--gray-500); }
+
+  /* Supabase config panel */
+  .config-panel {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .config-panel.hidden { display: none; }
+  .config-box {
+    background: #fff;
+    border-radius: var(--radius-lg);
+    padding: 32px 32px 28px;
+    width: 480px;
+    max-width: 95vw;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  }
+  .config-box h2 { font-size: 17px; font-weight: 600; color: var(--primary); margin-bottom: 6px; }
+  .config-box p { font-size: 13px; color: var(--gray-500); margin-bottom: 22px; line-height: 1.6; }
+  .config-box .form-row { margin-bottom: 14px; }
+  .config-note {
+    background: var(--accent-bg);
+    border-left: 3px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--accent);
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+  .config-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
   /* responsive */
   @media (max-width: 900px) {
     .sidebar { display: none; }
@@ -627,14 +706,50 @@
 </head>
 <body>
 
+<!-- SUPABASE CONFIG PANEL (최초 설정) -->
+<div class="config-panel" id="configPanel">
+  <div class="config-box">
+    <h2>⚙️ Supabase 연결 설정</h2>
+    <p>처음 한 번만 입력하면 브라우저에 저장됩니다.<br>Supabase 대시보드 → Settings → API 에서 확인하세요.</p>
+    <div class="config-note">
+      <strong>테이블 생성 SQL (Supabase SQL Editor에서 실행):</strong><br>
+      <code style="font-size:11px;font-family:monospace">
+        create table hr_tasks (id bigserial primary key, title text not null, member text not null, cat text not null default '기타', date date not null, status text not null default 'todo', note text default '', created_at timestamptz default now());<br>
+        alter table hr_tasks disable row level security;
+      </code>
+    </div>
+    <div class="form-row">
+      <label class="form-label">Project URL</label>
+      <input type="text" class="form-input" id="cfgUrl" placeholder="https://xxxx.supabase.co">
+    </div>
+    <div class="form-row">
+      <label class="form-label">anon public 키</label>
+      <input type="text" class="form-input" id="cfgKey" placeholder="eyJhbGci...">
+    </div>
+    <div class="config-actions">
+      <button class="btn" onclick="useLocalStorage()">로컬 저장소로 사용</button>
+      <button class="btn btn-primary" onclick="saveConfig()">연결하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay hidden" id="loadingOverlay">
+  <div class="spinner"></div>
+  <div class="loading-text">데이터 불러오는 중...</div>
+</div>
+
 <!-- HEADER -->
 <header class="app-header">
   <div class="brand">
     &#9881; 인사노무팀 업무 관리
   </div>
   <div class="header-meta">
+    <div class="db-status">
+      <div class="db-dot" id="dbDot"></div>
+      <span id="dbLabel">연결 안됨</span>
+    </div>
     <span class="today-badge" id="todayBadge"></span>
-    <span id="currentUserLabel" style="color:rgba(255,255,255,0.8); font-size:13px;"></span>
   </div>
 </header>
 
@@ -647,13 +762,14 @@
         &#9776; 전체 보기
         <span class="count" id="cnt-all">0</span>
       </div>
-      <div class="sidebar-item" data-member="구우회" onclick="filterMember(this)">
-        &#9675; 구우회
-        <span class="count" id="cnt-구우회">0</span>
-      </div>
+      <!-- 팀원 순서: 이상원, 구우회, 이호동 -->
       <div class="sidebar-item" data-member="이상원" onclick="filterMember(this)">
         &#9675; 이상원
         <span class="count" id="cnt-이상원">0</span>
+      </div>
+      <div class="sidebar-item" data-member="구우회" onclick="filterMember(this)">
+        &#9675; 구우회
+        <span class="count" id="cnt-구우회">0</span>
       </div>
       <div class="sidebar-item" data-member="이호동" onclick="filterMember(this)">
         &#9675; 이호동
@@ -687,6 +803,9 @@
       <div class="sidebar-item" onclick="switchTab('dashboard')">
         &#9636; 대시보드
       </div>
+      <div class="sidebar-item" onclick="openConfigPanel()">
+        &#9881; DB 설정 변경
+      </div>
     </div>
   </nav>
 
@@ -694,16 +813,17 @@
   <main class="main-content">
     <!-- TAB BAR -->
     <div class="tab-bar">
-      <button class="tab-btn active" id="tab-tasks" onclick="switchTab('tasks')">
+      <!-- 초기 활성 탭: 월별 대시보드 -->
+      <button class="tab-btn" id="tab-tasks" onclick="switchTab('tasks')">
         &#9998; 할 일 관리
       </button>
-      <button class="tab-btn" id="tab-dashboard" onclick="switchTab('dashboard')">
+      <button class="tab-btn active" id="tab-dashboard" onclick="switchTab('dashboard')">
         &#9636; 월별 대시보드
       </button>
     </div>
 
     <!-- ===== TAB: TASKS ===== -->
-    <div id="view-tasks">
+    <div id="view-tasks" style="display:none">
       <div class="page-header">
         <div class="page-title">
           할 일 관리
@@ -742,11 +862,11 @@
           <colgroup>
             <col class="col-check">
             <col class="col-date">
-            <col style="min-width:180px">
+            <col class="col-title"><!-- 업무명: 남은 공간 전부 -->
             <col class="col-member">
             <col class="col-cat">
             <col class="col-status">
-            <col style="width:120px">
+            <col class="col-note">
             <col class="col-action">
           </colgroup>
           <thead>
@@ -766,8 +886,8 @@
       </div>
     </div>
 
-    <!-- ===== TAB: DASHBOARD ===== -->
-    <div id="view-dashboard" style="display:none">
+    <!-- ===== TAB: DASHBOARD (초기 화면) ===== -->
+    <div id="view-dashboard">
       <div class="page-header">
         <div class="page-title">월별 대시보드</div>
       </div>
@@ -810,8 +930,9 @@
         <label class="form-label">담당자 *</label>
         <select class="form-select" id="f-member">
           <option value="">선택</option>
-          <option>구우회</option>
+          <!-- 팀원 순서: 이상원, 구우회, 이호동 -->
           <option>이상원</option>
+          <option>구우회</option>
           <option>이호동</option>
         </select>
       </div>
@@ -859,88 +980,234 @@
 <div class="toast" id="toast"><span id="toastIcon" style="color:#6ee7b7">&#10003;</span> <span id="toastMsg"></span></div>
 
 <script>
-// ── DATA LAYER (localStorage — Supabase 연동 시 교체) ──
-const STORAGE_KEY = 'hr_tasks_v1';
+// ══════════════════════════════════════════════
+//  SUPABASE CONFIG & DATA LAYER
+// ══════════════════════════════════════════════
+const CFG_KEY = 'hr_supabase_cfg';
+let sbClient = null;
+let useLocal = false;
 
-function loadTasks() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+// localStorage fallback
+const LOCAL_KEY = 'hr_tasks_v1';
+function localLoad() {
+  try { return JSON.parse(localStorage.getItem(LOCAL_KEY)) || []; }
   catch { return []; }
 }
-function saveTasks(tasks) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+function localSave(arr) {
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(arr));
 }
 
-let tasks = loadTasks();
+// Supabase init
+function initSupabase(url, key) {
+  try {
+    sbClient = window.supabase.createClient(url, key);
+    return true;
+  } catch(e) {
+    console.error('Supabase init error:', e);
+    return false;
+  }
+}
+
+// 설정 패널
+function openConfigPanel() {
+  const saved = getSavedConfig();
+  if (saved) {
+    document.getElementById('cfgUrl').value = saved.url || '';
+    document.getElementById('cfgKey').value = saved.key || '';
+  }
+  document.getElementById('configPanel').classList.remove('hidden');
+}
+
+function getSavedConfig() {
+  try { return JSON.parse(localStorage.getItem(CFG_KEY)); }
+  catch { return null; }
+}
+
+function saveConfig() {
+  const url = document.getElementById('cfgUrl').value.trim();
+  const key = document.getElementById('cfgKey').value.trim();
+  if (!url || !key) { alert('URL과 키를 모두 입력하세요.'); return; }
+  localStorage.setItem(CFG_KEY, JSON.stringify({ url, key }));
+  useLocal = false;
+  if (initSupabase(url, key)) {
+    document.getElementById('configPanel').classList.add('hidden');
+    startApp();
+  } else {
+    alert('Supabase 초기화에 실패했습니다. URL과 키를 확인하세요.');
+  }
+}
+
+function useLocalStorage() {
+  useLocal = true;
+  sbClient = null;
+  document.getElementById('configPanel').classList.add('hidden');
+  setDbStatus(false, '로컬 저장소');
+  startApp();
+}
+
+function setDbStatus(connected, label) {
+  const dot = document.getElementById('dbDot');
+  const lbl = document.getElementById('dbLabel');
+  dot.className = 'db-dot' + (connected ? ' connected' : '');
+  lbl.textContent = label || (connected ? 'Supabase 연결됨' : '연결 안됨');
+}
+
+// ── 데이터 CRUD ──
+async function dbLoad() {
+  if (useLocal || !sbClient) return localLoad();
+  const { data, error } = await sbClient.from('hr_tasks').select('*').order('date', { ascending: true });
+  if (error) { console.error(error); showToast('데이터 로드 오류', 'error'); return localLoad(); }
+  return data || [];
+}
+
+async function dbInsert(task) {
+  const row = { title: task.title, member: task.member, cat: task.cat,
+                date: task.date, status: task.status, note: task.note || '' };
+  if (useLocal || !sbClient) {
+    const arr = localLoad();
+    const newId = arr.length ? Math.max(...arr.map(t=>t.id)) + 1 : 1;
+    const newRow = { id: newId, ...row };
+    arr.push(newRow);
+    localSave(arr);
+    return newRow;
+  }
+  const { data, error } = await sbClient.from('hr_tasks').insert(row).select().single();
+  if (error) { console.error(error); showToast('저장 오류', 'error'); return null; }
+  return data;
+}
+
+async function dbUpdate(id, fields) {
+  if (useLocal || !sbClient) {
+    const arr = localLoad();
+    const idx = arr.findIndex(t => t.id === id);
+    if (idx !== -1) { Object.assign(arr[idx], fields); localSave(arr); }
+    return arr[idx];
+  }
+  const { data, error } = await sbClient.from('hr_tasks').update(fields).eq('id', id).select().single();
+  if (error) { console.error(error); showToast('수정 오류', 'error'); return null; }
+  return data;
+}
+
+async function dbDelete(id) {
+  if (useLocal || !sbClient) {
+    const arr = localLoad().filter(t => t.id !== id);
+    localSave(arr);
+    return true;
+  }
+  const { error } = await sbClient.from('hr_tasks').delete().eq('id', id);
+  if (error) { console.error(error); showToast('삭제 오류', 'error'); return false; }
+  return true;
+}
+
+async function dbSeedIfEmpty() {
+  // Supabase: count 확인 후 seed
+  if (!useLocal && sbClient) {
+    const { count } = await sbClient.from('hr_tasks').select('*', { count: 'exact', head: true });
+    if (count > 0) return;
+    // seed 삽입
+    const rows = SEED_DATA.map(t => ({ title:t.title, member:t.member, cat:t.cat, date:t.date, status:t.status, note:t.note||'' }));
+    await sbClient.from('hr_tasks').insert(rows);
+  } else {
+    // 로컬: 기존 로직
+    if (localLoad().length === 0) {
+      localSave(SEED_DATA);
+    }
+  }
+}
+
+// ── SEED DATA ──
+const SEED_DATA = [
+  {id:1,  title:'목표수정안내 공지(신규입사자 목표 설정추가)', member:'구우회', cat:'기타', date:'2026-06-05', status:'todo', note:''},
+  {id:2,  title:'파견자 목표작성 안내 공지 발송', member:'구우회', cat:'기타', date:'2026-06-05', status:'todo', note:''},
+  {id:3,  title:'임직원 교육진행(AI역량, 6.17~19)', member:'구우회', cat:'교육', date:'2026-06-17', status:'todo', note:''},
+  {id:4,  title:'2026 노사TF 회의(1~2차) 개최', member:'구우회', cat:'노무', date:'2026-06-10', status:'todo', note:''},
+  {id:5,  title:'2분기 노사협의회 개최', member:'구우회', cat:'노무', date:'2026-06-20', status:'todo', note:''},
+  {id:6,  title:'농협이념과정 체크(임시운)', member:'구우회', cat:'교육', date:'2026-06-12', status:'todo', note:''},
+  {id:7,  title:'목표 설정 수정 마감(6.19)', member:'구우회', cat:'기타', date:'2026-06-19', status:'todo', note:''},
+  {id:8,  title:'AI개발-인원현황', member:'구우회', cat:'기타', date:'2026-06-08', status:'완료', note:''},
+  {id:9,  title:'(매월)전화외국어 정산', member:'구우회', cat:'복리후생', date:'2026-06-30', status:'todo', note:''},
+  {id:10, title:'하반기 시차출퇴근제 공지 및 접수', member:'구우회', cat:'기타', date:'2026-06-15', status:'todo', note:''},
+  {id:11, title:'(2영업일)월보 자료 제출', member:'이상원', cat:'보고', date:'2026-06-03', status:'todo', note:''},
+  {id:12, title:'영업일 경영정보시스템 자료 입력', member:'이상원', cat:'보고', date:'2026-06-05', status:'todo', note:''},
+  {id:13, title:'각 고용노동부 지청 요청자료(사업체현황 등)', member:'이상원', cat:'노무', date:'2026-06-10', status:'진행중', note:''},
+  {id:14, title:'근로계약서 작성(최황옥·정규전환)', member:'이상원', cat:'채용', date:'2026-06-12', status:'todo', note:''},
+  {id:15, title:'정규전환자 축하선물(2분기)', member:'이상원', cat:'복리후생', date:'2026-06-15', status:'todo', note:''},
+  {id:16, title:'노후 사업계획 기초자료(임원운송) 자료 제출', member:'이상원', cat:'보고', date:'2026-06-08', status:'todo', note:''},
+  {id:17, title:'개인정보 교육관리 확인서(마이다스인)', member:'이상원', cat:'교육', date:'2026-06-20', status:'todo', note:''},
+  {id:18, title:'임금경쟁력원조사 자료 제출', member:'이상원', cat:'급여', date:'2026-06-18', status:'todo', note:''},
+  {id:19, title:'26상반기 경력채용자 정규전환 평가 및 발행', member:'이상원', cat:'채용', date:'2026-06-25', status:'todo', note:''},
+  {id:20, title:'26상반기 채용 인턴 중간평가', member:'이상원', cat:'채용', date:'2026-06-25', status:'todo', note:''},
+  {id:21, title:'취업규칙 변경신고(고용노동부)', member:'이상원', cat:'규정', date:'2026-06-15', status:'진행중', note:''},
+  {id:22, title:'노조 워크샵 참석(26.6.24~26)', member:'이상원', cat:'노무', date:'2026-06-24', status:'todo', note:''},
+  {id:23, title:'지점 출장(충북, 충남)', member:'이상원', cat:'기타', date:'2026-06-20', status:'todo', note:''},
+  {id:24, title:'급여지급', member:'이호동', cat:'급여', date:'2026-06-10', status:'todo', note:''},
+  {id:25, title:'4대보험 납부', member:'이호동', cat:'복리후생', date:'2026-06-10', status:'todo', note:''},
+  {id:26, title:'원천세(소득세·지방소득세·종업원분) 신고 및 납부', member:'이호동', cat:'급여', date:'2026-06-10', status:'진행중', note:''},
+  {id:27, title:'본부 예산약식보고', member:'이호동', cat:'보고', date:'2026-06-15', status:'todo', note:''},
+  {id:28, title:'일용 간이지급명세서 신고', member:'이호동', cat:'급여', date:'2026-06-15', status:'todo', note:''},
+  {id:29, title:'복지포인트 사용액 지급', member:'이호동', cat:'복리후생', date:'2026-06-20', status:'todo', note:''},
+  {id:30, title:'지주 파견자 급여 청구', member:'이호동', cat:'급여', date:'2026-06-20', status:'todo', note:''},
+  {id:31, title:'기탁조정설장 급여 선지급(복지연금 등)', member:'이호동', cat:'급여', date:'2026-06-22', status:'todo', note:''},
+  {id:32, title:'근태(시간외,휴가) 마감', member:'이호동', cat:'기타', date:'2026-06-25', status:'todo', note:''},
+  {id:33, title:'전포작업(급여, 4대보험, 원전세 등)', member:'이호동', cat:'급여', date:'2026-06-28', status:'todo', note:''},
+  {id:34, title:'월 결산 제출(회계팀)', member:'이호동', cat:'보고', date:'2026-06-30', status:'todo', note:''},
+  {id:35, title:'연차사용촉진진행(7월1일~7월10일게획작성)', member:'이호동', cat:'기타', date:'2026-07-05', status:'todo', note:''},
+  {id:36, title:'기능직군 결산 인센티브(상반기) 준비', member:'이호동', cat:'급여', date:'2026-07-10', status:'todo', note:''},
+  {id:37, title:'임직원 여름휴가비 지급준비', member:'이호동', cat:'복리후생', date:'2026-07-15', status:'todo', note:''},
+  {id:38, title:'농협교육 3차(6/15~17)', member:'이상원', cat:'교육', date:'2026-06-15', status:'todo', note:''},
+  {id:39, title:'징계위원회 무사고 일정 검토', member:'이상원', cat:'노무', date:'2026-06-18', status:'todo', note:''},
+  {id:40, title:'징계 대상자 면담(최황현, 심수환)', member:'이상원', cat:'노무', date:'2026-06-22', status:'todo', note:''},
+];
+
+// ══════════════════════════════════════════════
+//  APP STATE
+// ══════════════════════════════════════════════
+let tasks = [];
 let editId = null;
 let filterMemberVal = 'all';
 let filterStatusVal = '';
 
-// ── SEED DATA (첫 실행 시) ──
-if (tasks.length === 0) {
-  const seed = [
-    {id:1, title:'목표수정안내 공지(신규입사자 목표 설정추가)', member:'구우회', cat:'기타', date:'2026-06-05', status:'todo', note:''},
-    {id:2, title:'파견자 목표작성 안내 공지 발송', member:'구우회', cat:'기타', date:'2026-06-05', status:'todo', note:''},
-    {id:3, title:'임직원 교육진행(AI역량, 6.17~19)', member:'구우회', cat:'교육', date:'2026-06-17', status:'todo', note:''},
-    {id:4, title:'2026 노사TF 회의(1~2차) 개최', member:'구우회', cat:'노무', date:'2026-06-10', status:'todo', note:''},
-    {id:5, title:'2분기 노사협의회 개최', member:'구우회', cat:'노무', date:'2026-06-20', status:'todo', note:''},
-    {id:6, title:'농협이념과정 체크(임시운)', member:'구우회', cat:'교육', date:'2026-06-12', status:'todo', note:''},
-    {id:7, title:'목표 설정 수정 마감(6.19)', member:'구우회', cat:'기타', date:'2026-06-19', status:'todo', note:''},
-    {id:8, title:'AI개발-인원현황', member:'구우회', cat:'기타', date:'2026-06-08', status:'완료', note:''},
-    {id:9, title:'(매월)전화외국어 정산', member:'구우회', cat:'복리후생', date:'2026-06-30', status:'todo', note:''},
-    {id:10, title:'하반기 시차출퇴근제 공지 및 접수', member:'구우회', cat:'기타', date:'2026-06-15', status:'todo', note:''},
-    {id:11, title:'(2영업일)월보 자료 제출', member:'이상원', cat:'보고', date:'2026-06-03', status:'todo', note:''},
-    {id:12, title:'영업일 경영정보시스템 자료 입력', member:'이상원', cat:'보고', date:'2026-06-05', status:'todo', note:''},
-    {id:13, title:'각 고용노동부 지청 요청자료(사업체현황 등)', member:'이상원', cat:'노무', date:'2026-06-10', status:'진행중', note:''},
-    {id:14, title:'근로계약서 작성(최황옥·정규전환)', member:'이상원', cat:'채용', date:'2026-06-12', status:'todo', note:''},
-    {id:15, title:'정규전환자 축하선물(2분기)', member:'이상원', cat:'복리후생', date:'2026-06-15', status:'todo', note:''},
-    {id:16, title:'노후 사업계획 기초자료(임원운송) 자료 제출', member:'이상원', cat:'보고', date:'2026-06-08', status:'todo', note:''},
-    {id:17, title:'개인정보 교육관리 확인서(마이다스인)', member:'이상원', cat:'교육', date:'2026-06-20', status:'todo', note:''},
-    {id:18, title:'임금경쟁력원조사 자료 제출', member:'이상원', cat:'급여', date:'2026-06-18', status:'todo', note:''},
-    {id:19, title:'26상반기 경력채용자 정규전환 평가 및 발행', member:'이상원', cat:'채용', date:'2026-06-25', status:'todo', note:''},
-    {id:20, title:'26상반기 채용 인턴 중간평가', member:'이상원', cat:'채용', date:'2026-06-25', status:'todo', note:''},
-    {id:21, title:'취업규칙 변경신고(고용노동부)', member:'이상원', cat:'규정', date:'2026-06-15', status:'진행중', note:''},
-    {id:22, title:'노조 워크샵 참석(26.6.24~26)', member:'이상원', cat:'노무', date:'2026-06-24', status:'todo', note:''},
-    {id:23, title:'지점 출장(충북, 충남)', member:'이상원', cat:'기타', date:'2026-06-20', status:'todo', note:''},
-    {id:24, title:'급여지급', member:'이호동', cat:'급여', date:'2026-06-10', status:'todo', note:''},
-    {id:25, title:'4대보험 납부', member:'이호동', cat:'복리후생', date:'2026-06-10', status:'todo', note:''},
-    {id:26, title:'원천세(소득세·지방소득세·종업원분) 신고 및 납부', member:'이호동', cat:'급여', date:'2026-06-10', status:'진행중', note:''},
-    {id:27, title:'본부 예산약식보고', member:'이호동', cat:'보고', date:'2026-06-15', status:'todo', note:''},
-    {id:28, title:'일용 간이지급명세서 신고', member:'이호동', cat:'급여', date:'2026-06-15', status:'todo', note:''},
-    {id:29, title:'복지포인트 사용액 지급', member:'이호동', cat:'복리후생', date:'2026-06-20', status:'todo', note:''},
-    {id:30, title:'지주 파견자 급여 청구', member:'이호동', cat:'급여', date:'2026-06-20', status:'todo', note:''},
-    {id:31, title:'기탁조정설장 급여 선지급(복지연금 등)', member:'이호동', cat:'급여', date:'2026-06-22', status:'todo', note:''},
-    {id:32, title:'근태(시간외,휴가) 마감', member:'이호동', cat:'기타', date:'2026-06-25', status:'todo', note:''},
-    {id:33, title:'전포작업(급여, 4대보험, 원전세 등)', member:'이호동', cat:'급여', date:'2026-06-28', status:'todo', note:''},
-    {id:34, title:'월 결산 제출(회계팀)', member:'이호동', cat:'보고', date:'2026-06-30', status:'todo', note:''},
-    {id:35, title:'연차사용촉진진행(7월1일~7월10일게획작성)', member:'이호동', cat:'기타', date:'2026-07-05', status:'todo', note:''},
-    {id:36, title:'기능직군 결산 인센티브(상반기) 준비', member:'이호동', cat:'급여', date:'2026-07-10', status:'todo', note:''},
-    {id:37, title:'임직원 여름휴가비 지급준비', member:'이호동', cat:'복리후생', date:'2026-07-15', status:'todo', note:''},
-    {id:38, title:'농협교육 3차(6/15~17)', member:'이상원', cat:'교육', date:'2026-06-15', status:'todo', note:''},
-    {id:39, title:'징계위원회 무사고 일정 검토', member:'이상원', cat:'노무', date:'2026-06-18', status:'todo', note:''},
-    {id:40, title:'징계 대상자 면담(최종현, 심수환)', member:'이상원', cat:'노무', date:'2026-06-22', status:'todo', note:''},
-  ];
-  tasks = seed;
-  saveTasks(tasks);
+// ── 앱 시작 ──
+async function startApp() {
+  showLoading(true);
+  await dbSeedIfEmpty();
+  tasks = await dbLoad();
+
+  // DB 상태 표시
+  if (!useLocal && sbClient) {
+    setDbStatus(true, 'Supabase 연결됨');
+  } else {
+    setDbStatus(false, '로컬 저장소');
+  }
+
+  showLoading(false);
+  renderTable();
+  initDashDates();
+  renderDash();
 }
 
-// ── UTILITIES ──
-function nextId() { return tasks.length ? Math.max(...tasks.map(t=>t.id)) + 1 : 1; }
+function showLoading(v) {
+  document.getElementById('loadingOverlay').classList.toggle('hidden', !v);
+}
 
+// ══════════════════════════════════════════════
+//  UTILITIES
+// ══════════════════════════════════════════════
 function fmtDate(d) {
   if (!d) return '';
   const dt = new Date(d);
   return `${dt.getMonth()+1}/${dt.getDate()}`;
 }
-
 function monthLabel(ym) {
   const [y, m] = ym.split('-');
   return `${y}년 ${parseInt(m)}월`;
 }
-
 function toYM(dateStr) {
   return dateStr ? dateStr.substring(0,7) : '';
 }
-
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 function showToast(msg, type='success') {
   const t = document.getElementById('toast');
   const m = document.getElementById('toastMsg');
@@ -949,7 +1216,7 @@ function showToast(msg, type='success') {
   setTimeout(() => { t.className = 'toast'; }, 2500);
 }
 
-// ── TODAY ──
+// ── TODAY BADGE ──
 (function() {
   const now = new Date();
   const wd = ['일','월','화','수','목','금','토'][now.getDay()];
@@ -957,16 +1224,20 @@ function showToast(msg, type='success') {
     `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} (${wd})`;
 })();
 
-// ── TAB SWITCH ──
+// ══════════════════════════════════════════════
+//  TAB SWITCH
+// ══════════════════════════════════════════════
 function switchTab(tab) {
-  document.getElementById('view-tasks').style.display = tab==='tasks' ? '' : 'none';
-  document.getElementById('view-dashboard').style.display = tab==='dashboard' ? '' : 'none';
-  document.getElementById('tab-tasks').className = 'tab-btn' + (tab==='tasks' ? ' active' : '');
+  document.getElementById('view-tasks').style.display      = tab==='tasks' ? '' : 'none';
+  document.getElementById('view-dashboard').style.display  = tab==='dashboard' ? '' : 'none';
+  document.getElementById('tab-tasks').className     = 'tab-btn' + (tab==='tasks' ? ' active' : '');
   document.getElementById('tab-dashboard').className = 'tab-btn' + (tab==='dashboard' ? ' active' : '');
   if (tab==='dashboard') renderDash();
 }
 
-// ── SIDEBAR FILTERS ──
+// ══════════════════════════════════════════════
+//  SIDEBAR FILTERS
+// ══════════════════════════════════════════════
 function filterMember(el) {
   document.querySelectorAll('.sidebar-item[data-member]').forEach(e => e.classList.remove('active'));
   el.classList.add('active');
@@ -975,7 +1246,6 @@ function filterMember(el) {
   document.querySelectorAll('.sidebar-item[data-status]').forEach(e => e.classList.remove('active'));
   renderTable();
 }
-
 function filterStatus(el) {
   const val = el.dataset.status;
   if (filterStatusVal === val) {
@@ -989,7 +1259,7 @@ function filterStatus(el) {
   renderTable();
 }
 
-// ── POPULATE MONTH FILTER ──
+// ── MONTH FILTER POPULATE ──
 function populateMonthFilter() {
   const months = [...new Set(tasks.map(t => toYM(t.date)).filter(Boolean))].sort();
   const sel = document.getElementById('filterMonth');
@@ -1000,7 +1270,7 @@ function populateMonthFilter() {
 
 // ── FILTERED TASKS ──
 function getFiltered() {
-  const q = document.getElementById('searchInput').value.toLowerCase();
+  const q   = document.getElementById('searchInput').value.toLowerCase();
   const mth = document.getElementById('filterMonth').value;
   const cat = document.getElementById('filterCat').value;
   return tasks.filter(t => {
@@ -1008,12 +1278,12 @@ function getFiltered() {
     if (filterStatusVal && t.status !== filterStatusVal) return false;
     if (mth && toYM(t.date) !== mth) return false;
     if (cat && t.cat !== cat) return false;
-    if (q && !t.title.toLowerCase().includes(q) && !t.note.toLowerCase().includes(q)) return false;
+    if (q && !t.title.toLowerCase().includes(q) && !(t.note||'').toLowerCase().includes(q)) return false;
     return true;
   }).sort((a,b) => (a.date||'') > (b.date||'') ? 1 : -1);
 }
 
-// ── STATUS BADGE HTML ──
+// ── STATUS BADGE ──
 function statusBadge(s) {
   const map = {
     'todo':   ['badge-todo',     '&#9675;', '예정'],
@@ -1025,7 +1295,9 @@ function statusBadge(s) {
   return `<span class="badge ${cls}">${ico} ${lbl}</span>`;
 }
 
-// ── RENDER TABLE ──
+// ══════════════════════════════════════════════
+//  RENDER TABLE
+// ══════════════════════════════════════════════
 function renderTable() {
   const filtered = getFiltered();
   const tbody = document.getElementById('taskTbody');
@@ -1062,13 +1334,9 @@ function renderTable() {
   updateCounts();
 }
 
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
 // ── UPDATE SIDEBAR COUNTS ──
 function updateCounts() {
-  const members = ['구우회','이상원','이호동'];
+  const members  = ['이상원','구우회','이호동'];
   const statuses = ['todo','진행중','완료','보류'];
   document.getElementById('cnt-all').textContent = tasks.length;
   members.forEach(m => {
@@ -1082,36 +1350,43 @@ function updateCounts() {
   populateMonthFilter();
 }
 
-// ── TOGGLE DONE ──
-function toggleDone(id, checked) {
+// ══════════════════════════════════════════════
+//  TOGGLE / DELETE
+// ══════════════════════════════════════════════
+async function toggleDone(id, checked) {
   const t = tasks.find(t=>t.id===id);
-  if (t) {
-    t.status = checked ? '완료' : 'todo';
-    saveTasks(tasks);
+  if (!t) return;
+  const newStatus = checked ? '완료' : 'todo';
+  const updated = await dbUpdate(id, { status: newStatus });
+  if (updated) {
+    t.status = newStatus;
     renderTable();
     showToast(checked ? '완료로 변경했습니다.' : '예정으로 변경했습니다.');
   }
 }
 
-// ── DELETE TASK ──
-function deleteTask(id) {
+async function deleteTask(id) {
   if (!confirm('정말 삭제하시겠습니까?')) return;
-  tasks = tasks.filter(t=>t.id!==id);
-  saveTasks(tasks);
-  renderTable();
-  showToast('삭제했습니다.');
+  const ok = await dbDelete(id);
+  if (ok) {
+    tasks = tasks.filter(t=>t.id!==id);
+    renderTable();
+    showToast('삭제했습니다.');
+  }
 }
 
-// ── MODAL ──
+// ══════════════════════════════════════════════
+//  MODAL
+// ══════════════════════════════════════════════
 function openAddModal() {
   editId = null;
   document.getElementById('modalTitle').textContent = '할 일 추가';
-  document.getElementById('f-title').value = '';
+  document.getElementById('f-title').value  = '';
   document.getElementById('f-member').value = '';
-  document.getElementById('f-cat').value = '기타';
-  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('f-cat').value    = '기타';
+  document.getElementById('f-date').value   = new Date().toISOString().split('T')[0];
   document.getElementById('f-status').value = 'todo';
-  document.getElementById('f-note').value = '';
+  document.getElementById('f-note').value   = '';
   document.getElementById('taskModal').classList.add('open');
   setTimeout(() => document.getElementById('f-title').focus(), 50);
 }
@@ -1121,12 +1396,12 @@ function openEditModal(id) {
   if (!t) return;
   editId = id;
   document.getElementById('modalTitle').textContent = '할 일 수정';
-  document.getElementById('f-title').value = t.title;
+  document.getElementById('f-title').value  = t.title;
   document.getElementById('f-member').value = t.member;
-  document.getElementById('f-cat').value = t.cat;
-  document.getElementById('f-date').value = t.date;
+  document.getElementById('f-cat').value    = t.cat;
+  document.getElementById('f-date').value   = t.date;
   document.getElementById('f-status').value = t.status;
-  document.getElementById('f-note').value = t.note||'';
+  document.getElementById('f-note').value   = t.note||'';
   document.getElementById('taskModal').classList.add('open');
 }
 
@@ -1134,34 +1409,47 @@ function closeModal() {
   document.getElementById('taskModal').classList.remove('open');
 }
 
-function saveTask() {
-  const title = document.getElementById('f-title').value.trim();
+async function saveTask() {
+  const title  = document.getElementById('f-title').value.trim();
   const member = document.getElementById('f-member').value;
-  const cat = document.getElementById('f-cat').value;
-  const date = document.getElementById('f-date').value;
+  const cat    = document.getElementById('f-cat').value;
+  const date   = document.getElementById('f-date').value;
   const status = document.getElementById('f-status').value;
-  const note = document.getElementById('f-note').value.trim();
+  const note   = document.getElementById('f-note').value.trim();
 
-  if (!title) { alert('업무명을 입력하세요.'); return; }
+  if (!title)  { alert('업무명을 입력하세요.'); return; }
   if (!member) { alert('담당자를 선택하세요.'); return; }
-  if (!date) { alert('날짜를 선택하세요.'); return; }
+  if (!date)   { alert('날짜를 선택하세요.'); return; }
 
   if (editId) {
-    const t = tasks.find(t=>t.id===editId);
-    Object.assign(t, {title, member, cat, date, status, note});
+    const fields = { title, member, cat, date, status, note };
+    const updated = await dbUpdate(editId, fields);
+    if (updated) {
+      const t = tasks.find(t=>t.id===editId);
+      if (t) Object.assign(t, fields);
+      closeModal();
+      renderTable();
+      showToast('수정했습니다.');
+    }
   } else {
-    tasks.push({id: nextId(), title, member, cat, date, status, note});
+    const newTask = await dbInsert({ title, member, cat, date, status, note });
+    if (newTask) {
+      tasks.push(newTask);
+      closeModal();
+      renderTable();
+      showToast('추가했습니다.');
+    }
   }
-  saveTasks(tasks);
-  closeModal();
-  renderTable();
-  showToast(editId ? '수정했습니다.' : '추가했습니다.');
 }
 
-// ── EXPORT CSV ──
+// ══════════════════════════════════════════════
+//  EXPORT CSV
+// ══════════════════════════════════════════════
 function exportCSV() {
   const header = ['날짜','업무명','담당자','카테고리','상태','비고'];
-  const rows = getFiltered().map(t => [t.date, t.title, t.member, t.cat, t.status, t.note||''].map(v=>`"${v}"`).join(','));
+  const rows = getFiltered().map(t =>
+    [t.date, t.title, t.member, t.cat, t.status, t.note||''].map(v=>`"${v}"`).join(',')
+  );
   const csv = '\uFEFF' + [header.join(','), ...rows].join('\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
@@ -1169,7 +1457,17 @@ function exportCSV() {
   a.click();
 }
 
-// ── DASHBOARD ──
+// ══════════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════════
+function initDashDates() {
+  const now = new Date();
+  const end = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const start3 = new Date(now.getFullYear(), now.getMonth()-2, 1);
+  document.getElementById('dashStart').value = `${start3.getFullYear()}-${String(start3.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('dashEnd').value = end;
+}
+
 function setDashQuarter(months) {
   const now = new Date();
   const end = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
@@ -1199,11 +1497,11 @@ function renderDash() {
   if (!range || range.length < 1) return;
 
   const inRange = tasks.filter(t => range.includes(toYM(t.date)));
-  const total = inRange.length;
-  const done = inRange.filter(t=>t.status==='완료').length;
+  const total    = inRange.length;
+  const done     = inRange.filter(t=>t.status==='완료').length;
   const progress = inRange.filter(t=>t.status==='진행중').length;
-  const todo = inRange.filter(t=>t.status==='todo').length;
-  const rate = total ? Math.round(done/total*100) : 0;
+  const todo     = inRange.filter(t=>t.status==='todo').length;
+  const rate     = total ? Math.round(done/total*100) : 0;
 
   // Stats
   document.getElementById('dashStats').innerHTML = `
@@ -1229,12 +1527,12 @@ function renderDash() {
     </div>
   `;
 
-  // Charts: member breakdown + category breakdown
-  const members = ['구우회','이상원','이호동'];
-  const memberColors = ['blue','green','purple'];
+  // 팀원 순서: 이상원, 구우회, 이호동
+  const members      = ['이상원','구우회','이호동'];
+  const memberColors = ['green','blue','purple'];
   const maxM = Math.max(...members.map(m => inRange.filter(t=>t.member===m).length), 1);
 
-  const cats = ['급여','채용','교육','노무','복리후생','규정','보고','기타'];
+  const cats      = ['급여','채용','교육','노무','복리후생','규정','보고','기타'];
   const catColors = ['blue','purple','green','orange','blue','green','purple','orange'];
   const maxC = Math.max(...cats.map(c => inRange.filter(t=>t.cat===c).length), 1);
 
@@ -1242,9 +1540,9 @@ function renderDash() {
     <div class="dash-card">
       <div class="dash-card-title">&#9650; 팀원별 업무 현황</div>
       ${members.map((m,i) => {
-        const cnt = inRange.filter(t=>t.member===m).length;
+        const cnt   = inRange.filter(t=>t.member===m).length;
         const doneC = inRange.filter(t=>t.member===m && t.status==='완료').length;
-        const pct = Math.round(cnt/maxM*100);
+        const pct   = Math.round(cnt/maxM*100);
         return `<div class="prog-item">
           <div class="prog-header">
             <span style="display:flex;align-items:center;gap:6px">
@@ -1273,12 +1571,15 @@ function renderDash() {
     </div>
   `;
 
-  // Monthly columns — grouped by member inside each month
-  const colsHtml = range.map(ym => {
-    const mTasks = tasks.filter(t => toYM(t.date) === ym);
-    const mDone = mTasks.filter(t=>t.status==='완료').length;
-    const mProg = mTasks.filter(t=>t.status==='진행중').length;
+  // 월별 목록 — 최신 월이 가장 위 (내림차순)
+  const sortedRange = [...range].sort((a,b) => b.localeCompare(a));
 
+  const colsHtml = sortedRange.map(ym => {
+    const mTasks = tasks.filter(t => toYM(t.date) === ym);
+    const mDone  = mTasks.filter(t=>t.status==='완료').length;
+    const mProg  = mTasks.filter(t=>t.status==='진행중').length;
+
+    // 팀원 순서: 이상원, 구우회, 이호동
     const memberGroupsHtml = members.map(m => {
       const mmt = mTasks.filter(t=>t.member===m).sort((a,b)=>(a.date||'')>(b.date||'')?1:-1);
       if (!mmt.length) return '';
@@ -1329,28 +1630,36 @@ function renderDash() {
   `;
 }
 
-// ── INIT DASHBOARD DATES ──
-(function() {
-  const now = new Date();
-  const end = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const start3 = new Date(now.getFullYear(), now.getMonth()-2, 1);
-  document.getElementById('dashStart').value = `${start3.getFullYear()}-${String(start3.getMonth()+1).padStart(2,'0')}`;
-  document.getElementById('dashEnd').value = end;
-})();
-
-// ── KEYBOARD SHORTCUT ──
+// ══════════════════════════════════════════════
+//  KEYBOARD & MODAL OUTSIDE CLICK
+// ══════════════════════════════════════════════
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') closeModal();
   if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); openAddModal(); }
 });
-
-// ── MODAL OUTSIDE CLICK ──
 document.getElementById('taskModal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
 
-// ── INIT ──
-renderTable();
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+(function init() {
+  const saved = getSavedConfig();
+  if (saved && saved.url && saved.key) {
+    // 저장된 설정 있음 → 자동 연결
+    if (initSupabase(saved.url, saved.key)) {
+      document.getElementById('configPanel').classList.add('hidden');
+      startApp();
+    } else {
+      // 연결 실패 → 설정 패널 표시
+      document.getElementById('configPanel').classList.remove('hidden');
+    }
+  } else {
+    // 설정 없음 → 설정 패널 표시
+    document.getElementById('configPanel').classList.remove('hidden');
+  }
+})();
 </script>
 </body>
 </html>
