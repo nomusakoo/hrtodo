@@ -695,6 +695,108 @@
   }
   .config-actions { display: flex; gap: 10px; justify-content: flex-end; }
 
+  /* ── PIN LOCK ── */
+  .pin-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* 배경 블러 */
+    backdrop-filter: blur(12px) brightness(0.6);
+    -webkit-backdrop-filter: blur(12px) brightness(0.6);
+  }
+  .pin-overlay.hidden { display: none; }
+  .pin-box {
+    background: #fff;
+    border-radius: 20px;
+    padding: 36px 32px 30px;
+    width: 320px;
+    max-width: 90vw;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+    text-align: center;
+  }
+  .pin-logo {
+    font-size: 28px;
+    margin-bottom: 8px;
+  }
+  .pin-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--primary);
+    margin-bottom: 4px;
+  }
+  .pin-sub {
+    font-size: 12px;
+    color: var(--gray-400);
+    margin-bottom: 24px;
+  }
+  /* 핀 dots */
+  .pin-dots {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .pin-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--gray-300);
+    background: transparent;
+    transition: all 0.15s;
+  }
+  .pin-dot.filled {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .pin-dot.error {
+    background: var(--danger);
+    border-color: var(--danger);
+    animation: shake 0.3s ease;
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+  /* 핀패드 */
+  .pin-pad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .pin-key {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 14px 0;
+    font-size: 20px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    color: var(--primary);
+    cursor: pointer;
+    transition: all 0.1s;
+    user-select: none;
+  }
+  .pin-key:hover { background: var(--accent-bg); border-color: var(--accent-light); color: var(--accent); }
+  .pin-key:active { transform: scale(0.94); }
+  .pin-key.del {
+    font-size: 16px;
+    color: var(--gray-500);
+  }
+  .pin-key.zero {
+    grid-column: 2;
+  }
+  .pin-error-msg {
+    font-size: 12px;
+    color: var(--danger);
+    margin-top: 14px;
+    min-height: 18px;
+    transition: opacity 0.2s;
+  }
+
   /* responsive */
   @media (max-width: 900px) {
     .sidebar { display: none; }
@@ -730,6 +832,35 @@
       <button class="btn" onclick="useLocalStorage()">로컬 저장소로 사용</button>
       <button class="btn btn-primary" onclick="saveConfig()">연결하기</button>
     </div>
+  </div>
+</div>
+
+<!-- PIN LOCK OVERLAY (Supabase 연결 후 비밀번호 입력) -->
+<div class="pin-overlay hidden" id="pinOverlay">
+  <div class="pin-box">
+    <div class="pin-logo">&#9881;</div>
+    <div class="pin-title">인사노무팀 업무 관리</div>
+    <div class="pin-sub">4자리 비밀번호를 입력하세요</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="pinInput('1')">1</button>
+      <button class="pin-key" onclick="pinInput('2')">2</button>
+      <button class="pin-key" onclick="pinInput('3')">3</button>
+      <button class="pin-key" onclick="pinInput('4')">4</button>
+      <button class="pin-key" onclick="pinInput('5')">5</button>
+      <button class="pin-key" onclick="pinInput('6')">6</button>
+      <button class="pin-key" onclick="pinInput('7')">7</button>
+      <button class="pin-key" onclick="pinInput('8')">8</button>
+      <button class="pin-key" onclick="pinInput('9')">9</button>
+      <button class="pin-key zero" onclick="pinInput('0')">0</button>
+      <button class="pin-key del" onclick="pinDelete()">⌫</button>
+    </div>
+    <div class="pin-error-msg" id="pinErrorMsg"></div>
   </div>
 </div>
 
@@ -1042,7 +1173,12 @@ function useLocalStorage() {
   sbClient = null;
   document.getElementById('configPanel').classList.add('hidden');
   setDbStatus(false, '로컬 저장소');
-  startApp();
+  if (sessionStorage.getItem(PIN_SESSION_KEY) === '1') {
+    startApp();
+  } else {
+    showPinOverlay();
+    startApp();
+  }
 }
 
 function setDbStatus(connected, label) {
@@ -1071,21 +1207,25 @@ async function dbInsert(task) {
     localSave(arr);
     return newRow;
   }
-  const { data, error } = await sbClient.from('hr_tasks').insert(row).select().single();
+  // .single() 제거 → 배열로 받아 첫 번째 행 반환
+  const { data, error } = await sbClient.from('hr_tasks').insert(row).select();
   if (error) { console.error(error); showToast('저장 오류', 'error'); return null; }
-  return data;
+  return (data && data[0]) || null;
 }
 
 async function dbUpdate(id, fields) {
   if (useLocal || !sbClient) {
     const arr = localLoad();
     const idx = arr.findIndex(t => t.id === id);
-    if (idx !== -1) { Object.assign(arr[idx], fields); localSave(arr); }
+    if (idx === -1) return null;
+    Object.assign(arr[idx], fields);
+    localSave(arr);
     return arr[idx];
   }
-  const { data, error } = await sbClient.from('hr_tasks').update(fields).eq('id', id).select().single();
+  // .single() 제거 → 배열로 받아 첫 번째 행 반환 (single()은 행이 없을 때 에러를 던짐)
+  const { data, error } = await sbClient.from('hr_tasks').update(fields).eq('id', id).select();
   if (error) { console.error(error); showToast('수정 오류', 'error'); return null; }
-  return data;
+  return (data && data[0]) || { id, ...fields };
 }
 
 async function dbDelete(id) {
@@ -1630,15 +1770,82 @@ function renderDash() {
   `;
 }
 
-// ══════════════════════════════════════════════
-//  KEYBOARD & MODAL OUTSIDE CLICK
-// ══════════════════════════════════════════════
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeModal();
-  if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); openAddModal(); }
-});
+// ── MODAL OUTSIDE CLICK ──
 document.getElementById('taskModal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
+});
+
+// ══════════════════════════════════════════════
+//  PIN LOCK
+//  ★ 비밀번호를 변경하려면 아래 APP_PIN 값만 수정하세요
+// ══════════════════════════════════════════════
+const APP_PIN = '1234'; // ← 여기서 4자리 비밀번호 관리
+
+let pinBuffer = '';
+const PIN_SESSION_KEY = 'hr_pin_unlocked';
+
+function showPinOverlay() {
+  pinBuffer = '';
+  updatePinDots();
+  document.getElementById('pinErrorMsg').textContent = '';
+  document.getElementById('pinOverlay').classList.remove('hidden');
+}
+
+function hidePinOverlay() {
+  document.getElementById('pinOverlay').classList.add('hidden');
+  // 세션 동안 잠금 해제 유지 (탭 닫으면 초기화)
+  sessionStorage.setItem(PIN_SESSION_KEY, '1');
+}
+
+function pinInput(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  updatePinDots();
+  if (pinBuffer.length === 4) {
+    setTimeout(checkPin, 120); // 마지막 dot 채워지는 시각적 효과 후 검증
+  }
+}
+
+function pinDelete() {
+  if (pinBuffer.length === 0) return;
+  pinBuffer = pinBuffer.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pinErrorMsg').textContent = '';
+}
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    const dot = document.getElementById(`pd${i}`);
+    dot.className = 'pin-dot' + (i < pinBuffer.length ? ' filled' : '');
+  }
+}
+
+function checkPin() {
+  if (pinBuffer === APP_PIN) {
+    hidePinOverlay();
+  } else {
+    // 오류 애니메이션
+    for (let i = 0; i < 4; i++) {
+      document.getElementById(`pd${i}`).className = 'pin-dot error';
+    }
+    document.getElementById('pinErrorMsg').textContent = '비밀번호가 올바르지 않습니다.';
+    setTimeout(() => {
+      pinBuffer = '';
+      updatePinDots();
+      document.getElementById('pinErrorMsg').textContent = '';
+    }, 800);
+  }
+}
+
+// 키보드 숫자 입력 지원
+document.addEventListener('keydown', e => {
+  if (!document.getElementById('pinOverlay').classList.contains('hidden')) {
+    if (e.key >= '0' && e.key <= '9') pinInput(e.key);
+    if (e.key === 'Backspace') pinDelete();
+    return; // PIN 모드일 땐 다른 단축키 무시
+  }
+  if (e.key === 'Escape') closeModal();
+  if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); openAddModal(); }
 });
 
 // ══════════════════════════════════════════════
@@ -1647,16 +1854,21 @@ document.getElementById('taskModal').addEventListener('click', function(e) {
 (function init() {
   const saved = getSavedConfig();
   if (saved && saved.url && saved.key) {
-    // 저장된 설정 있음 → 자동 연결
+    // 저장된 설정 있음 → 자동 연결 후 PIN 확인
     if (initSupabase(saved.url, saved.key)) {
       document.getElementById('configPanel').classList.add('hidden');
-      startApp();
+      // 이미 세션에서 인증됐으면 바로 진입
+      if (sessionStorage.getItem(PIN_SESSION_KEY) === '1') {
+        startApp();
+      } else {
+        showPinOverlay();
+        startApp(); // 데이터 로드는 백그라운드에서 미리 시작
+      }
     } else {
-      // 연결 실패 → 설정 패널 표시
       document.getElementById('configPanel').classList.remove('hidden');
     }
   } else {
-    // 설정 없음 → 설정 패널 표시
+    // 설정 없음 → 설정 패널 (PIN 없이 바로 로컬 모드 가능)
     document.getElementById('configPanel').classList.remove('hidden');
   }
 })();
