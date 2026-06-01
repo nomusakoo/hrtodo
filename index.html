@@ -985,6 +985,7 @@
         </select>
         <div class="toolbar-right">
           <button class="btn" onclick="exportCSV()">&#8595; 내보내기</button>
+          <button class="btn btn-primary" onclick="openCsvModal()">&#8679; 올리기</button>
         </div>
       </div>
 
@@ -1107,6 +1108,85 @@
   </div>
 </div>
 
+<!-- CSV UPLOAD MODAL -->
+<div class="modal-overlay" id="csvModal">
+  <div class="modal" style="width:560px">
+    <div class="modal-header">
+      <div class="modal-title">&#8679; CSV 대량 올리기</div>
+      <button class="modal-close" onclick="closeCsvModal()">&#10005;</button>
+    </div>
+    <div style="background:var(--accent-bg);border-left:3px solid var(--accent);padding:10px 14px;border-radius:6px;font-size:12px;color:var(--accent);margin-bottom:16px;line-height:1.7">
+      <strong>내보내기 양식 그대로</strong> 사용하세요.<br>
+      헤더: <code style="font-family:monospace;background:#dce8f5;padding:1px 5px;border-radius:3px">날짜,업무명,담당자,카테고리,상태,비고</code><br>
+      담당자: 이상원 / 구우회 / 이호동 &nbsp;|&nbsp; 상태: todo / 진행중 / 완료 / 보류
+    </div>
+    <div class="form-row">
+      <label class="form-label">CSV 파일 선택</label>
+      <input type="file" id="csvFileInput" accept=".csv" class="form-input" style="padding:6px 10px;cursor:pointer">
+    </div>
+    <div id="csvPreviewWrap" style="display:none;margin-bottom:4px">
+      <div class="form-label" style="margin-bottom:8px">미리보기 <span id="csvPreviewCount" style="color:var(--accent);font-weight:600"></span></div>
+      <div style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius)">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:var(--gray-50);position:sticky;top:0">
+              <th style="padding:7px 10px;text-align:left;color:var(--gray-500);font-weight:600;border-bottom:1px solid var(--border)">날짜</th>
+              <th style="padding:7px 10px;text-align:left;color:var(--gray-500);font-weight:600;border-bottom:1px solid var(--border)">업무명</th>
+              <th style="padding:7px 10px;text-align:left;color:var(--gray-500);font-weight:600;border-bottom:1px solid var(--border)">담당자</th>
+              <th style="padding:7px 10px;text-align:left;color:var(--gray-500);font-weight:600;border-bottom:1px solid var(--border)">카테고리</th>
+              <th style="padding:7px 10px;text-align:left;color:var(--gray-500);font-weight:600;border-bottom:1px solid var(--border)">상태</th>
+              <th style="padding:7px 10px;text-align:left;color:var(--gray-500);font-weight:600;border-bottom:1px solid var(--border)">비고</th>
+              <th style="padding:7px 10px;text-align:left;color:var(--gray-500);font-weight:600;border-bottom:1px solid var(--border)">검증</th>
+            </tr>
+          </thead>
+          <tbody id="csvPreviewBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="csvErrorMsg" style="font-size:12px;color:var(--danger);margin-top:6px;min-height:16px"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeCsvModal()">취소</button>
+      <button class="btn btn-primary" id="csvUploadBtn" onclick="uploadCSV()" disabled>&#8679; 올리기</button>
+    </div>
+  </div>
+</div>
+
+<!-- TABLE NOT FOUND POPUP -->
+<div class="modal-overlay" id="tableErrModal">
+  <div class="modal" style="width:520px">
+    <div class="modal-header">
+      <div class="modal-title" style="color:var(--danger)">&#9888; 테이블을 찾을 수 없습니다</div>
+      <button class="modal-close" onclick="document.getElementById('tableErrModal').classList.remove('open')">&#10005;</button>
+    </div>
+    <p style="font-size:13px;color:var(--gray-600);margin-bottom:18px;line-height:1.7">
+      Supabase에 <strong>hr_tasks</strong> 테이블이 없거나 schema cache가 갱신되지 않았어요.<br>
+      아래 SQL을 Supabase <strong>SQL Editor</strong>에서 실행한 후 페이지를 새로고침하세요.
+    </p>
+    <div style="background:#1e1e2e;border-radius:8px;padding:16px;margin-bottom:18px;position:relative">
+      <pre style="color:#a8c4e8;font-size:11.5px;font-family:monospace;line-height:1.8;white-space:pre-wrap;margin:0">create table if not exists hr_tasks (
+  id          bigserial primary key,
+  title       text        not null,
+  member      text        not null,
+  cat         text        not null default '기타',
+  date        date        not null,
+  status      text        not null default 'todo',
+  note        text        default '',
+  created_at  timestamptz default now()
+);
+alter table hr_tasks disable row level security;
+grant all on table hr_tasks to anon;
+grant usage, select on sequence hr_tasks_id_seq to anon;</pre>
+      <button onclick="copyTableSQL()" style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#a8c4e8;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer" id="copySqlBtn">복사</button>
+    </div>
+      <button onclick="copyTableSQL()" style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#a8c4e8;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer" id="copySqlBtn">복사</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="document.getElementById('tableErrModal').classList.remove('open');openConfigPanel()">DB 설정 변경</button>
+      <button class="btn btn-primary" onclick="location.reload()">&#8635; 새로고침</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"><span id="toastIcon" style="color:#6ee7b7">&#10003;</span> <span id="toastMsg"></span></div>
 
@@ -1188,12 +1268,51 @@ function setDbStatus(connected, label) {
   lbl.textContent = label || (connected ? 'Supabase 연결됨' : '연결 안됨');
 }
 
+// ── 테이블 없음 감지 ──
+function isTableNotFoundError(error) {
+  if (!error) return false;
+  const msg = (error.message || '') + (error.code || '');
+  return msg.includes('schema cache') || msg.includes('relation') || msg.includes('does not exist') || error.code === 'PGRST116' || error.code === '42P01';
+}
+
+function showTableError() {
+  document.getElementById('tableErrModal').classList.add('open');
+}
+
+function copyTableSQL() {
+  const sql = [
+    "create table if not exists hr_tasks (",
+    "  id          bigserial primary key,",
+    "  title       text        not null,",
+    "  member      text        not null,",
+    "  cat         text        not null default '기타',",
+    "  date        date        not null,",
+    "  status      text        not null default 'todo',",
+    "  note        text        default '',",
+    "  created_at  timestamptz default now()",
+    ");",
+    "alter table hr_tasks disable row level security;",
+    "grant all on table hr_tasks to anon;",
+    "grant usage, select on sequence hr_tasks_id_seq to anon;"
+  ].join("\n");
+  navigator.clipboard.writeText(sql).then(() => {
+    const btn = document.getElementById('copySqlBtn');
+    btn.textContent = '복사됨 ✓';
+    setTimeout(() => { btn.textContent = '복사'; }, 2000);
+  });
+}
+
 // ── 데이터 CRUD ──
 async function dbLoad() {
   if (useLocal || !sbClient) return localLoad();
   const { data, error } = await sbClient.from('hr_tasks').select('*').order('date', { ascending: true });
   if (error) {
     console.error('[dbLoad]', error);
+    if (isTableNotFoundError(error)) {
+      showLoading(false);
+      showTableError();
+      return [];
+    }
     showToast('로드 오류: ' + (error.message || error.code), 'error');
     return localLoad();
   }
@@ -1214,6 +1333,7 @@ async function dbInsert(task) {
   const { data, error } = await sbClient.from('hr_tasks').insert(row).select();
   if (error) {
     console.error('[dbInsert]', error);
+    if (isTableNotFoundError(error)) { showTableError(); return null; }
     showToast('저장 오류: ' + (error.message || error.code), 'error');
     return null;
   }
@@ -1232,6 +1352,7 @@ async function dbUpdate(id, fields) {
   const { data, error } = await sbClient.from('hr_tasks').update(fields).eq('id', id).select();
   if (error) {
     console.error('[dbUpdate]', error);
+    if (isTableNotFoundError(error)) { showTableError(); return null; }
     showToast('수정 오류: ' + (error.message || error.code), 'error');
     return null;
   }
@@ -1247,6 +1368,7 @@ async function dbDelete(id) {
   const { error } = await sbClient.from('hr_tasks').delete().eq('id', id);
   if (error) {
     console.error('[dbDelete]', error);
+    if (isTableNotFoundError(error)) { showTableError(); return false; }
     showToast('삭제 오류: ' + (error.message || error.code), 'error');
     return false;
   }
@@ -1256,7 +1378,11 @@ async function dbDelete(id) {
 async function dbSeedIfEmpty() {
   if (!useLocal && sbClient) {
     const { count, error: cntErr } = await sbClient.from('hr_tasks').select('*', { count: 'exact', head: true });
-    if (cntErr) { console.error('[dbSeedIfEmpty count]', cntErr); return; }
+    if (cntErr) {
+      console.error('[dbSeedIfEmpty count]', cntErr);
+      if (isTableNotFoundError(cntErr)) { showLoading(false); showTableError(); }
+      return;
+    }
     if (count > 0) return;
     const rows = SEED_DATA.map(t => ({ title:t.title, member:t.member, cat:t.cat, date:t.date, status:t.status, note:t.note||'' }));
     const { error: insErr } = await sbClient.from('hr_tasks').insert(rows);
@@ -1609,6 +1735,138 @@ function exportCSV() {
 }
 
 // ══════════════════════════════════════════════
+//  CSV 업로드
+// ══════════════════════════════════════════════
+const VALID_MEMBERS  = ['이상원','구우회','이호동'];
+const VALID_CATS     = ['급여','채용','교육','노무','복리후생','규정','보고','기타'];
+const VALID_STATUSES = ['todo','진행중','완료','보류'];
+let csvParsedRows = [];
+
+function openCsvModal() {
+  csvParsedRows = [];
+  document.getElementById('csvFileInput').value = '';
+  document.getElementById('csvPreviewWrap').style.display = 'none';
+  document.getElementById('csvPreviewBody').innerHTML = '';
+  document.getElementById('csvPreviewCount').textContent = '';
+  document.getElementById('csvErrorMsg').textContent = '';
+  document.getElementById('csvUploadBtn').disabled = true;
+  document.getElementById('csvModal').classList.add('open');
+}
+
+function closeCsvModal() {
+  document.getElementById('csvModal').classList.remove('open');
+}
+
+// 파일 선택 시 파싱 + 미리보기
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('csvFileInput').addEventListener('change', function() {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => parseCsvPreview(e.target.result);
+    reader.readAsText(file, 'UTF-8');
+  });
+});
+
+function parseCsvLine(line) {
+  // 쌍따옴표 처리 포함 CSV 파싱
+  const result = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (c === ',' && !inQ) {
+      result.push(cur.trim()); cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  result.push(cur.trim());
+  return result;
+}
+
+function parseCsvPreview(text) {
+  // BOM 제거
+  text = text.replace(/^\uFEFF/, '');
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 2) {
+    document.getElementById('csvErrorMsg').textContent = '데이터 행이 없습니다.';
+    return;
+  }
+
+  // 헤더 검증
+  const header = parseCsvLine(lines[0]);
+  const expected = ['날짜','업무명','담당자','카테고리','상태','비고'];
+  const headerOk = expected.every((h,i) => header[i] === h);
+  if (!headerOk) {
+    document.getElementById('csvErrorMsg').textContent = `헤더가 맞지 않습니다. 내보내기로 받은 파일을 사용하세요. (현재: ${header.join(',')})`;
+    document.getElementById('csvUploadBtn').disabled = true;
+    return;
+  }
+
+  csvParsedRows = [];
+  let hasError = false;
+  const tbodyRows = [];
+
+  for (let i = 1; i < lines.length; i++) {
+    const cols = parseCsvLine(lines[i]);
+    if (cols.length < 2 || cols.every(c => !c)) continue; // 빈 행 스킵
+
+    const [date, title, member, cat, status, note] = cols;
+    const errs = [];
+
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) errs.push('날짜형식(YYYY-MM-DD)');
+    if (!title) errs.push('업무명필수');
+    if (!VALID_MEMBERS.includes(member)) errs.push(`담당자(${member || '없음'})`);
+    const finalCat    = VALID_CATS.includes(cat) ? cat : '기타';
+    const finalStatus = VALID_STATUSES.includes(status) ? status : 'todo';
+
+    const ok = errs.length === 0;
+    if (!ok) hasError = true;
+    if (ok) csvParsedRows.push({ title, member, cat: finalCat, date, status: finalStatus, note: note || '' });
+
+    tbodyRows.push(`<tr style="background:${ok?'':'#fff5f5'}">
+      <td style="padding:5px 10px;font-family:monospace;font-size:11px;color:var(--gray-600)">${date||''}</td>
+      <td style="padding:5px 10px;font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${escHtml(title||'')}">${escHtml(title||'')}</td>
+      <td style="padding:5px 10px;font-size:12px">${escHtml(member||'')}</td>
+      <td style="padding:5px 10px;font-size:12px">${escHtml(finalCat)}</td>
+      <td style="padding:5px 10px;font-size:12px">${escHtml(finalStatus)}</td>
+      <td style="padding:5px 10px;font-size:11px;color:var(--gray-400)">${escHtml(note||'')}</td>
+      <td style="padding:5px 10px;font-size:11px">${ok ? '<span style="color:#22c55e">✓</span>' : '<span style="color:var(--danger)" title="'+errs.join(', ')+'">✗ '+errs.join(', ')+'</span>'}</td>
+    </tr>`);
+  }
+
+  document.getElementById('csvPreviewBody').innerHTML = tbodyRows.join('');
+  document.getElementById('csvPreviewCount').textContent = `(${csvParsedRows.length}건 유효 / 전체 ${lines.length-1}행)`;
+  document.getElementById('csvPreviewWrap').style.display = '';
+  document.getElementById('csvErrorMsg').textContent = hasError ? '⚠ 빨간 행은 오류가 있어 제외됩니다. 유효한 행만 올라갑니다.' : '';
+  document.getElementById('csvUploadBtn').disabled = csvParsedRows.length === 0;
+}
+
+async function uploadCSV() {
+  if (csvParsedRows.length === 0) return;
+  document.getElementById('csvUploadBtn').disabled = true;
+  document.getElementById('csvUploadBtn').textContent = '올리는 중...';
+
+  let success = 0, fail = 0;
+  for (const row of csvParsedRows) {
+    const result = await dbInsert(row);
+    if (result) { tasks.push(result); success++; }
+    else fail++;
+  }
+
+  closeCsvModal();
+  renderTable();
+  if (fail === 0) showToast(`${success}건 올리기 완료!`);
+  else showToast(`${success}건 성공, ${fail}건 실패`, 'error');
+
+  document.getElementById('csvUploadBtn').disabled = false;
+  document.getElementById('csvUploadBtn').textContent = '↑ 올리기';
+}
+
+// ══════════════════════════════════════════════
 //  DASHBOARD
 // ══════════════════════════════════════════════
 function initDashDates() {
@@ -1784,6 +2042,9 @@ function renderDash() {
 // ── MODAL OUTSIDE CLICK ──
 document.getElementById('taskModal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
+});
+document.getElementById('csvModal').addEventListener('click', function(e) {
+  if (e.target === this) closeCsvModal();
 });
 
 // ══════════════════════════════════════════════
