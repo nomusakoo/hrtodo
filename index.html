@@ -1153,17 +1153,27 @@
 
 <!-- TABLE NOT FOUND POPUP -->
 <div class="modal-overlay" id="tableErrModal">
-  <div class="modal" style="width:520px">
+  <div class="modal" style="width:560px">
     <div class="modal-header">
-      <div class="modal-title" style="color:var(--danger)">&#9888; 테이블을 찾을 수 없습니다</div>
-      <button class="modal-close" onclick="document.getElementById('tableErrModal').classList.remove('open')">&#10005;</button>
+      <div class="modal-title" style="color:var(--warning)">&#9888; API 연결 오류</div>
+      <button class="modal-close" onclick="closeTableErrModal()">&#10005;</button>
     </div>
-    <p style="font-size:13px;color:var(--gray-600);margin-bottom:18px;line-height:1.7">
-      Supabase에 <strong>hr_tasks</strong> 테이블이 없거나 schema cache가 갱신되지 않았어요.<br>
-      아래 SQL을 Supabase <strong>SQL Editor</strong>에서 실행한 후 페이지를 새로고침하세요.
-    </p>
-    <div style="background:#1e1e2e;border-radius:8px;padding:16px;margin-bottom:18px;position:relative">
-      <pre style="color:#a8c4e8;font-size:11.5px;font-family:monospace;line-height:1.8;white-space:pre-wrap;margin:0">create table if not exists hr_tasks (
+
+    <!-- STEP 1: 테이블 이미 만든 경우 (schema cache) -->
+    <div style="background:#fef3c7;border-left:3px solid #d97706;border-radius:6px;padding:12px 14px;margin-bottom:16px">
+      <div style="font-size:12px;font-weight:600;color:#92400e;margin-bottom:6px">✅ SQL 실행은 성공했는데 이 팝업이 뜬다면 — Schema Cache 재로드 필요</div>
+      <div style="font-size:12px;color:#92400e;line-height:1.7">
+        Supabase 대시보드 → 좌측 메뉴 <strong>Project Settings</strong> → <strong>API</strong> 탭 →<br>
+        하단 <strong>"Reload schema cache"</strong> 버튼 클릭 → 완료 후 아래 <strong>새로고침</strong> 버튼
+      </div>
+    </div>
+
+    <!-- STEP 2: 테이블 아직 안 만든 경우 -->
+    <div style="font-size:12px;color:var(--gray-600);margin-bottom:10px;line-height:1.6">
+      아직 테이블을 만들지 않았다면 아래 SQL을 Supabase <strong>SQL Editor</strong>에서 실행하세요.
+    </div>
+    <div style="background:#1e1e2e;border-radius:8px;padding:16px;margin-bottom:6px;position:relative">
+      <pre style="color:#a8c4e8;font-size:11px;font-family:monospace;line-height:1.8;white-space:pre-wrap;margin:0">create table if not exists hr_tasks (
   id          bigserial primary key,
   title       text        not null,
   member      text        not null,
@@ -1178,10 +1188,9 @@ grant all on table hr_tasks to anon;
 grant usage, select on sequence hr_tasks_id_seq to anon;</pre>
       <button onclick="copyTableSQL()" style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#a8c4e8;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer" id="copySqlBtn">복사</button>
     </div>
-      <button onclick="copyTableSQL()" style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#a8c4e8;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer" id="copySqlBtn">복사</button>
-    </div>
+
     <div class="modal-footer">
-      <button class="btn" onclick="document.getElementById('tableErrModal').classList.remove('open');openConfigPanel()">DB 설정 변경</button>
+      <button class="btn" onclick="closeTableErrModal();openConfigPanel()">DB 설정 변경</button>
       <button class="btn btn-primary" onclick="location.reload()">&#8635; 새로고침</button>
     </div>
   </div>
@@ -1268,15 +1277,25 @@ function setDbStatus(connected, label) {
   lbl.textContent = label || (connected ? 'Supabase 연결됨' : '연결 안됨');
 }
 
-// ── 테이블 없음 감지 ──
+// ── 테이블 없음 / schema cache 오류 감지 ──
 function isTableNotFoundError(error) {
   if (!error) return false;
-  const msg = (error.message || '') + (error.code || '');
-  return msg.includes('schema cache') || msg.includes('relation') || msg.includes('does not exist') || error.code === 'PGRST116' || error.code === '42P01';
+  const msg = (error.message || '').toLowerCase();
+  const code = (error.code || '');
+  // PGRST200: schema cache miss (테이블 있어도 cache 안 됐을 때)
+  // 42P01: relation does not exist (테이블 자체 없음)
+  return code === 'PGRST200' || code === '42P01'
+    || msg.includes('schema cache')
+    || msg.includes('could not find')
+    || (msg.includes('relation') && msg.includes('does not exist'));
 }
 
 function showTableError() {
   document.getElementById('tableErrModal').classList.add('open');
+}
+
+function closeTableErrModal() {
+  document.getElementById('tableErrModal').classList.remove('open');
 }
 
 function copyTableSQL() {
