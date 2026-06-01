@@ -1,0 +1,1356 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>인사노무팀 업무 관리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --primary: #1a1a2e;
+    --primary-mid: #2d2d4e;
+    --accent: #4a6fa5;
+    --accent-light: #6b8fc9;
+    --accent-bg: #eef2f8;
+    --success: #2d7d46;
+    --success-bg: #e8f5ec;
+    --warning: #b45309;
+    --warning-bg: #fef3c7;
+    --danger: #c0392b;
+    --danger-bg: #fdecea;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-600: #4b5563;
+    --gray-700: #374151;
+    --gray-800: #1f2937;
+    --border: #e5e7eb;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.07);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+    --font: 'Noto Sans KR', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--gray-50);
+    color: var(--gray-800);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  /* ── HEADER ── */
+  .app-header {
+    background: var(--primary);
+    color: #fff;
+    padding: 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 58px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .app-header .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+  }
+  .app-header .brand i { color: var(--accent-light); font-size: 18px; }
+  .app-header .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+  }
+  .app-header .today-badge {
+    background: rgba(74,111,165,0.35);
+    color: #a8c4e8;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .app-layout {
+    display: flex;
+    min-height: calc(100vh - 58px);
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 220px;
+    background: #fff;
+    border-right: 1px solid var(--border);
+    padding: 20px 0;
+    flex-shrink: 0;
+    position: sticky;
+    top: 58px;
+    height: calc(100vh - 58px);
+    overflow-y: auto;
+  }
+  .sidebar-section { margin-bottom: 24px; }
+  .sidebar-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--gray-400);
+    padding: 0 18px;
+    margin-bottom: 6px;
+  }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 18px;
+    cursor: pointer;
+    color: var(--gray-600);
+    font-size: 13.5px;
+    transition: all 0.15s;
+    border-left: 3px solid transparent;
+    user-select: none;
+  }
+  .sidebar-item i { width: 16px; text-align: center; font-size: 14px; }
+  .sidebar-item:hover { background: var(--gray-50); color: var(--gray-800); }
+  .sidebar-item.active {
+    background: var(--accent-bg);
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 500;
+  }
+  .sidebar-item .count {
+    margin-left: auto;
+    background: var(--gray-100);
+    color: var(--gray-500);
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-family: var(--font-mono);
+  }
+  .sidebar-item.active .count { background: var(--accent-bg); color: var(--accent); }
+
+  /* ── CONTENT AREA ── */
+  .main-content {
+    flex: 1;
+    padding: 28px 32px;
+    min-width: 0;
+  }
+
+  /* ── TABS ── */
+  .tab-bar {
+    display: flex;
+    gap: 4px;
+    border-bottom: 2px solid var(--border);
+    margin-bottom: 24px;
+  }
+  .tab-btn {
+    padding: 9px 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--gray-500);
+    position: relative;
+    bottom: -2px;
+    border-bottom: 2px solid transparent;
+    font-family: var(--font);
+    transition: color 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .tab-btn i { font-size: 13px; }
+  .tab-btn:hover { color: var(--gray-800); }
+  .tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .page-title {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    color: var(--primary);
+  }
+  .page-title span { color: var(--gray-400); font-weight: 400; font-size: 14px; margin-left: 8px; }
+
+  /* ── TOOLBAR ── */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+  .toolbar input, .toolbar select {
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-family: var(--font);
+    background: #fff;
+    color: var(--gray-700);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .toolbar input:focus, .toolbar select:focus { border-color: var(--accent-light); }
+  .toolbar input { width: 220px; }
+  .toolbar-right { margin-left: auto; display: flex; gap: 8px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: #fff;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: var(--font);
+    font-weight: 500;
+    color: var(--gray-700);
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--gray-50); border-color: var(--gray-300); }
+  .btn.btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .btn.btn-primary:hover { background: #3a5f95; }
+  .btn.btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn.btn-danger { color: var(--danger); border-color: #fca5a5; }
+  .btn.btn-danger:hover { background: var(--danger-bg); }
+
+  /* ── TASK TABLE ── */
+  .task-table-wrap {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .task-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+  .task-table th {
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    color: var(--gray-500);
+    white-space: nowrap;
+  }
+  .task-table td {
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--gray-100);
+    font-size: 13.5px;
+    color: var(--gray-700);
+    vertical-align: middle;
+  }
+  .task-table tr:last-child td { border-bottom: none; }
+  .task-table tr:hover td { background: var(--gray-50); }
+  .task-table tr.done td { color: var(--gray-400); }
+  .task-table tr.done .task-title { text-decoration: line-through; }
+
+  .col-check { width: 36px; }
+  .col-date { width: 80px; }
+  .col-member { width: 90px; }
+  .col-cat { width: 90px; }
+  .col-status { width: 90px; }
+  .col-action { width: 80px; }
+
+  /* ── STATUS BADGE ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .badge i { font-size: 10px; }
+  .badge-todo { background: var(--gray-100); color: var(--gray-600); }
+  .badge-progress { background: #dbeafe; color: #1d4ed8; }
+  .badge-done { background: var(--success-bg); color: var(--success); }
+  .badge-hold { background: var(--warning-bg); color: var(--warning); }
+  .badge-overdue { background: var(--danger-bg); color: var(--danger); }
+
+  /* ── CATEGORY TAG ── */
+  .cat-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .cat-급여 { background: #fce7f3; color: #9d174d; }
+  .cat-채용 { background: #ede9fe; color: #5b21b6; }
+  .cat-교육 { background: #d1fae5; color: #065f46; }
+  .cat-노무 { background: #fee2e2; color: #991b1b; }
+  .cat-복리후생 { background: #fef3c7; color: #92400e; }
+  .cat-규정 { background: #dbeafe; color: #1e40af; }
+  .cat-기타 { background: var(--gray-100); color: var(--gray-600); }
+  .cat-보고 { background: #e0f2fe; color: #0369a1; }
+
+  /* ── MEMBER AVATAR ── */
+  .avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 600;
+    margin-right: 5px;
+    flex-shrink: 0;
+  }
+  .avatar-구우회 { background: #dbeafe; color: #1d4ed8; }
+  .avatar-이상원 { background: #d1fae5; color: #065f46; }
+  .avatar-이호동 { background: #fce7f3; color: #9d174d; }
+
+  /* ── CHECKBOX ── */
+  .task-check {
+    width: 17px;
+    height: 17px;
+    cursor: pointer;
+    accent-color: var(--accent);
+  }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: var(--radius-lg);
+    padding: 28px 28px 24px;
+    width: 520px;
+    max-width: 95vw;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+  }
+  .modal-title { font-size: 16px; font-weight: 600; color: var(--primary); }
+  .modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--gray-400);
+    font-size: 18px;
+    padding: 2px;
+    transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--gray-700); }
+  .form-row { margin-bottom: 16px; }
+  .form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray-600);
+    margin-bottom: 5px;
+    letter-spacing: 0.2px;
+  }
+  .form-input, .form-select, .form-textarea {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 13.5px;
+    font-family: var(--font);
+    color: var(--gray-800);
+    outline: none;
+    transition: border-color 0.15s;
+    background: #fff;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+  .form-textarea { resize: vertical; min-height: 80px; }
+  .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; }
+
+  /* ── DASHBOARD ── */
+  .dash-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  .dash-toolbar select, .dash-toolbar input {
+    padding: 7px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-family: var(--font);
+    background: #fff;
+    color: var(--gray-700);
+    outline: none;
+  }
+  .dash-toolbar select:focus, .dash-toolbar input:focus { border-color: var(--accent-light); }
+  .dash-label {
+    font-size: 12px;
+    color: var(--gray-500);
+    font-weight: 500;
+  }
+  .dash-sep { color: var(--gray-300); }
+
+  .stat-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 18px;
+    box-shadow: var(--shadow-sm);
+  }
+  .stat-label { font-size: 12px; color: var(--gray-500); margin-bottom: 6px; font-weight: 500; }
+  .stat-value { font-size: 28px; font-weight: 600; color: var(--primary); font-family: var(--font-mono); letter-spacing: -1px; }
+  .stat-value span { font-size: 14px; color: var(--gray-400); font-weight: 400; margin-left: 3px; }
+  .stat-sub { font-size: 11.5px; color: var(--gray-400); margin-top: 4px; }
+  .stat-card.accent { border-top: 3px solid var(--accent); }
+  .stat-card.success { border-top: 3px solid var(--success); }
+  .stat-card.warning { border-top: 3px solid #d97706; }
+  .stat-card.danger { border-top: 3px solid var(--danger); }
+
+  .dash-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-bottom: 22px;
+  }
+  .dash-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    box-shadow: var(--shadow-sm);
+  }
+  .dash-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .dash-card-title { gap: 7px; }
+
+  /* progress bar */
+  .prog-item { margin-bottom: 12px; }
+  .prog-header { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--gray-600); margin-bottom: 5px; }
+  .prog-bar { height: 7px; background: var(--gray-100); border-radius: 4px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+  .prog-fill.blue { background: var(--accent); }
+  .prog-fill.green { background: #22c55e; }
+  .prog-fill.purple { background: #8b5cf6; }
+  .prog-fill.orange { background: #f59e0b; }
+
+  /* member stats */
+  .member-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .member-row:last-child { border-bottom: none; }
+  .member-name { font-size: 13px; font-weight: 500; min-width: 60px; color: var(--gray-700); }
+  .member-stat { display: flex; gap: 8px; margin-left: auto; }
+  .member-stat-item { text-align: center; min-width: 40px; }
+  .member-stat-item .n { font-size: 15px; font-weight: 600; font-family: var(--font-mono); color: var(--primary); }
+  .member-stat-item .l { font-size: 10px; color: var(--gray-400); }
+
+  /* monthly column view */
+  .month-cols {
+    display: grid;
+    gap: 16px;
+  }
+  .month-col-card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .month-col-header {
+    background: var(--primary);
+    color: #fff;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .month-col-header .month-name { font-size: 14px; font-weight: 600; letter-spacing: -0.3px; }
+  .month-col-header .month-stats {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+  }
+  .month-col-header .month-stats span { color: #a8c4e8; font-weight: 600; }
+  .month-task-list { padding: 8px 0; }
+  .month-task-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--gray-100);
+    font-size: 13px;
+  }
+  .month-task-row:last-child { border-bottom: none; }
+  .month-task-row .task-info { flex: 1; min-width: 0; }
+  .month-task-row .task-title-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 3px;
+  }
+  .month-task-row .task-meta { font-size: 11.5px; color: var(--gray-400); }
+
+  /* empty state */
+  .empty-state {
+    text-align: center;
+    padding: 52px 20px;
+    color: var(--gray-400);
+  }
+  .empty-state .empty-icon { font-size: 32px; margin-bottom: 12px; display: block; line-height:1; }
+  .empty-state p { font-size: 14px; }
+
+  /* member group within month */
+  .member-group { border-bottom: 1px solid var(--gray-100); }
+  .member-group:last-child { border-bottom: none; }
+  .member-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px 6px;
+    background: var(--gray-50);
+    border-bottom: 1px solid var(--gray-100);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray-600);
+    letter-spacing: 0.2px;
+  }
+  .member-group-header .avatar { width: 20px; height: 20px; font-size: 10px; flex-shrink: 0; }
+  .member-group-header .mg-count {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--gray-400);
+    font-weight: 400;
+  }
+
+  /* toast */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    background: var(--primary);
+    color: #fff;
+    padding: 11px 18px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    z-index: 999;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.25s;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 320px;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  /* responsive */
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main-content { padding: 20px 16px; }
+    .stat-grid { grid-template-columns: 1fr 1fr; }
+    .dash-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="app-header">
+  <div class="brand">
+    &#9881; 인사노무팀 업무 관리
+  </div>
+  <div class="header-meta">
+    <span class="today-badge" id="todayBadge"></span>
+    <span id="currentUserLabel" style="color:rgba(255,255,255,0.8); font-size:13px;"></span>
+  </div>
+</header>
+
+<div class="app-layout">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">팀원</div>
+      <div class="sidebar-item active" data-member="all" onclick="filterMember(this)">
+        &#9776; 전체 보기
+        <span class="count" id="cnt-all">0</span>
+      </div>
+      <div class="sidebar-item" data-member="구우회" onclick="filterMember(this)">
+        &#9675; 구우회
+        <span class="count" id="cnt-구우회">0</span>
+      </div>
+      <div class="sidebar-item" data-member="이상원" onclick="filterMember(this)">
+        &#9675; 이상원
+        <span class="count" id="cnt-이상원">0</span>
+      </div>
+      <div class="sidebar-item" data-member="이호동" onclick="filterMember(this)">
+        &#9675; 이호동
+        <span class="count" id="cnt-이호동">0</span>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">상태 필터</div>
+      <div class="sidebar-item" data-status="todo" onclick="filterStatus(this)">
+        <span style="font-size:9px; color:var(--gray-400)">&#9679;</span> 예정
+        <span class="count" id="cnt-todo">0</span>
+      </div>
+      <div class="sidebar-item" data-status="진행중" onclick="filterStatus(this)">
+        <span style="font-size:9px; color:#3b82f6">&#9679;</span> 진행 중
+        <span class="count" id="cnt-진행중">0</span>
+      </div>
+      <div class="sidebar-item" data-status="완료" onclick="filterStatus(this)">
+        <span style="font-size:9px; color:var(--success)">&#9679;</span> 완료
+        <span class="count" id="cnt-완료">0</span>
+      </div>
+      <div class="sidebar-item" data-status="보류" onclick="filterStatus(this)">
+        <span style="font-size:9px; color:#f59e0b">&#9679;</span> 보류
+        <span class="count" id="cnt-보류">0</span>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-label">빠른 이동</div>
+      <div class="sidebar-item" onclick="switchTab('tasks')">
+        &#9998; 할 일 목록
+      </div>
+      <div class="sidebar-item" onclick="switchTab('dashboard')">
+        &#9636; 대시보드
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    <!-- TAB BAR -->
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-tasks" onclick="switchTab('tasks')">
+        &#9998; 할 일 관리
+      </button>
+      <button class="tab-btn" id="tab-dashboard" onclick="switchTab('dashboard')">
+        &#9636; 월별 대시보드
+      </button>
+    </div>
+
+    <!-- ===== TAB: TASKS ===== -->
+    <div id="view-tasks">
+      <div class="page-header">
+        <div class="page-title">
+          할 일 관리
+          <span id="taskCountLabel"></span>
+        </div>
+        <div>
+          <button class="btn btn-primary" onclick="openAddModal()">
+            + 할 일 추가
+          </button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <input type="text" id="searchInput" placeholder="업무 검색..." oninput="renderTable()">
+        <select id="filterMonth" onchange="renderTable()">
+          <option value="">전체 월</option>
+        </select>
+        <select id="filterCat" onchange="renderTable()">
+          <option value="">전체 카테고리</option>
+          <option>급여</option>
+          <option>채용</option>
+          <option>교육</option>
+          <option>노무</option>
+          <option>복리후생</option>
+          <option>규정</option>
+          <option>보고</option>
+          <option>기타</option>
+        </select>
+        <div class="toolbar-right">
+          <button class="btn" onclick="exportCSV()">&#8595; 내보내기</button>
+        </div>
+      </div>
+
+      <div class="task-table-wrap">
+        <table class="task-table">
+          <colgroup>
+            <col class="col-check">
+            <col class="col-date">
+            <col style="min-width:180px">
+            <col class="col-member">
+            <col class="col-cat">
+            <col class="col-status">
+            <col style="width:120px">
+            <col class="col-action">
+          </colgroup>
+          <thead>
+            <tr>
+              <th></th>
+              <th>일정</th>
+              <th>업무명</th>
+              <th>담당자</th>
+              <th>카테고리</th>
+              <th>상태</th>
+              <th>비고</th>
+              <th style="text-align:center">관리</th>
+            </tr>
+          </thead>
+          <tbody id="taskTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ===== TAB: DASHBOARD ===== -->
+    <div id="view-dashboard" style="display:none">
+      <div class="page-header">
+        <div class="page-title">월별 대시보드</div>
+      </div>
+
+      <div class="dash-toolbar">
+        <span class="dash-label">조회 기간</span>
+        <input type="month" id="dashStart" onchange="renderDash()">
+        <span class="dash-sep">~</span>
+        <input type="month" id="dashEnd" onchange="renderDash()">
+        <button class="btn btn-sm" onclick="setDashQuarter(3)">3개월</button>
+        <button class="btn btn-sm" onclick="setDashQuarter(6)">6개월</button>
+        <button class="btn btn-sm" onclick="setDashQuarter(12)">1년</button>
+      </div>
+
+      <!-- Summary Stats -->
+      <div class="stat-grid" id="dashStats"></div>
+
+      <!-- Charts -->
+      <div class="dash-grid" id="dashCharts"></div>
+
+      <!-- Monthly Columns -->
+      <div id="dashMonthCols"></div>
+    </div>
+  </main>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="taskModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">할 일 추가</div>
+      <button class="modal-close" onclick="closeModal()">&#10005;</button>
+    </div>
+    <div class="form-row">
+      <label class="form-label">업무명 *</label>
+      <input type="text" class="form-input" id="f-title" placeholder="업무 내용을 입력하세요">
+    </div>
+    <div class="form-row-2">
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">담당자 *</label>
+        <select class="form-select" id="f-member">
+          <option value="">선택</option>
+          <option>구우회</option>
+          <option>이상원</option>
+          <option>이호동</option>
+        </select>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">카테고리</label>
+        <select class="form-select" id="f-cat">
+          <option>기타</option>
+          <option>급여</option>
+          <option>채용</option>
+          <option>교육</option>
+          <option>노무</option>
+          <option>복리후생</option>
+          <option>규정</option>
+          <option>보고</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row-2" style="margin-top:16px">
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">날짜 *</label>
+        <input type="date" class="form-input" id="f-date">
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">상태</label>
+        <select class="form-select" id="f-status">
+          <option value="todo">예정</option>
+          <option value="진행중">진행 중</option>
+          <option value="완료">완료</option>
+          <option value="보류">보류</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row" style="margin-top:16px">
+      <label class="form-label">비고</label>
+      <textarea class="form-textarea" id="f-note" placeholder="추가 메모 (선택)"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveTask()">&#10003; 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span id="toastIcon" style="color:#6ee7b7">&#10003;</span> <span id="toastMsg"></span></div>
+
+<script>
+// ── DATA LAYER (localStorage — Supabase 연동 시 교체) ──
+const STORAGE_KEY = 'hr_tasks_v1';
+
+function loadTasks() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch { return []; }
+}
+function saveTasks(tasks) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+}
+
+let tasks = loadTasks();
+let editId = null;
+let filterMemberVal = 'all';
+let filterStatusVal = '';
+
+// ── SEED DATA (첫 실행 시) ──
+if (tasks.length === 0) {
+  const seed = [
+    {id:1, title:'목표수정안내 공지(신규입사자 목표 설정추가)', member:'구우회', cat:'기타', date:'2026-06-05', status:'todo', note:''},
+    {id:2, title:'파견자 목표작성 안내 공지 발송', member:'구우회', cat:'기타', date:'2026-06-05', status:'todo', note:''},
+    {id:3, title:'임직원 교육진행(AI역량, 6.17~19)', member:'구우회', cat:'교육', date:'2026-06-17', status:'todo', note:''},
+    {id:4, title:'2026 노사TF 회의(1~2차) 개최', member:'구우회', cat:'노무', date:'2026-06-10', status:'todo', note:''},
+    {id:5, title:'2분기 노사협의회 개최', member:'구우회', cat:'노무', date:'2026-06-20', status:'todo', note:''},
+    {id:6, title:'농협이념과정 체크(임시운)', member:'구우회', cat:'교육', date:'2026-06-12', status:'todo', note:''},
+    {id:7, title:'목표 설정 수정 마감(6.19)', member:'구우회', cat:'기타', date:'2026-06-19', status:'todo', note:''},
+    {id:8, title:'AI개발-인원현황', member:'구우회', cat:'기타', date:'2026-06-08', status:'완료', note:''},
+    {id:9, title:'(매월)전화외국어 정산', member:'구우회', cat:'복리후생', date:'2026-06-30', status:'todo', note:''},
+    {id:10, title:'하반기 시차출퇴근제 공지 및 접수', member:'구우회', cat:'기타', date:'2026-06-15', status:'todo', note:''},
+    {id:11, title:'(2영업일)월보 자료 제출', member:'이상원', cat:'보고', date:'2026-06-03', status:'todo', note:''},
+    {id:12, title:'영업일 경영정보시스템 자료 입력', member:'이상원', cat:'보고', date:'2026-06-05', status:'todo', note:''},
+    {id:13, title:'각 고용노동부 지청 요청자료(사업체현황 등)', member:'이상원', cat:'노무', date:'2026-06-10', status:'진행중', note:''},
+    {id:14, title:'근로계약서 작성(최황옥·정규전환)', member:'이상원', cat:'채용', date:'2026-06-12', status:'todo', note:''},
+    {id:15, title:'정규전환자 축하선물(2분기)', member:'이상원', cat:'복리후생', date:'2026-06-15', status:'todo', note:''},
+    {id:16, title:'노후 사업계획 기초자료(임원운송) 자료 제출', member:'이상원', cat:'보고', date:'2026-06-08', status:'todo', note:''},
+    {id:17, title:'개인정보 교육관리 확인서(마이다스인)', member:'이상원', cat:'교육', date:'2026-06-20', status:'todo', note:''},
+    {id:18, title:'임금경쟁력원조사 자료 제출', member:'이상원', cat:'급여', date:'2026-06-18', status:'todo', note:''},
+    {id:19, title:'26상반기 경력채용자 정규전환 평가 및 발행', member:'이상원', cat:'채용', date:'2026-06-25', status:'todo', note:''},
+    {id:20, title:'26상반기 채용 인턴 중간평가', member:'이상원', cat:'채용', date:'2026-06-25', status:'todo', note:''},
+    {id:21, title:'취업규칙 변경신고(고용노동부)', member:'이상원', cat:'규정', date:'2026-06-15', status:'진행중', note:''},
+    {id:22, title:'노조 워크샵 참석(26.6.24~26)', member:'이상원', cat:'노무', date:'2026-06-24', status:'todo', note:''},
+    {id:23, title:'지점 출장(충북, 충남)', member:'이상원', cat:'기타', date:'2026-06-20', status:'todo', note:''},
+    {id:24, title:'급여지급', member:'이호동', cat:'급여', date:'2026-06-10', status:'todo', note:''},
+    {id:25, title:'4대보험 납부', member:'이호동', cat:'복리후생', date:'2026-06-10', status:'todo', note:''},
+    {id:26, title:'원천세(소득세·지방소득세·종업원분) 신고 및 납부', member:'이호동', cat:'급여', date:'2026-06-10', status:'진행중', note:''},
+    {id:27, title:'본부 예산약식보고', member:'이호동', cat:'보고', date:'2026-06-15', status:'todo', note:''},
+    {id:28, title:'일용 간이지급명세서 신고', member:'이호동', cat:'급여', date:'2026-06-15', status:'todo', note:''},
+    {id:29, title:'복지포인트 사용액 지급', member:'이호동', cat:'복리후생', date:'2026-06-20', status:'todo', note:''},
+    {id:30, title:'지주 파견자 급여 청구', member:'이호동', cat:'급여', date:'2026-06-20', status:'todo', note:''},
+    {id:31, title:'기탁조정설장 급여 선지급(복지연금 등)', member:'이호동', cat:'급여', date:'2026-06-22', status:'todo', note:''},
+    {id:32, title:'근태(시간외,휴가) 마감', member:'이호동', cat:'기타', date:'2026-06-25', status:'todo', note:''},
+    {id:33, title:'전포작업(급여, 4대보험, 원전세 등)', member:'이호동', cat:'급여', date:'2026-06-28', status:'todo', note:''},
+    {id:34, title:'월 결산 제출(회계팀)', member:'이호동', cat:'보고', date:'2026-06-30', status:'todo', note:''},
+    {id:35, title:'연차사용촉진진행(7월1일~7월10일게획작성)', member:'이호동', cat:'기타', date:'2026-07-05', status:'todo', note:''},
+    {id:36, title:'기능직군 결산 인센티브(상반기) 준비', member:'이호동', cat:'급여', date:'2026-07-10', status:'todo', note:''},
+    {id:37, title:'임직원 여름휴가비 지급준비', member:'이호동', cat:'복리후생', date:'2026-07-15', status:'todo', note:''},
+    {id:38, title:'농협교육 3차(6/15~17)', member:'이상원', cat:'교육', date:'2026-06-15', status:'todo', note:''},
+    {id:39, title:'징계위원회 무사고 일정 검토', member:'이상원', cat:'노무', date:'2026-06-18', status:'todo', note:''},
+    {id:40, title:'징계 대상자 면담(최종현, 심수환)', member:'이상원', cat:'노무', date:'2026-06-22', status:'todo', note:''},
+  ];
+  tasks = seed;
+  saveTasks(tasks);
+}
+
+// ── UTILITIES ──
+function nextId() { return tasks.length ? Math.max(...tasks.map(t=>t.id)) + 1 : 1; }
+
+function fmtDate(d) {
+  if (!d) return '';
+  const dt = new Date(d);
+  return `${dt.getMonth()+1}/${dt.getDate()}`;
+}
+
+function monthLabel(ym) {
+  const [y, m] = ym.split('-');
+  return `${y}년 ${parseInt(m)}월`;
+}
+
+function toYM(dateStr) {
+  return dateStr ? dateStr.substring(0,7) : '';
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  const m = document.getElementById('toastMsg');
+  m.textContent = msg;
+  t.className = `toast show ${type}`;
+  setTimeout(() => { t.className = 'toast'; }, 2500);
+}
+
+// ── TODAY ──
+(function() {
+  const now = new Date();
+  const wd = ['일','월','화','수','목','금','토'][now.getDay()];
+  document.getElementById('todayBadge').textContent =
+    `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} (${wd})`;
+})();
+
+// ── TAB SWITCH ──
+function switchTab(tab) {
+  document.getElementById('view-tasks').style.display = tab==='tasks' ? '' : 'none';
+  document.getElementById('view-dashboard').style.display = tab==='dashboard' ? '' : 'none';
+  document.getElementById('tab-tasks').className = 'tab-btn' + (tab==='tasks' ? ' active' : '');
+  document.getElementById('tab-dashboard').className = 'tab-btn' + (tab==='dashboard' ? ' active' : '');
+  if (tab==='dashboard') renderDash();
+}
+
+// ── SIDEBAR FILTERS ──
+function filterMember(el) {
+  document.querySelectorAll('.sidebar-item[data-member]').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+  filterMemberVal = el.dataset.member;
+  filterStatusVal = '';
+  document.querySelectorAll('.sidebar-item[data-status]').forEach(e => e.classList.remove('active'));
+  renderTable();
+}
+
+function filterStatus(el) {
+  const val = el.dataset.status;
+  if (filterStatusVal === val) {
+    filterStatusVal = '';
+    el.classList.remove('active');
+  } else {
+    document.querySelectorAll('.sidebar-item[data-status]').forEach(e => e.classList.remove('active'));
+    el.classList.add('active');
+    filterStatusVal = val;
+  }
+  renderTable();
+}
+
+// ── POPULATE MONTH FILTER ──
+function populateMonthFilter() {
+  const months = [...new Set(tasks.map(t => toYM(t.date)).filter(Boolean))].sort();
+  const sel = document.getElementById('filterMonth');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">전체 월</option>' +
+    months.map(m => `<option value="${m}" ${m===cur?'selected':''}>${monthLabel(m)}</option>`).join('');
+}
+
+// ── FILTERED TASKS ──
+function getFiltered() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const mth = document.getElementById('filterMonth').value;
+  const cat = document.getElementById('filterCat').value;
+  return tasks.filter(t => {
+    if (filterMemberVal !== 'all' && t.member !== filterMemberVal) return false;
+    if (filterStatusVal && t.status !== filterStatusVal) return false;
+    if (mth && toYM(t.date) !== mth) return false;
+    if (cat && t.cat !== cat) return false;
+    if (q && !t.title.toLowerCase().includes(q) && !t.note.toLowerCase().includes(q)) return false;
+    return true;
+  }).sort((a,b) => (a.date||'') > (b.date||'') ? 1 : -1);
+}
+
+// ── STATUS BADGE HTML ──
+function statusBadge(s) {
+  const map = {
+    'todo':   ['badge-todo',     '&#9675;', '예정'],
+    '진행중': ['badge-progress', '&#9654;', '진행 중'],
+    '완료':   ['badge-done',     '&#10003;','완료'],
+    '보류':   ['badge-hold',     '&#9646;', '보류'],
+  };
+  const [cls, ico, lbl] = map[s] || map['todo'];
+  return `<span class="badge ${cls}">${ico} ${lbl}</span>`;
+}
+
+// ── RENDER TABLE ──
+function renderTable() {
+  const filtered = getFiltered();
+  const tbody = document.getElementById('taskTbody');
+  document.getElementById('taskCountLabel').textContent = `총 ${filtered.length}건`;
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty-state"><span class="empty-icon">&#128203;</span><p>등록된 할 일이 없습니다.</p></div></td></tr>`;
+    updateCounts();
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(t => {
+    const isDone = t.status === '완료';
+    return `<tr class="${isDone?'done':''}">
+      <td><input type="checkbox" class="task-check" ${isDone?'checked':''} onchange="toggleDone(${t.id}, this.checked)"></td>
+      <td style="font-family:var(--font-mono); font-size:12px; color:var(--gray-500)">${fmtDate(t.date)}</td>
+      <td><span class="task-title">${escHtml(t.title)}</span></td>
+      <td>
+        <div style="display:flex;align-items:center">
+          <span class="avatar avatar-${t.member}">${t.member[0]}</span>
+          <span style="font-size:12.5px">${t.member}</span>
+        </div>
+      </td>
+      <td><span class="cat-tag cat-${t.cat}">${t.cat}</span></td>
+      <td>${statusBadge(t.status)}</td>
+      <td style="font-size:12px;color:var(--gray-400);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px" title="${escHtml(t.note||'')}">${escHtml(t.note||'—')}</td>
+      <td style="text-align:center">
+        <button class="btn btn-sm" onclick="openEditModal(${t.id})" title="수정">&#9998;</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteTask(${t.id})" title="삭제">&#10005;</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  updateCounts();
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── UPDATE SIDEBAR COUNTS ──
+function updateCounts() {
+  const members = ['구우회','이상원','이호동'];
+  const statuses = ['todo','진행중','완료','보류'];
+  document.getElementById('cnt-all').textContent = tasks.length;
+  members.forEach(m => {
+    const el = document.getElementById(`cnt-${m}`);
+    if (el) el.textContent = tasks.filter(t=>t.member===m).length;
+  });
+  statuses.forEach(s => {
+    const el = document.getElementById(`cnt-${s}`);
+    if (el) el.textContent = tasks.filter(t=>t.status===s).length;
+  });
+  populateMonthFilter();
+}
+
+// ── TOGGLE DONE ──
+function toggleDone(id, checked) {
+  const t = tasks.find(t=>t.id===id);
+  if (t) {
+    t.status = checked ? '완료' : 'todo';
+    saveTasks(tasks);
+    renderTable();
+    showToast(checked ? '완료로 변경했습니다.' : '예정으로 변경했습니다.');
+  }
+}
+
+// ── DELETE TASK ──
+function deleteTask(id) {
+  if (!confirm('정말 삭제하시겠습니까?')) return;
+  tasks = tasks.filter(t=>t.id!==id);
+  saveTasks(tasks);
+  renderTable();
+  showToast('삭제했습니다.');
+}
+
+// ── MODAL ──
+function openAddModal() {
+  editId = null;
+  document.getElementById('modalTitle').textContent = '할 일 추가';
+  document.getElementById('f-title').value = '';
+  document.getElementById('f-member').value = '';
+  document.getElementById('f-cat').value = '기타';
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('f-status').value = 'todo';
+  document.getElementById('f-note').value = '';
+  document.getElementById('taskModal').classList.add('open');
+  setTimeout(() => document.getElementById('f-title').focus(), 50);
+}
+
+function openEditModal(id) {
+  const t = tasks.find(t=>t.id===id);
+  if (!t) return;
+  editId = id;
+  document.getElementById('modalTitle').textContent = '할 일 수정';
+  document.getElementById('f-title').value = t.title;
+  document.getElementById('f-member').value = t.member;
+  document.getElementById('f-cat').value = t.cat;
+  document.getElementById('f-date').value = t.date;
+  document.getElementById('f-status').value = t.status;
+  document.getElementById('f-note').value = t.note||'';
+  document.getElementById('taskModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('taskModal').classList.remove('open');
+}
+
+function saveTask() {
+  const title = document.getElementById('f-title').value.trim();
+  const member = document.getElementById('f-member').value;
+  const cat = document.getElementById('f-cat').value;
+  const date = document.getElementById('f-date').value;
+  const status = document.getElementById('f-status').value;
+  const note = document.getElementById('f-note').value.trim();
+
+  if (!title) { alert('업무명을 입력하세요.'); return; }
+  if (!member) { alert('담당자를 선택하세요.'); return; }
+  if (!date) { alert('날짜를 선택하세요.'); return; }
+
+  if (editId) {
+    const t = tasks.find(t=>t.id===editId);
+    Object.assign(t, {title, member, cat, date, status, note});
+  } else {
+    tasks.push({id: nextId(), title, member, cat, date, status, note});
+  }
+  saveTasks(tasks);
+  closeModal();
+  renderTable();
+  showToast(editId ? '수정했습니다.' : '추가했습니다.');
+}
+
+// ── EXPORT CSV ──
+function exportCSV() {
+  const header = ['날짜','업무명','담당자','카테고리','상태','비고'];
+  const rows = getFiltered().map(t => [t.date, t.title, t.member, t.cat, t.status, t.note||''].map(v=>`"${v}"`).join(','));
+  const csv = '\uFEFF' + [header.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
+  a.download = `인사노무팀_할일_${new Date().toISOString().split('T')[0]}.csv`;
+  a.click();
+}
+
+// ── DASHBOARD ──
+function setDashQuarter(months) {
+  const now = new Date();
+  const end = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const start = new Date(now.getFullYear(), now.getMonth() - (months-1), 1);
+  const startStr = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('dashStart').value = startStr;
+  document.getElementById('dashEnd').value = end;
+  renderDash();
+}
+
+function getDashRange() {
+  const s = document.getElementById('dashStart').value;
+  const e = document.getElementById('dashEnd').value;
+  if (!s || !e) return null;
+  const months = [];
+  let cur = new Date(s + '-01');
+  const endD = new Date(e + '-01');
+  while (cur <= endD) {
+    months.push(`${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}`);
+    cur.setMonth(cur.getMonth()+1);
+  }
+  return months;
+}
+
+function renderDash() {
+  const range = getDashRange();
+  if (!range || range.length < 1) return;
+
+  const inRange = tasks.filter(t => range.includes(toYM(t.date)));
+  const total = inRange.length;
+  const done = inRange.filter(t=>t.status==='완료').length;
+  const progress = inRange.filter(t=>t.status==='진행중').length;
+  const todo = inRange.filter(t=>t.status==='todo').length;
+  const rate = total ? Math.round(done/total*100) : 0;
+
+  // Stats
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat-card accent">
+      <div class="stat-label">전체 업무</div>
+      <div class="stat-value">${total}<span>건</span></div>
+      <div class="stat-sub">${range[0]} ~ ${range[range.length-1]}</div>
+    </div>
+    <div class="stat-card success">
+      <div class="stat-label">완료</div>
+      <div class="stat-value">${done}<span>건</span></div>
+      <div class="stat-sub">완료율 ${rate}%</div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-label">진행 중</div>
+      <div class="stat-value">${progress}<span>건</span></div>
+      <div class="stat-sub">전체의 ${total?Math.round(progress/total*100):0}%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">예정</div>
+      <div class="stat-value">${todo}<span>건</span></div>
+      <div class="stat-sub">전체의 ${total?Math.round(todo/total*100):0}%</div>
+    </div>
+  `;
+
+  // Charts: member breakdown + category breakdown
+  const members = ['구우회','이상원','이호동'];
+  const memberColors = ['blue','green','purple'];
+  const maxM = Math.max(...members.map(m => inRange.filter(t=>t.member===m).length), 1);
+
+  const cats = ['급여','채용','교육','노무','복리후생','규정','보고','기타'];
+  const catColors = ['blue','purple','green','orange','blue','green','purple','orange'];
+  const maxC = Math.max(...cats.map(c => inRange.filter(t=>t.cat===c).length), 1);
+
+  document.getElementById('dashCharts').innerHTML = `
+    <div class="dash-card">
+      <div class="dash-card-title">&#9650; 팀원별 업무 현황</div>
+      ${members.map((m,i) => {
+        const cnt = inRange.filter(t=>t.member===m).length;
+        const doneC = inRange.filter(t=>t.member===m && t.status==='완료').length;
+        const pct = Math.round(cnt/maxM*100);
+        return `<div class="prog-item">
+          <div class="prog-header">
+            <span style="display:flex;align-items:center;gap:6px">
+              <span class="avatar avatar-${m}" style="width:20px;height:20px;font-size:10px">${m[0]}</span>${m}
+            </span>
+            <span>${cnt}건 (완료 ${doneC})</span>
+          </div>
+          <div class="prog-bar"><div class="prog-fill ${memberColors[i]}" style="width:${pct}%"></div></div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-title">&#9632; 카테고리별 분포</div>
+      ${cats.map((c,i) => {
+        const cnt = inRange.filter(t=>t.cat===c).length;
+        if (!cnt) return '';
+        const pct = Math.round(cnt/maxC*100);
+        return `<div class="prog-item">
+          <div class="prog-header">
+            <span><span class="cat-tag cat-${c}" style="margin-right:6px">${c}</span></span>
+            <span>${cnt}건</span>
+          </div>
+          <div class="prog-bar"><div class="prog-fill ${catColors[i]}" style="width:${pct}%"></div></div>
+        </div>`;
+      }).filter(Boolean).join('')}
+    </div>
+  `;
+
+  // Monthly columns — grouped by member inside each month
+  const colsHtml = range.map(ym => {
+    const mTasks = tasks.filter(t => toYM(t.date) === ym);
+    const mDone = mTasks.filter(t=>t.status==='완료').length;
+    const mProg = mTasks.filter(t=>t.status==='진행중').length;
+
+    const memberGroupsHtml = members.map(m => {
+      const mmt = mTasks.filter(t=>t.member===m).sort((a,b)=>(a.date||'')>(b.date||'')?1:-1);
+      if (!mmt.length) return '';
+      const mDoneC = mmt.filter(t=>t.status==='완료').length;
+      return `<div class="member-group">
+        <div class="member-group-header">
+          <span class="avatar avatar-${m}">${m[0]}</span>
+          <span>${m}</span>
+          <span class="mg-count">${mmt.length}건 &nbsp;&#183;&nbsp; 완료 ${mDoneC}</span>
+        </div>
+        <div class="month-task-list">
+          ${mmt.map(t => `
+          <div class="month-task-row">
+            <div class="task-info">
+              <div class="task-title-row">
+                <span style="${t.status==='완료'?'text-decoration:line-through;color:var(--gray-400)':''}">${escHtml(t.title)}</span>
+              </div>
+              <div class="task-meta">
+                ${fmtDate(t.date)} &nbsp;&#183;&nbsp; <span class="cat-tag cat-${t.cat}" style="padding:1px 6px;font-size:10px">${t.cat}</span>
+                ${t.note ? `&nbsp;&#183;&nbsp; ${escHtml(t.note)}` : ''}
+              </div>
+            </div>
+            ${statusBadge(t.status)}
+          </div>`).join('')}
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div class="month-col-card">
+      <div class="month-col-header">
+        <span class="month-name">${monthLabel(ym)}</span>
+        <div class="month-stats">
+          전체 <span>${mTasks.length}</span> &nbsp; 완료 <span>${mDone}</span> &nbsp; 진행 <span>${mProg}</span>
+        </div>
+      </div>
+      ${mTasks.length === 0
+        ? '<div style="padding:16px;text-align:center;color:var(--gray-400);font-size:13px">등록된 업무 없음</div>'
+        : memberGroupsHtml
+      }
+    </div>`;
+  }).join('');
+
+  document.getElementById('dashMonthCols').innerHTML = `
+    <div class="dash-card-title" style="margin-bottom:14px;font-size:13px;font-weight:600;color:var(--gray-700)">
+      &#9635; 월별 업무 목록
+    </div>
+    <div class="month-cols">${colsHtml}</div>
+  `;
+}
+
+// ── INIT DASHBOARD DATES ──
+(function() {
+  const now = new Date();
+  const end = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const start3 = new Date(now.getFullYear(), now.getMonth()-2, 1);
+  document.getElementById('dashStart').value = `${start3.getFullYear()}-${String(start3.getMonth()+1).padStart(2,'0')}`;
+  document.getElementById('dashEnd').value = end;
+})();
+
+// ── KEYBOARD SHORTCUT ──
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+  if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); openAddModal(); }
+});
+
+// ── MODAL OUTSIDE CLICK ──
+document.getElementById('taskModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ── INIT ──
+renderTable();
+</script>
+</body>
+</html>
