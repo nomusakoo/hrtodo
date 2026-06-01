@@ -633,7 +633,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    max-width: 320px;
+    max-width: 480px;
   }
   .toast.show { opacity: 1; transform: translateY(0); }
 
@@ -1192,7 +1192,11 @@ function setDbStatus(connected, label) {
 async function dbLoad() {
   if (useLocal || !sbClient) return localLoad();
   const { data, error } = await sbClient.from('hr_tasks').select('*').order('date', { ascending: true });
-  if (error) { console.error(error); showToast('데이터 로드 오류', 'error'); return localLoad(); }
+  if (error) {
+    console.error('[dbLoad]', error);
+    showToast('로드 오류: ' + (error.message || error.code), 'error');
+    return localLoad();
+  }
   return data || [];
 }
 
@@ -1207,9 +1211,12 @@ async function dbInsert(task) {
     localSave(arr);
     return newRow;
   }
-  // .single() 제거 → 배열로 받아 첫 번째 행 반환
   const { data, error } = await sbClient.from('hr_tasks').insert(row).select();
-  if (error) { console.error(error); showToast('저장 오류', 'error'); return null; }
+  if (error) {
+    console.error('[dbInsert]', error);
+    showToast('저장 오류: ' + (error.message || error.code), 'error');
+    return null;
+  }
   return (data && data[0]) || null;
 }
 
@@ -1222,9 +1229,12 @@ async function dbUpdate(id, fields) {
     localSave(arr);
     return arr[idx];
   }
-  // .single() 제거 → 배열로 받아 첫 번째 행 반환 (single()은 행이 없을 때 에러를 던짐)
   const { data, error } = await sbClient.from('hr_tasks').update(fields).eq('id', id).select();
-  if (error) { console.error(error); showToast('수정 오류', 'error'); return null; }
+  if (error) {
+    console.error('[dbUpdate]', error);
+    showToast('수정 오류: ' + (error.message || error.code), 'error');
+    return null;
+  }
   return (data && data[0]) || { id, ...fields };
 }
 
@@ -1235,23 +1245,24 @@ async function dbDelete(id) {
     return true;
   }
   const { error } = await sbClient.from('hr_tasks').delete().eq('id', id);
-  if (error) { console.error(error); showToast('삭제 오류', 'error'); return false; }
+  if (error) {
+    console.error('[dbDelete]', error);
+    showToast('삭제 오류: ' + (error.message || error.code), 'error');
+    return false;
+  }
   return true;
 }
 
 async function dbSeedIfEmpty() {
-  // Supabase: count 확인 후 seed
   if (!useLocal && sbClient) {
-    const { count } = await sbClient.from('hr_tasks').select('*', { count: 'exact', head: true });
+    const { count, error: cntErr } = await sbClient.from('hr_tasks').select('*', { count: 'exact', head: true });
+    if (cntErr) { console.error('[dbSeedIfEmpty count]', cntErr); return; }
     if (count > 0) return;
-    // seed 삽입
     const rows = SEED_DATA.map(t => ({ title:t.title, member:t.member, cat:t.cat, date:t.date, status:t.status, note:t.note||'' }));
-    await sbClient.from('hr_tasks').insert(rows);
+    const { error: insErr } = await sbClient.from('hr_tasks').insert(rows);
+    if (insErr) console.error('[dbSeedIfEmpty insert]', insErr);
   } else {
-    // 로컬: 기존 로직
-    if (localLoad().length === 0) {
-      localSave(SEED_DATA);
-    }
+    if (localLoad().length === 0) localSave(SEED_DATA);
   }
 }
 
