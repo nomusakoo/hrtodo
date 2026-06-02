@@ -622,6 +622,7 @@
           <option value="보류">보류</option>
         </select>
         <button class="btn btn-primary btn-sm" onclick="applyBulkStatus()">적용</button>
+        <button class="btn btn-sm btn-danger" onclick="applyBulkDelete()">&#10005; 일괄 삭제</button>
         <button class="btn btn-sm" onclick="clearBulkSelect()">선택 해제</button>
       </div>
 
@@ -767,6 +768,7 @@
       <textarea class="form-textarea" id="f-note" placeholder="추가 메모 (선택)"></textarea>
     </div>
     <div class="modal-footer">
+      <button class="btn btn-danger" id="modalDeleteBtn" onclick="deleteFromModal()" style="display:none;margin-right:auto">&#10005; 삭제</button>
       <button class="btn" onclick="closeModal()">취소</button>
       <button class="btn btn-primary" onclick="saveTask()">&#10003; 저장</button>
     </div>
@@ -1416,6 +1418,36 @@ function clearBulkSelect() {
   renderTable();
 }
 
+async function applyBulkDelete() {
+  if (selectedIds.size === 0) { showToast('선택된 항목이 없습니다.', 'error'); return; }
+  if (!confirm(`선택한 ${selectedIds.size}건을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.`)) return;
+  const ids = [...selectedIds];
+  let count = 0;
+  for (const id of ids) {
+    const ok = await dbDelete(id);
+    if (ok) { tasks = tasks.filter(t => t.id !== id); count++; }
+  }
+  if (count > 0) {
+    showToast(`${count}건을 삭제했습니다.`);
+    selectedIds.clear();
+    updateBulkBar();
+    renderTable();
+  }
+}
+
+async function deleteFromModal() {
+  if (!editId) return;
+  if (!confirm('이 업무를 삭제하시겠습니까?')) return;
+  const isOnDash = document.getElementById('view-dashboard').style.display !== 'none';
+  const ok = await dbDelete(editId);
+  if (ok) {
+    tasks = tasks.filter(t => t.id !== editId);
+    closeModal();
+    if (isOnDash) renderDash(); else renderTable();
+    showToast('삭제했습니다.');
+  }
+}
+
 async function applyBulkStatus() {
   const newStatus = document.getElementById('bulkStatusSelect').value;
   if (!newStatus) { showToast('변경할 상태를 선택하세요.', 'error'); return; }
@@ -1488,6 +1520,7 @@ function openAddModal(prefillDate) {
   document.getElementById('f-date').value=prefillDate || new Date().toISOString().split('T')[0];
   document.getElementById('f-status').value='todo';
   document.getElementById('f-note').value='';
+  document.getElementById('modalDeleteBtn').style.display='none';
   document.getElementById('taskModal').classList.add('open');
   setTimeout(()=>document.getElementById('f-title').focus(), 50);
 }
@@ -1501,6 +1534,7 @@ function openEditModal(id) {
   document.getElementById('f-date').value=t.date;
   document.getElementById('f-status').value=t.status;
   document.getElementById('f-note').value=t.note||'';
+  document.getElementById('modalDeleteBtn').style.display='';
   document.getElementById('taskModal').classList.add('open');
 }
 function closeModal() { document.getElementById('taskModal').classList.remove('open'); }
