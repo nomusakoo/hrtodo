@@ -95,8 +95,8 @@
   .task-table tr.row-urgent:hover td{background:#fef3c7;}
 
   .col-check{width:36px;} .col-date{width:104px;} .col-title{min-width:110px;}
-  .col-member{width:110px;} .col-cat{width:110px;} .col-status{width:106px;}
-  .col-note{width:120px;} .col-action{width:106px;}
+  .col-member{width:110px;} .col-cat{width:110px;} .col-status{width:120px;}
+  .col-note{width:120px;} .col-action{width:84px;}
 
   /* D-DAY */
   .dday-badge{display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:700;font-family:var(--font-mono);margin-top:3px;letter-spacing:0.2px;line-height:1.4;}
@@ -114,6 +114,7 @@
   .badge-progress{background:#dbeafe;color:#1d4ed8;}
   .badge-done{background:var(--success-bg);color:var(--success);}
   .badge-hold{background:var(--warning-bg);color:var(--warning);}
+  .badge-done-off{background:var(--gray-100);color:var(--gray-400);}
 
   /* CATEGORY INLINE SELECT */
   .cat-select{padding:2px 6px;border-radius:4px;font-size:11px;font-weight:500;border:1px solid transparent;cursor:pointer;outline:none;font-family:var(--font);appearance:auto;transition:border-color 0.15s;}
@@ -1184,7 +1185,7 @@ function getFiltered() {
   }).sort((a,b)=>(a.date||'')>(b.date||'')?1:-1);
 }
 
-// STATUS BADGE — todo/진행중 은 클릭 가능
+// STATUS BADGE — 예정/진행중/보류 사이클 (완료 제외)
 function statusBadge(s, id) {
   const map = {
     'todo':   ['badge-todo',     '&#9675;', '예정'],
@@ -1193,9 +1194,23 @@ function statusBadge(s, id) {
     '보류':   ['badge-hold',     '&#9646;', '보류'],
   };
   const [cls, ico, lbl] = map[s] || map['todo'];
-  const isToggleable = (s==='todo'||s==='진행중') && id != null;
-  const clickAttr = isToggleable ? `onclick="cycleStatus(${id})" title="클릭하여 상태 변경"` : '';
-  return `<span class="badge ${cls}${isToggleable?' clickable':''}" ${clickAttr}>${ico} ${lbl}</span>`;
+  // 완료 상태는 클릭 불가 (완료 버튼으로 분리)
+  const cycleable = (s==='todo'||s==='진행중'||s==='보류') && id != null;
+  const clickAttr = cycleable ? `onclick="cycleStatus(${id})" title="클릭하여 상태 변경"` : '';
+  return `<span class="badge ${cls}${cycleable?' clickable':''}" ${clickAttr}>${ico} ${lbl}</span>`;
+}
+
+// STATUS CELL — 상태뱃지 + 완료 토글 버튼 함께 표시
+function statusCell(s, id) {
+  const isDone = s === '완료';
+  const doneBtnCls = isDone ? 'badge badge-done clickable' : 'badge badge-done-off clickable';
+  const doneIco = isDone ? '&#10003;' : '&#9711;';
+  const doneLbl = '완료';
+  const doneTitle = isDone ? '완료 취소' : '완료로 변경';
+  return `<div style="display:flex;flex-direction:column;gap:4px;align-items:flex-start;">
+    ${statusBadge(s, id)}
+    <span class="${doneBtnCls}" onclick="toggleDoneBtn(${id})" title="${doneTitle}">${doneIco} ${doneLbl}</span>
+  </div>`;
 }
 
 // CATEGORY — inline select
@@ -1232,10 +1247,9 @@ function renderTable() {
       <td><span class="task-title">${escHtml(t.title)}</span></td>
       <td><div style="display:flex;align-items:center;gap:5px"><span class="avatar avatar-${t.member}">${t.member[0]}</span><span style="font-size:12.5px">${t.member}</span></div></td>
       <td>${catSelect(t.id, t.cat)}</td>
-      <td>${statusBadge(t.status, t.id)}</td>
+      <td>${statusCell(t.status, t.id)}</td>
       <td>
         <div class="action-btns">
-          ${!isDone ? `<button class="btn btn-sm btn-done" onclick="markDone(${t.id})" title="완료">✓</button>` : `<button class="btn btn-sm" style="opacity:0.35;cursor:default" disabled title="완료됨">✓</button>`}
           <button class="btn btn-sm" onclick="openEditModal(${t.id})" title="수정">&#9998;</button>
           <button class="btn btn-sm btn-danger" onclick="deleteTask(${t.id})" title="삭제">&#10005;</button>
         </div>
@@ -1381,9 +1395,19 @@ async function toggleDone(id, checked) {
 
 async function cycleStatus(id) {
   const t=tasks.find(t=>t.id===id); if(!t) return;
-  const next = t.status==='todo' ? '진행중' : 'todo';
+  // 예정 → 진행 중 → 보류 → 예정 순환 (완료는 완료 버튼으로 분리)
+  const cycle = {'todo':'진행중','진행중':'보류','보류':'todo'};
+  const next = cycle[t.status] || 'todo';
+  const label = {'todo':'예정','진행중':'진행 중','보류':'보류'};
   const updated = await dbUpdate(id, { status:next });
-  if (updated) { t.status=next; renderTable(); showToast(next==='진행중'?'진행 중으로 변경했습니다.':'예정으로 변경했습니다.'); }
+  if (updated) { t.status=next; renderTable(); showToast(`'${label[next]}'으로 변경했습니다.`); }
+}
+
+async function toggleDoneBtn(id) {
+  const t=tasks.find(t=>t.id===id); if(!t) return;
+  const newStatus = t.status==='완료' ? 'todo' : '완료';
+  const updated = await dbUpdate(id, { status:newStatus });
+  if (updated) { t.status=newStatus; renderTable(); showToast(newStatus==='완료'?'완료로 변경했습니다.':'예정으로 변경했습니다.'); }
 }
 
 async function updateCat(id, cat) {
