@@ -414,7 +414,7 @@
   }
 
 
-  .master-cal-toggle.on { background:var(--accent);color:#fff;border-color:var(--accent); }
+  #masterCalModal { overflow-y:auto; align-items:flex-start; }
   .master-month-card { background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:12px;overflow:hidden; }
   .master-month-header { display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--gray-50);border-bottom:1px solid var(--border);cursor:pointer;user-select:none; }
   .master-month-header:hover { background:#e8f0fe; }
@@ -530,9 +530,9 @@
 
   /* MOBILE DRAWER */
   .mobile-menu-btn{display:none;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px 6px;line-height:1;}
-  .drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:150;}
-  .drawer-overlay.open{display:block;}
-  .sidebar.drawer-open{transform:translateX(0) !important;box-shadow:4px 0 24px rgba(0,0,0,0.18);}
+  .drawer-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0);z-index:150;transition:background 0.35s ease;}
+  .drawer-overlay.open{display:block;background:rgba(0,0,0,0.4);}
+  .sidebar.drawer-open{transform:translateX(0) !important;box-shadow:6px 0 32px rgba(0,0,0,0.15);}
 
   /* ── MOBILE ── */
   @media(max-width:900px){
@@ -542,7 +542,7 @@
       position:fixed;top:0;left:0;bottom:0;
       width:240px;z-index:160;
       transform:translateX(-100%);
-      transition:transform 0.25s cubic-bezier(.4,0,.2,1);
+      transition:transform 0.38s cubic-bezier(0.22, 1, 0.36, 1);
       overflow-y:auto;
       padding-top:58px;
     }
@@ -1066,8 +1066,8 @@
 </a>
 
 <!-- MASTER CALENDAR PAGE -->
-<div class="modal-overlay" id="masterCalModal" style="display:none;align-items:flex-start;padding-top:0" onclick="closeMasterCalPage(event)">
-  <div class="modal" style="width:min(900px,100vw);max-height:100vh;border-radius:0 0 var(--radius-lg) var(--radius-lg);margin-top:58px;display:flex;flex-direction:column" onclick="event.stopPropagation()">
+<div class="modal-overlay" id="masterCalModal" style="display:none;align-items:flex-start;padding-top:0;overflow-y:auto;" onclick="closeMasterCalPage(event)">
+  <div class="modal" style="width:min(900px,100vw);min-height:100vh;border-radius:0;margin-top:58px;display:flex;flex-direction:column;box-shadow:none;max-height:none;overflow-y:visible;" onclick="event.stopPropagation()">
     <div class="modal-header" style="background:var(--primary);color:#fff;border-radius:0;flex-wrap:wrap;gap:8px;">
       <div class="modal-title" style="color:#fff;font-size:15px">📅 인사노무 Master 캘린더</div>
       <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;">
@@ -1080,7 +1080,7 @@
         <button class="modal-close" onclick="closeMasterCalPage()" style="color:#fff;opacity:0.8">&#10005;</button>
       </div>
     </div>
-    <div style="flex:1;overflow-y:auto;padding:16px 20px" id="masterCalScrollArea">
+    <div style="flex:1;padding:16px 20px" id="masterCalScrollArea">
       <div style="font-size:12px;color:var(--gray-400);margin-bottom:12px" id="masterCalModeHint">조회 모드 — 각 일정의 <b>→ 할 일</b> 버튼으로 담당자를 지정해 업무를 추가할 수 있습니다.</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px" id="masterLegend"></div>
       <div id="masterCalContent" class="master-view-mode"></div>
@@ -1401,13 +1401,17 @@ function toggleMobileDrawer() {
   const overlay = document.getElementById('drawerOverlay');
   const isOpen  = sidebar.classList.contains('drawer-open');
   if (isOpen) { closeMobileDrawer(); } else {
+    overlay.style.display = 'block';
+    requestAnimationFrame(()=>{ overlay.classList.add('open'); });
     sidebar.classList.add('drawer-open');
-    overlay.classList.add('open');
   }
 }
 function closeMobileDrawer() {
-  document.querySelector('.sidebar').classList.remove('drawer-open');
-  document.getElementById('drawerOverlay').classList.remove('open');
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('drawerOverlay');
+  sidebar.classList.remove('drawer-open');
+  overlay.classList.remove('open');
+  setTimeout(()=>{ if(!overlay.classList.contains('open')) overlay.style.display='none'; }, 380);
 }
 
 // ── APP START ──
@@ -2354,7 +2358,7 @@ function renderMasterCalPage() {
     const titleVal=masterTitles[m]||DEFAULT_MONTH_TITLES[m];
     return `<div class="master-month-card" id="master-month-${m}">
       <div class="master-month-header" onclick="toggleMasterMonth(${m},event)">
-        <span class="master-month-title" id="mmt-${m}" onclick="${masterEditMode?`editMonthTitle(${m},event)`:''}">${titleVal}</span>
+        <span class="master-month-title" id="mmt-${m}" onclick="${masterEditMode?`editMonthTitle(${m},event)`:''}" style="${masterEditMode?'cursor:pointer;text-decoration:underline dotted var(--accent);':''}" title="${masterEditMode?'클릭하여 제목 수정':''}">${titleVal}${masterEditMode?` <span style="font-size:11px;color:var(--accent);margin-left:4px;font-weight:400">✏</span>`:''}</span>
         <span class="master-month-count">${evts.length}건</span>
         <button class="btn btn-sm master-btn-add-evt" onclick="event.stopPropagation();showInlineForm(${m})" style="font-size:11px;padding:2px 8px">+ 일정 추가</button>
         <span style="font-size:11px;color:var(--gray-400);flex-shrink:0" id="mchev-${m}">${isCurrentMonth?'▼':'▶'}</span>
@@ -2400,7 +2404,7 @@ function editMonthTitle(m,e) {
   if(!masterEditMode)return;
   e.stopPropagation();
   const span=document.getElementById('mmt-'+m);
-  const cur=span.textContent;
+  const cur=masterTitles[m]||DEFAULT_MONTH_TITLES[m];
   const inp=document.createElement('input');
   inp.className='master-month-title-input';
   inp.value=cur;
@@ -2410,9 +2414,16 @@ function editMonthTitle(m,e) {
     const val=inp.value.trim()||cur;
     masterTitles[m]=val;
     saveMasterTitles(masterTitles);
-    inp.outerHTML=`<span class="master-month-title" id="mmt-${m}" onclick="editMonthTitle(${m},event)">${escHtml(val)}</span>`;
-    // re-attach
-    document.getElementById('mmt-'+m).onclick=ev=>editMonthTitle(m,ev);
+    const newSpan=document.createElement('span');
+    newSpan.className='master-month-title';
+    newSpan.id='mmt-'+m;
+    newSpan.style.cursor='pointer';
+    newSpan.style.textDecoration='underline dotted var(--accent)';
+    newSpan.title='클릭하여 제목 수정';
+    newSpan.innerHTML=`${escHtml(val)} <span style="font-size:11px;color:var(--accent);margin-left:4px;font-weight:400">✏</span>`;
+    newSpan.onclick=ev=>editMonthTitle(m,ev);
+    inp.replaceWith(newSpan);
+    showToast('제목을 저장했습니다.');
   };
   inp.addEventListener('blur',save);
   inp.addEventListener('keydown',ev=>{if(ev.key==='Enter')inp.blur();if(ev.key==='Escape'){inp.value=cur;inp.blur();}});
