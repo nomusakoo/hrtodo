@@ -1476,6 +1476,9 @@ async function startApp() {
 
   await dbSeedIfEmpty();
   tasks = await dbLoad();
+  // Master 캘린더 초기 로드 (달력 오버레이용)
+  masterEvents = await loadMasterEvents();
+  masterTitles = await loadMasterTitles();
   if (useLocal || !sbClient) setDbStatus(false, '로컬 저장소');
   showLoading(false);
   renderAll();
@@ -2279,35 +2282,88 @@ const DEFAULT_MONTH_TITLES = {
 const ME_KEY = 'hr_master_events_v2';
 const MT_KEY = 'hr_master_titles_v1';
 
-function loadMasterEvents() {
+// ── Master 이벤트: Supabase 우선, 없으면 localStorage, 없으면 기본값 ──
+async function loadMasterEvents() {
+  // Supabase 연결된 경우
+  if (!useLocal && sbClient) {
+    const { data, error } = await sbClient.from('hr_master_events').select('*').order('month').order('day');
+    if (!error && data && data.length > 0) {
+      // Supabase 컬럼 description → desc 로 매핑
+      return data.map(r => ({ id:r.id, month:r.month, day:r.day, cat:r.cat, title:r.title, desc:r.description||'', deadline:!!r.deadline }));
+    }
+    // Supabase에 데이터 없으면 기본값으로 시드
+    if (!error && data && data.length === 0) {
+      await seedMasterEvents();
+      const { data: d2 } = await sbClient.from('hr_master_events').select('*').order('month').order('day');
+      if (d2 && d2.length) return d2.map(r => ({ id:r.id, month:r.month, day:r.day, cat:r.cat, title:r.title, desc:r.description||'', deadline:!!r.deadline }));
+    }
+  }
+  // localStorage 폴백
   try { const d = JSON.parse(localStorage.getItem(ME_KEY)); return Array.isArray(d)&&d.length?d:JSON.parse(JSON.stringify(DEFAULT_MASTER_EVENTS)); }
   catch { return JSON.parse(JSON.stringify(DEFAULT_MASTER_EVENTS)); }
 }
-function loadMasterTitles() {
+
+async function seedMasterEvents() {
+  if (useLocal || !sbClient) return;
+  const rows = DEFAULT_MASTER_EVENTS.map(e => ({ month:e.month, day:e.day, cat:e.cat, title:e.title, description:e.desc||'', deadline:!!e.deadline }));
+  await sbClient.from('hr_master_events').insert(rows);
+}
+
+async function loadMasterTitles() {
+  // Supabase 연결된 경우
+  if (!useLocal && sbClient) {
+    const { data, error } = await sbClient.from('hr_master_titles').select('*');
+    if (!error && data && data.length > 0) {
+      const result = {...DEFAULT_MONTH_TITLES};
+      data.forEach(r => { result[r.month] = r.title; });
+      return result;
+    }
+  }
+  // localStorage 폴백 (마이그레이션 포함)
   try {
     const d = JSON.parse(localStorage.getItem(MT_KEY));
     if(!d||typeof d!=='object') return {...DEFAULT_MONTH_TITLES};
-    // 구버전 마이그레이션: "1월 — 연말정산..." → "연말정산..."
     const result = {};
     for(let m=1;m<=12;m++){
       const v = d[m] || d[String(m)];
-      if(v){
-        // "N월 — " prefix 제거
-        const stripped = v.replace(/^\d+월\s*[—\-–]\s*/,'');
-        result[m] = stripped || DEFAULT_MONTH_TITLES[m];
-      } else {
-        result[m] = DEFAULT_MONTH_TITLES[m];
-      }
+      if(v){ const stripped = v.replace(/^\d+월\s*[—\-–]\s*/,''); result[m] = stripped || DEFAULT_MONTH_TITLES[m]; }
+      else { result[m] = DEFAULT_MONTH_TITLES[m]; }
     }
     return result;
   }
   catch { return {...DEFAULT_MONTH_TITLES}; }
 }
-function saveMasterEvents(arr) { localStorage.setItem(ME_KEY, JSON.stringify(arr)); }
-function saveMasterTitles(obj) { localStorage.setItem(MT_KEY, JSON.stringify(obj)); }
 
-let masterEvents = loadMasterEvents();
-let masterTitles = loadMasterTitles();
+async function saveMasterEvents(arr) {
+  masterEvents = arr;
+  if (!useLocal && sbClient) {
+    // 전체 교체: 기존 삭제 후 재삽입
+    await sbClient.from('hr_master_events').delete().neq('id', 0);
+    const rows = arr.map(e => ({ month:e.month, day:e.day, cat:e.cat, title:e.title, description:e.desc||'', deadline:!!e.deadline }));
+    if (rows.length) {
+      const { data, error } = await sbClient.from('hr_master_events').insert(rows).select();
+      if (!error && data) {
+        masterEvents = data.map(r => ({ id:r.id, month:r.month, day:r.day, cat:r.cat, title:r.title, desc:r.description||'', deadline:!!r.deadline }));
+      }
+    }
+  } else {
+    localStorage.setItem(ME_KEY, JSON.stringify(arr));
+  }
+}
+
+async function saveMasterTitles(obj) {
+  masterTitles = obj;
+  if (!useLocal && sbClient) {
+    const rows = Object.entries(obj).map(([m,t]) => ({ month:parseInt(m), title:t }));
+    // upsert
+    await sbClient.from('hr_master_titles').upsert(rows, { onConflict:'month' });
+  } else {
+    localStorage.setItem(MT_KEY, JSON.stringify(obj));
+  }
+}
+
+let masterEvents = [];
+let masterTitles = {...DEFAULT_MONTH_TITLES};
 
 // ── Toggle (calendar overlay) ──
 function _applyMasterCalBtn(on) {
@@ -2339,9 +2395,13 @@ function getMasterEventsForDate(dateStr) {
 }
 
 // ── Page open/close ──
-function openMasterCalPage() {
+async function openMasterCalPage() {
   masterCalYear=new Date().getFullYear();
   masterEditMode=false;
+  // Supabase에서 최신 데이터 로드
+  showToast('캘린더 데이터 불러오는 중...');
+  masterEvents = await loadMasterEvents();
+  masterTitles = await loadMasterTitles();
   renderMasterCalPage();
   document.getElementById('masterCalModal').style.display='flex';
   closeMobileDrawer();
@@ -2397,15 +2457,15 @@ function renderMasterCalPage() {
     const titleHtml = masterEditMode
       ? `<span class="master-month-title" style="display:flex;align-items:center;gap:4px;flex:1;">
           <span style="color:var(--gray-400);font-weight:600;white-space:nowrap">${prefix}</span>
-          <span id="mmt-${m}" onclick="editMonthTitle(${m},event)" style="cursor:pointer;text-decoration:underline dotted var(--accent);color:var(--primary);" title="클릭하여 수정">${escHtml(suffixVal)}<span style="font-size:11px;color:var(--accent);margin-left:4px;font-weight:400">✏</span></span>
+          <span id="mmt-${m}" onclick="editMonthTitle(${m},event)" style="cursor:pointer;text-decoration:underline dotted var(--accent);color:var(--primary);" title="클릭하여 제목 수정">${escHtml(suffixVal)}&nbsp;<span style="font-size:11px;color:var(--accent);font-weight:400">✏</span></span>
          </span>`
-      : `<span class="master-month-title"><span style="color:var(--gray-600)">${prefix}</span>${escHtml(suffixVal)}</span>`;
+      : `<span class="master-month-title" onclick="toggleMasterMonth(${m})" style="cursor:pointer;flex:1"><span style="color:var(--gray-600)">${prefix}</span>${escHtml(suffixVal)}</span>`;
     return `<div class="master-month-card" id="master-month-${m}">
-      <div class="master-month-header" onclick="toggleMasterMonth(${m},event)">
+      <div class="master-month-header" id="mmh-${m}">
         ${titleHtml}
-        <span class="master-month-count">${evts.length}건</span>
-        <button class="btn btn-sm master-btn-add-evt" onclick="event.stopPropagation();showInlineForm(${m})" style="font-size:11px;padding:2px 8px">+ 일정 추가</button>
-        <span style="font-size:11px;color:var(--gray-400);flex-shrink:0" id="mchev-${m}">${isCurrentMonth?'▼':'▶'}</span>
+        <span class="master-month-count" onclick="toggleMasterMonth(${m})" style="cursor:pointer">${evts.length}건</span>
+        <button class="btn btn-sm master-btn-add-evt" onclick="showInlineForm(${m})" style="font-size:11px;padding:2px 8px">+ 일정 추가</button>
+        <span style="font-size:11px;color:var(--gray-400);flex-shrink:0;cursor:pointer" id="mchev-${m}" onclick="toggleMasterMonth(${m})">${isCurrentMonth?'▼':'▶'}</span>
       </div>
       <div class="master-month-body" id="mmb-${m}" style="${isCurrentMonth?'':'display:none'}">
         ${evts.map((e,idx)=>renderMasterEventRow(e,m,idx)).join('')}
@@ -2434,11 +2494,10 @@ function renderMasterEventRow(e,m,idx) {
   </div>`;
 }
 
-function toggleMasterMonth(m,e) {
-  if(e&&e.target.closest('.master-btn-add-evt,.master-month-title-input,[id^="mmt-"]'))return;
-  if(masterEditMode&&e&&e.target.closest('.master-month-title'))return;
+function toggleMasterMonth(m) {
   const body=document.getElementById('mmb-'+m);
   const chev=document.getElementById('mchev-'+m);
+  if(!body)return;
   const hidden=body.style.display==='none';
   body.style.display=hidden?'block':'none';
   if(chev)chev.textContent=hidden?'▼':'▶';
@@ -2458,10 +2517,10 @@ function editMonthTitle(m,e) {
   inp.style.cssText='flex:1;min-width:80px;';
   span.replaceWith(inp);
   inp.focus();inp.select();
-  const save=()=>{
+  const save=async ()=>{
     const val=inp.value.trim()||cur;
     masterTitles[m]=val;
-    saveMasterTitles(masterTitles);
+    await saveMasterTitles(masterTitles);
     const newSpan=document.createElement('span');
     newSpan.id='mmt-'+m;
     newSpan.style.cssText='cursor:pointer;text-decoration:underline dotted var(--accent);color:var(--primary);';
@@ -2479,7 +2538,7 @@ function editMonthTitle(m,e) {
 function showInlineForm(m) {
   if(!masterEditMode)return;
   const body=document.getElementById('mmb-'+m);
-  if(body.style.display==='none')toggleMasterMonth(m,null);
+  if(body.style.display==='none')toggleMasterMonth(m);
   const form=document.getElementById('mf-'+m);
   form.className='master-inline-form open';
   form.innerHTML=buildInlineForm(m,null,-1);
@@ -2490,7 +2549,7 @@ function showInlineFormEdit(idx) {
   const e=masterEvents[idx];
   if(!e)return;
   const body=document.getElementById('mmb-'+e.month);
-  if(body&&body.style.display==='none')toggleMasterMonth(e.month,null);
+  if(body&&body.style.display==='none')toggleMasterMonth(e.month);
   const form=document.getElementById('mf-'+e.month);
   form.className='master-inline-form open';
   form.innerHTML=buildInlineForm(e.month,e,idx);
@@ -2529,7 +2588,7 @@ function closeInlineForm(m) {
   if(form){form.className='master-inline-form';form.innerHTML='';}
 }
 
-function saveMasterInlineForm(origMonth,idx) {
+async function saveMasterInlineForm(origMonth,idx) {
   const month=parseInt(document.getElementById('mfi-month').value);
   const day=parseInt(document.getElementById('mfi-day').value);
   const cat=document.getElementById('mfi-cat').value;
@@ -2541,7 +2600,7 @@ function saveMasterInlineForm(origMonth,idx) {
   const newEvt={month,day,cat,title,desc,deadline};
   if(idx<0){masterEvents.push(newEvt);}
   else{masterEvents[idx]=newEvt;}
-  saveMasterEvents(masterEvents);
+  await saveMasterEvents(masterEvents);
   closeInlineForm(origMonth);
   renderMasterCalPage();
   // 편집모드 재적용
@@ -2549,19 +2608,19 @@ function saveMasterInlineForm(origMonth,idx) {
   showToast(idx<0?'일정을 추가했습니다.':'일정을 수정했습니다.');
   // 해당 월 펼치기
   const body=document.getElementById('mmb-'+month);
-  if(body&&body.style.display==='none')toggleMasterMonth(month,null);
+  if(body&&body.style.display==='none')toggleMasterMonth(month);
 }
 
-function deleteMasterEvent(idx) {
+async function deleteMasterEvent(idx) {
   if(!confirm('이 일정을 삭제하시겠습니까?'))return;
   const m=masterEvents[idx].month;
   masterEvents.splice(idx,1);
-  saveMasterEvents(masterEvents);
+  await saveMasterEvents(masterEvents);
   renderMasterCalPage();
   if(masterEditMode){const c=document.getElementById('masterCalContent');if(c)c.className='master-edit-mode';}
   showToast('일정을 삭제했습니다.');
   const body=document.getElementById('mmb-'+m);
-  if(body&&body.style.display==='none')toggleMasterMonth(m,null);
+  if(body&&body.style.display==='none')toggleMasterMonth(m);
 }
 
 // ── 담당자 피커 ──
@@ -2653,7 +2712,7 @@ function exportMasterCal() {
 function importMasterCal(input) {
   const file=input.files[0]; if(!file)return;
   const reader=new FileReader();
-  reader.onload=ev=>{
+  reader.onload=async ev=>{
     try{
       const wb=XLSX.read(ev.target.result,{type:'array'});
       const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,raw:false});
@@ -2671,7 +2730,7 @@ function importMasterCal(input) {
       } else {
         masterEvents=[...masterEvents,...parsed];
       }
-      saveMasterEvents(masterEvents);
+      await saveMasterEvents(masterEvents);
       renderMasterCalPage();
       showToast(`${parsed.length}건을 가져왔습니다.`);
     }catch(err){showToast('파일 오류: '+err.message,'error');}
