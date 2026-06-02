@@ -305,7 +305,60 @@
   .cal-more-item-meta { font-size:11px; color:var(--gray-400); white-space:nowrap; }
   @media(max-width:700px){.cal-cell{min-height:80px;}.cal-chip{font-size:9px;padding:1px 3px;}}
 
-  /* WEEKLY */
+  /* FLOATING ACTION BUTTON */
+  .fab {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 999px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.22);
+    text-decoration: none;
+    overflow: hidden;
+    width: 48px;
+    height: 48px;
+    transition: width 0.32s cubic-bezier(.4,0,.2,1), box-shadow 0.2s;
+    white-space: nowrap;
+  }
+  .fab:hover {
+    width: 196px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.28);
+  }
+  .fab-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+  .fab-text {
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font);
+    opacity: 0;
+    max-width: 0;
+    transition: opacity 0.2s 0.1s, max-width 0.32s cubic-bezier(.4,0,.2,1);
+    overflow: hidden;
+    padding-right: 0;
+    letter-spacing: 0.2px;
+  }
+  .fab:hover .fab-text {
+    opacity: 1;
+    max-width: 160px;
+    padding-right: 16px;
+  }
+  @media(max-width:900px) {
+    .fab { bottom: 76px; right: 16px; }
+  }
+
+
   .week-nav{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
   .week-label{font-size:15px;font-weight:600;color:var(--primary);min-width:160px;text-align:center;}
   .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;}
@@ -825,6 +878,12 @@
 
 <!-- DRAG GHOST -->
 <div id="calDragGhost" style="position:fixed;pointer-events:none;z-index:9999;display:none;padding:4px 8px;background:var(--accent);color:#fff;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap;opacity:0.9;transform:translate(-50%,-50%)"></div>
+
+<!-- FLOATING BUTTON -->
+<a href="https://nomusakoo.github.io/Personnelstatus/" target="_blank" class="fab" title="인원현황 바로가기">
+  <span class="fab-icon">👥</span>
+  <span class="fab-text">인원현황 바로가기</span>
+</a>
 
 <!-- EXCEL UPLOAD MODAL -->
 <div class="modal-overlay" id="excelModal">
