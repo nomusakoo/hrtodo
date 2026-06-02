@@ -52,7 +52,7 @@
   .main-content{flex:1;padding:28px 32px;min-width:0;}
 
   /* TABS */
-  .tab-bar{display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:24px;}
+  .tab-bar{display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:24px;position:sticky;top:58px;z-index:90;background:var(--bg);padding-top:4px;}
   .tab-btn{padding:9px 20px;background:none;border:none;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--gray-500);position:relative;bottom:-2px;border-bottom:2px solid transparent;font-family:var(--font);transition:color 0.15s;display:flex;align-items:center;gap:7px;}
   .tab-btn:hover{color:var(--gray-800);}
   .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
@@ -368,7 +368,8 @@
   .week-label{font-size:15px;font-weight:600;color:var(--primary);min-width:160px;text-align:center;}
   .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;}
   .week-day-col{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);min-height:120px;}
-  .week-day-header{padding:8px 10px;text-align:center;font-size:12px;font-weight:600;border-bottom:1px solid var(--border);background:var(--gray-50);min-height:72px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .week-day-header{padding:8px 10px;text-align:center;font-size:12px;font-weight:600;border-bottom:1px solid var(--border);background:var(--gray-50);min-height:72px;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:background 0.15s;}
+  .week-day-header:hover{background:#e8f0fe;}
   .week-day-header .wd-name{color:var(--gray-600);}
   .week-day-header .wd-date{font-size:18px;font-weight:700;color:var(--primary);font-family:var(--font-mono);margin:2px 0;}
   .week-day-header.is-today{background:var(--accent-bg);}
@@ -450,7 +451,7 @@
     .app-header{padding:0 14px;}
     .app-header .brand{font-size:13px;}
     .today-badge{display:none;}
-    .tab-bar{gap:0;overflow-x:auto;padding-bottom:2px;}
+    .tab-bar{gap:0;overflow-x:auto;padding-bottom:2px;top:48px;}
     .tab-btn{padding:8px 14px;font-size:12px;white-space:nowrap;}
     .toolbar{flex-wrap:wrap;gap:6px;}
     .toolbar input{width:100%;min-width:0;}
@@ -1702,7 +1703,8 @@ async function saveTask() {
   if (!member) { alert('담당자를 선택하세요.'); return; }
   if (!date)   { alert('날짜를 선택하세요.'); return; }
 
-  const isOnDash = document.getElementById('view-dashboard').style.display !== 'none';
+  const isOnDash   = document.getElementById('view-dashboard').style.display !== 'none';
+  const isOnWeekly = document.getElementById('view-weekly').style.display    !== 'none';
 
   if (editId) {
     const fields={title,member,cat,date,time,status,note};
@@ -1710,7 +1712,7 @@ async function saveTask() {
     if (updated) {
       const t=tasks.find(t=>t.id===editId); if(t) Object.assign(t,fields);
       closeModal();
-      if (isOnDash) renderDash(); else renderTable();
+      if (isOnDash) renderDash(); else if (isOnWeekly) { renderWeekly(); renderTable(); } else renderTable();
       showToast('수정했습니다.');
     }
   } else {
@@ -1725,14 +1727,14 @@ async function saveTask() {
         if (newTask) { tasks.push(newTask); added++; }
       }
       closeModal();
-      if (isOnDash) renderDash(); else renderTable();
+      if (isOnDash) renderDash(); else if (isOnWeekly) { renderWeekly(); renderTable(); } else renderTable();
       showToast(`반복 업무 ${added}건을 추가했습니다.`);
     } else {
       const newTask=await dbInsert({title,member,cat,date,time,status,note});
       if (newTask) {
         tasks.push(newTask);
         closeModal();
-        if (isOnDash) renderDash(); else renderTable();
+        if (isOnDash) renderDash(); else if (isOnWeekly) { renderWeekly(); renderTable(); } else renderTable();
         showToast('추가했습니다.');
       }
     }
@@ -2031,7 +2033,7 @@ function renderWeekly() {
           </div>
         </div>`).join('');
     return `<div class="week-day-col" data-date="${dateStr}">
-      <div class="week-day-header ${headerCls}">
+      <div class="week-day-header ${headerCls}" onclick="openAddModal('${dateStr}')" title="${dateStr} 업무 추가" style="cursor:pointer;">
         <div class="wd-name" style="${dateColor}">${dayNames[i]}</div>
         <div class="wd-date" style="${dateColor}">${d.getDate()}</div>
         <div style="font-size:10px;color:var(--gray-400)">${dayTasks.length}건</div>
