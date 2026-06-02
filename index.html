@@ -52,7 +52,7 @@
   .main-content{flex:1;padding:28px 32px;min-width:0;}
 
   /* TABS */
-  .tab-bar{display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:24px;position:sticky;top:58px;z-index:90;background:var(--bg);padding-top:4px;}
+  .tab-bar{display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:24px;position:sticky;top:58px;z-index:90;background:var(--gray-50);padding-top:6px;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
   .tab-btn{padding:9px 20px;background:none;border:none;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--gray-500);position:relative;bottom:-2px;border-bottom:2px solid transparent;font-family:var(--font);transition:color 0.15s;display:flex;align-items:center;gap:7px;}
   .tab-btn:hover{color:var(--gray-800);}
   .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
@@ -1333,7 +1333,6 @@ function switchTab(tab) {
   ['tasks','weekly','dashboard'].forEach(t=>{
     document.getElementById(`tab-${t}`).className='tab-btn'+(tab===t?' active':'');
   });
-  // 모바일 하단 네비 동기화
   ['tasks','weekly','dashboard'].forEach(t=>{
     const el = document.getElementById(`mnav-${t}`);
     if (el) el.className = 'mobile-nav-btn' + (tab===t ? ' active' : '');
@@ -1341,6 +1340,8 @@ function switchTab(tab) {
   if (tab==='dashboard') renderDash();
   if (tab==='weekly') renderWeekly();
   if (tab==='tasks') renderTable();
+  // 탭 전환 시 페이지 최상단으로 스크롤
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ══════════════════════════════════════════════
@@ -1440,8 +1441,8 @@ function renderTable() {
     return `<tr class="${isDone?'done':''} ${urgency}${checked?' row-selected':''}">
       <td><input type="checkbox" class="task-check" data-id="${t.id}" ${checked?'checked':''} onchange="onRowCheck(${t.id},this.checked)"></td>
       <td data-label="일정" style="font-family:var(--font-mono);font-size:12px;color:var(--gray-500);white-space:nowrap;">
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:nowrap;">
-          ${fmtDate(t.date)}${t.time?`<span style="font-size:11px;color:var(--accent);letter-spacing:0.5px;">⏰&nbsp;&nbsp;${t.time}</span>`:''}${ddayBadge(t.date,t.status)}
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap;">
+          <span>${fmtDate(t.date)}</span>${t.time?`<span style="display:inline-block;width:1px;height:11px;background:var(--gray-300);border-radius:1px;flex-shrink:0;"></span><span style="font-size:11px;color:var(--accent);letter-spacing:0.5px;">⏰&nbsp;&nbsp;${t.time}</span>`:''}${ddayBadge(t.date,t.status)?`<span style="display:inline-block;width:1px;height:11px;background:var(--gray-300);border-radius:1px;flex-shrink:0;"></span>${ddayBadge(t.date,t.status)}`:''}
         </div>
       </td>
       <td data-label="업무명"><span class="task-title task-title-link" onclick="openEditModal(${t.id})">${escHtml(t.title)}</span></td>
