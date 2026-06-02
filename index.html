@@ -205,7 +205,8 @@
 
   /* WORKLOAD BOARD */
   .workload-board{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;}
-  .workload-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden;}
+  .workload-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden;transition:transform 0.15s,box-shadow 0.15s;}
+  .workload-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.10);}
   .workload-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--m-color,var(--gray-300));}
   .workload-member{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
   .workload-member .avatar{width:32px;height:32px;font-size:14px;margin-right:0;}
@@ -1967,6 +1968,17 @@ function copyTableSQL() {
   });
 }
 
+// ── 대시보드 팀원 카드 → 해당 팀원 할 일 관리로 이동 ──
+function goToMemberTasks(member) {
+  filterMemberVal = member;
+  filterStatusVal = '';
+  document.querySelectorAll('.sidebar-item[data-member]').forEach(el =>
+    el.classList.toggle('active', el.dataset.member === member));
+  document.querySelectorAll('.sidebar-item[data-status]').forEach(el =>
+    el.classList.remove('active'));
+  switchTab('tasks');
+}
+
 // ── 대시보드 stat 카드 → 할 일 관리 이동 + 상태 필터 ──
 function goToTasksWithFilter(status) {
   // 상태 필터 초기화 후 지정값 설정
@@ -2189,7 +2201,7 @@ function renderDash() {
     const dr=mt.length?Math.round(md/mt.length*100):0;
     const pending=mt.filter(t=>t.status!=='완료'&&t.status!=='보류').sort((a,b)=>(a.date||'')>(b.date||'')?1:-1).slice(0,5);
     const mColor = memberColor(m);
-    return `<div class="workload-card" style="--m-color:${mColor}">
+    return `<div class="workload-card" style="--m-color:${mColor};cursor:pointer;" onclick="goToMemberTasks('${m}')" title="${m} 업무 목록으로 이동">
       <div class="workload-member"><span class="avatar avatar-${m}" style="width:32px;height:32px;font-size:14px;margin-right:0;background:${memberBg(m)};color:${memberTx(m)}">${m[0]}</span>
         <div><div class="name">${m}${m===LEADER?' <span style="font-size:10px;background:#1a1a1a;color:#fff;padding:1px 5px;border-radius:3px;font-weight:600;vertical-align:middle;margin-left:4px">팀장</span>':''}</div><div style="font-size:11px;color:var(--gray-400)">완료율 ${dr}%</div></div></div>
       <div class="workload-numbers">
