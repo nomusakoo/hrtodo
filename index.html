@@ -375,7 +375,12 @@
   .week-day-header.is-today .wd-name,.week-day-header.is-today .wd-date{color:var(--accent);}
   .week-day-header.is-weekend .wd-name,.week-day-header.is-weekend .wd-date{color:var(--gray-400);}
   .week-task-items{padding:6px;}
-  .week-task-chip{display:flex;flex-direction:column;padding:5px 7px;border-radius:5px;margin-bottom:5px;font-size:11.5px;border-left:3px solid transparent;}
+  .week-task-chip{display:flex;flex-direction:column;padding:5px 7px;border-radius:5px;margin-bottom:5px;font-size:11.5px;border-left:3px solid transparent;cursor:grab;user-select:none;transition:opacity 0.15s,box-shadow 0.15s;}
+  .week-task-chip:hover{box-shadow:0 2px 8px rgba(0,0,0,0.10);}
+  .week-task-chip.dragging{opacity:0.3;cursor:grabbing;}
+  .week-day-col.drag-over{outline:2px dashed var(--accent);outline-offset:-3px;border-radius:var(--radius-lg);}
+  .week-task-items.drag-over{background:#dbeafe;border-radius:6px;}
+  .week-empty-msg{padding:16px 8px;text-align:center;font-size:11px;color:var(--gray-300);}
   .week-task-chip.wc-이상원{background:#f0fdf4;border-left-color:#22c55e;}
   .week-task-chip.wc-구우회{background:#eff6ff;border-left-color:var(--accent);}
   .week-task-chip.wc-이호동{background:#faf5ff;border-left-color:#8b5cf6;}
@@ -702,14 +707,19 @@
           </colgroup>
           <thead>
             <tr>
-              <th><input type="checkbox" id="checkAll" title="전체 선택" onchange="toggleCheckAll(this.checked)"></th>
-              <th>일정</th><th>업무명</th><th>담당자</th>
-              <th>카테고리</th><th>상태</th>
+              <th style="text-align:center"><input type="checkbox" id="checkAll" title="전체 선택" onchange="toggleCheckAll(this.checked)"></th>
+              <th style="text-align:center">일정</th><th style="text-align:center">업무명</th><th style="text-align:center">담당자</th>
+              <th style="text-align:center">카테고리</th><th style="text-align:center">상태</th>
               <th style="text-align:center">관리</th>
             </tr>
             <tr id="quickAddRow" class="quick-add-row">
               <td></td>
-              <td><input type="date" id="qa-date" class="qa-input"></td>
+              <td>
+                <div style="display:flex;gap:4px;align-items:center;">
+                  <input type="date" id="qa-date" class="qa-input" style="flex:1;min-width:0">
+                  <input type="time" id="qa-time" class="qa-input" style="width:82px;flex-shrink:0" placeholder="시간">
+                </div>
+              </td>
               <td><input type="text" id="qa-title" class="qa-input" placeholder="업무명 입력 후 Enter..."></td>
               <td>
                 <select id="qa-member" class="qa-select">
@@ -1993,7 +2003,6 @@ function shiftWeek(dir) { currentWeekOffset+=dir; renderWeekly(); }
 function goThisWeek() { currentWeekOffset=0; renderWeekly(); }
 
 function renderWeekly() {
-  // 이번 주 일요일 기준으로 시작
   const weekStart=getWeekStartDate(currentWeekOffset);
   const weekDays=[];
   for (let i=0;i<7;i++) { const d=new Date(weekStart); d.setDate(weekStart.getDate()+i); weekDays.push(d); }
@@ -2010,23 +2019,87 @@ function renderWeekly() {
     const headerCls=isToday?'is-today':isWeekend?'is-weekend':'';
     const dateColor=isSun?'color:#dc2626':isSat?'color:#2563eb':'';
     const chips=dayTasks.length===0
-      ?`<div style="padding:16px 8px;text-align:center;font-size:11px;color:var(--gray-300)">업무 없음</div>`
-      :dayTasks.map(t=>`<div class="week-task-chip ${t.status==='완료'?'is-done':''}" style="background:${memberBg(t.member)};border-left-color:${memberColor(t.member)}" title="${escHtml(t.title)}">
+      ?`<div class="week-empty-msg">업무 없음</div>`
+      :dayTasks.map(t=>`<div class="week-task-chip ${t.status==='완료'?'is-done':''}"
+          style="background:${memberBg(t.member)};border-left-color:${memberColor(t.member)}"
+          draggable="true" data-task-id="${t.id}"
+          onclick="openEditModal(${t.id})" title="${escHtml(t.title)}">
           <span class="chip-title">${escHtml(t.title)}</span>
           <div class="chip-meta">
             <span style="width:14px;height:14px;border-radius:50%;background:${memberBg(t.member)};color:${memberTx(t.member)};font-size:8px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">${t.member[0]}</span>
             <span class="chip-name">${t.member}</span>
           </div>
         </div>`).join('');
-    return `<div class="week-day-col">
+    return `<div class="week-day-col" data-date="${dateStr}">
       <div class="week-day-header ${headerCls}">
         <div class="wd-name" style="${dateColor}">${dayNames[i]}</div>
         <div class="wd-date" style="${dateColor}">${d.getDate()}</div>
         <div style="font-size:10px;color:var(--gray-400)">${dayTasks.length}건</div>
       </div>
-      <div class="week-task-items">${chips}</div>
+      <div class="week-task-items" data-date="${dateStr}">${chips}</div>
     </div>`;
   }).join('');
+  bindWeeklyDrag();
+}
+
+function bindWeeklyDrag() {
+  const grid = document.getElementById('weekGrid');
+  if (!grid || grid._weekDragBound) return;
+  grid._weekDragBound = true;
+
+  grid.addEventListener('dragstart', e => {
+    const chip = e.target.closest('.week-task-chip[data-task-id]');
+    if (!chip) return;
+    dragTaskId = parseInt(chip.dataset.taskId);
+    chip.classList.add('dragging');
+    const t = tasks.find(t => t.id === dragTaskId);
+    const ghost = document.getElementById('calDragGhost');
+    if (ghost) { ghost.textContent = t ? t.title : ''; ghost.style.display = 'block'; }
+    e.dataTransfer.effectAllowed = 'move';
+  });
+
+  grid.addEventListener('dragend', () => {
+    const ghost = document.getElementById('calDragGhost');
+    if (ghost) ghost.style.display = 'none';
+    grid.querySelectorAll('.week-task-chip.dragging').forEach(c => c.classList.remove('dragging'));
+    grid.querySelectorAll('.drag-over').forEach(c => c.classList.remove('drag-over'));
+  });
+
+  grid.addEventListener('dragover', e => {
+    e.preventDefault();
+    const col = e.target.closest('[data-date]');
+    grid.querySelectorAll('.drag-over').forEach(c => c.classList.remove('drag-over'));
+    if (col) col.classList.add('drag-over');
+    e.dataTransfer.dropEffect = 'move';
+  });
+
+  grid.addEventListener('dragleave', e => {
+    if (!grid.contains(e.relatedTarget))
+      grid.querySelectorAll('.drag-over').forEach(c => c.classList.remove('drag-over'));
+  });
+
+  grid.addEventListener('drop', async e => {
+    e.preventDefault();
+    grid.querySelectorAll('.drag-over').forEach(c => c.classList.remove('drag-over'));
+    const ghost = document.getElementById('calDragGhost');
+    if (ghost) ghost.style.display = 'none';
+    if (!dragTaskId) return;
+    const col = e.target.closest('[data-date]');
+    if (!col) { dragTaskId = null; return; }
+    const newDate = col.dataset.date;
+    const t = tasks.find(t => t.id === dragTaskId);
+    dragTaskId = null;
+    if (!t || t.date === newDate) return;
+    const updated = await dbUpdate(t.id, { date: newDate });
+    if (updated) {
+      t.date = newDate;
+      showToast(`날짜를 ${fmtDate(newDate)}로 변경했습니다.`);
+      renderWeekly();
+      renderTable();
+      const { year, month } = getCalYM();
+      renderCalendar(year, month);
+    }
+  });
 }
 
 // ══════════════════════════════════════════════
@@ -2047,14 +2120,16 @@ async function quickAddTask() {
   const member = document.getElementById('qa-member').value;
   const cat    = document.getElementById('qa-cat').value;
   const date   = document.getElementById('qa-date').value;
+  const time   = document.getElementById('qa-time').value || '';
   const status = document.getElementById('qa-status').value;
   if (!title)  { document.getElementById('qa-title').focus();  showToast('업무명을 입력하세요.','error'); return; }
   if (!member) { document.getElementById('qa-member').focus(); showToast('담당자를 선택하세요.','error'); return; }
   if (!date)   { document.getElementById('qa-date').focus();   showToast('날짜를 선택하세요.','error'); return; }
-  const newTask = await dbInsert({title, member, cat, date, status, note:''});
+  const newTask = await dbInsert({title, member, cat, date, time, status, note:''});
   if (newTask) {
     tasks.push(newTask);
     document.getElementById('qa-title').value = '';
+    document.getElementById('qa-time').value  = '';
     document.getElementById('qa-title').focus();
     renderTable();
     showToast('추가했습니다.');
