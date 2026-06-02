@@ -96,7 +96,7 @@
   .task-table tr.row-overdue:hover td{background:#fee2e2;}
   .task-table tr.row-urgent:hover td{background:#fef3c7;}
 
-  .col-check{width:36px;} .col-date{width:136px;} .col-title{min-width:90px;}
+  .col-check{width:36px;} .col-date{width:180px;} .col-title{min-width:80px;}
   .col-member{width:108px;} .col-cat{width:108px;} .col-status{width:148px;}
   .col-note{width:120px;} .col-action{width:78px;}
 
@@ -1426,8 +1426,11 @@ function renderTable() {
     const checked = selectedIds.has(t.id);
     return `<tr class="${isDone?'done':''} ${urgency}${checked?' row-selected':''}">
       <td><input type="checkbox" class="task-check" data-id="${t.id}" ${checked?'checked':''} onchange="onRowCheck(${t.id},this.checked)"></td>
-      <td data-label="일정" style="font-family:var(--font-mono);font-size:12px;color:var(--gray-500);line-height:1.5;white-space:nowrap;">
-        ${fmtDate(t.date)}${t.time?`<br><span style="font-size:11px;color:var(--accent)">⏰ ${t.time}</span>`:''}${ddayBadge(t.date,t.status)}
+      <td data-label="일정" style="font-family:var(--font-mono);font-size:12px;color:var(--gray-500);white-space:nowrap;">
+        <div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;">
+          ${fmtDate(t.date)}${t.time?`<span style="font-size:11px;color:var(--accent)">⏰ ${t.time}</span>`:''}
+        </div>
+        ${ddayBadge(t.date,t.status)}
       </td>
       <td data-label="업무명"><span class="task-title task-title-link" onclick="openEditModal(${t.id})">${escHtml(t.title)}</span></td>
       <td data-label="담당자"><div style="display:flex;align-items:center;gap:5px"><span class="avatar avatar-${t.member}">${t.member[0]}</span><span style="font-size:12.5px">${t.member}</span></div></td>
