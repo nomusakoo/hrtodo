@@ -2255,12 +2255,12 @@ const DEFAULT_MASTER_EVENTS = [
 ];
 
 const DEFAULT_MONTH_TITLES = {
-  1:'1월 — 연말정산·신고 시작', 2:'2월 — 연말정산 마감·부담금',
-  3:'3월 — 보수총액·지급명세서', 4:'4월 — 건강보험 정산',
-  5:'5월 — 종합소득세', 6:'6월 — 노사협의·계약 점검',
-  7:'7월 — ★연차 촉진 1차', 8:'8월 — 최저임금 고시',
-  9:'9월 — 노사협의·명절', 10:'10월 — ★연차 촉진 2차',
-  11:'11월 — 법정교육 점검', 12:'12월 — 법정교육·연간 마감'
+  1:'연말정산·신고 시작', 2:'연말정산 마감·부담금',
+  3:'보수총액·지급명세서', 4:'건강보험 정산',
+  5:'종합소득세', 6:'노사협의·계약 점검',
+  7:'★연차 촉진 1차', 8:'최저임금 고시',
+  9:'노사협의·명절', 10:'★연차 촉진 2차',
+  11:'법정교육 점검', 12:'법정교육·연간 마감'
 };
 const ME_KEY = 'hr_master_events_v2';
 const MT_KEY = 'hr_master_titles_v1';
@@ -2270,7 +2270,23 @@ function loadMasterEvents() {
   catch { return JSON.parse(JSON.stringify(DEFAULT_MASTER_EVENTS)); }
 }
 function loadMasterTitles() {
-  try { const d = JSON.parse(localStorage.getItem(MT_KEY)); return d&&typeof d==='object'?d:{...DEFAULT_MONTH_TITLES}; }
+  try {
+    const d = JSON.parse(localStorage.getItem(MT_KEY));
+    if(!d||typeof d!=='object') return {...DEFAULT_MONTH_TITLES};
+    // 구버전 마이그레이션: "1월 — 연말정산..." → "연말정산..."
+    const result = {};
+    for(let m=1;m<=12;m++){
+      const v = d[m] || d[String(m)];
+      if(v){
+        // "N월 — " prefix 제거
+        const stripped = v.replace(/^\d+월\s*[—\-–]\s*/,'');
+        result[m] = stripped || DEFAULT_MONTH_TITLES[m];
+      } else {
+        result[m] = DEFAULT_MONTH_TITLES[m];
+      }
+    }
+    return result;
+  }
   catch { return {...DEFAULT_MONTH_TITLES}; }
 }
 function saveMasterEvents(arr) { localStorage.setItem(ME_KEY, JSON.stringify(arr)); }
@@ -2355,10 +2371,17 @@ function renderMasterCalPage() {
     const m=i+1;
     const evts=masterEvents.filter(e=>e.month===m).sort((a,b)=>a.day-b.day);
     const isCurrentMonth=m===curMonth;
-    const titleVal=masterTitles[m]||DEFAULT_MONTH_TITLES[m];
+    const suffixVal = masterTitles[m] || DEFAULT_MONTH_TITLES[m];
+    const prefix = `${m}월 — `;
+    const titleHtml = masterEditMode
+      ? `<span class="master-month-title" style="display:flex;align-items:center;gap:4px;flex:1;">
+          <span style="color:var(--gray-400);font-weight:600;white-space:nowrap">${prefix}</span>
+          <span id="mmt-${m}" onclick="editMonthTitle(${m},event)" style="cursor:pointer;text-decoration:underline dotted var(--accent);color:var(--primary);" title="클릭하여 수정">${escHtml(suffixVal)}<span style="font-size:11px;color:var(--accent);margin-left:4px;font-weight:400">✏</span></span>
+         </span>`
+      : `<span class="master-month-title"><span style="color:var(--gray-600)">${prefix}</span>${escHtml(suffixVal)}</span>`;
     return `<div class="master-month-card" id="master-month-${m}">
       <div class="master-month-header" onclick="toggleMasterMonth(${m},event)">
-        <span class="master-month-title" id="mmt-${m}" onclick="${masterEditMode?`editMonthTitle(${m},event)`:''}" style="${masterEditMode?'cursor:pointer;text-decoration:underline dotted var(--accent);':''}" title="${masterEditMode?'클릭하여 제목 수정':''}">${titleVal}${masterEditMode?` <span style="font-size:11px;color:var(--accent);margin-left:4px;font-weight:400">✏</span>`:''}</span>
+        ${titleHtml}
         <span class="master-month-count">${evts.length}건</span>
         <button class="btn btn-sm master-btn-add-evt" onclick="event.stopPropagation();showInlineForm(${m})" style="font-size:11px;padding:2px 8px">+ 일정 추가</button>
         <span style="font-size:11px;color:var(--gray-400);flex-shrink:0" id="mchev-${m}">${isCurrentMonth?'▼':'▶'}</span>
@@ -2404,10 +2427,13 @@ function editMonthTitle(m,e) {
   if(!masterEditMode)return;
   e.stopPropagation();
   const span=document.getElementById('mmt-'+m);
+  if(!span)return;
   const cur=masterTitles[m]||DEFAULT_MONTH_TITLES[m];
   const inp=document.createElement('input');
   inp.className='master-month-title-input';
   inp.value=cur;
+  inp.placeholder='제목 입력...';
+  inp.style.cssText='flex:1;min-width:80px;';
   span.replaceWith(inp);
   inp.focus();inp.select();
   const save=()=>{
@@ -2415,12 +2441,10 @@ function editMonthTitle(m,e) {
     masterTitles[m]=val;
     saveMasterTitles(masterTitles);
     const newSpan=document.createElement('span');
-    newSpan.className='master-month-title';
     newSpan.id='mmt-'+m;
-    newSpan.style.cursor='pointer';
-    newSpan.style.textDecoration='underline dotted var(--accent)';
-    newSpan.title='클릭하여 제목 수정';
-    newSpan.innerHTML=`${escHtml(val)} <span style="font-size:11px;color:var(--accent);margin-left:4px;font-weight:400">✏</span>`;
+    newSpan.style.cssText='cursor:pointer;text-decoration:underline dotted var(--accent);color:var(--primary);';
+    newSpan.title='클릭하여 수정';
+    newSpan.innerHTML=`${escHtml(val)}<span style="font-size:11px;color:var(--accent);margin-left:4px;font-weight:400">✏</span>`;
     newSpan.onclick=ev=>editMonthTitle(m,ev);
     inp.replaceWith(newSpan);
     showToast('제목을 저장했습니다.');
