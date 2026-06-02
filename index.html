@@ -380,12 +380,11 @@
     .master-event-actions { width:100%; justify-content:flex-end; padding-top:2px; }
     .master-btn-add-task { font-size:11px !important; padding:3px 8px !important; }
 
-    /* 인라인 폼 — 4컬럼→2컬럼→1컬럼 */
-    .master-inline-row { grid-template-columns:1fr 1fr; gap:6px; }
-    .master-inline-row > div:nth-child(3),
-    .master-inline-row > div:nth-child(4) { grid-column:span 1; }
-    .master-inline-row2 { grid-template-columns:1fr; }
+    /* 인라인 폼 */
+    .master-inline-form { padding:10px 12px; }
+    .master-inline-form [style*="grid-template-columns"] { grid-template-columns:1fr !important; }
     .mf-input, .mf-select { font-size:14px; padding:7px 9px; }
+    .master-inline-form [style*="grid-template-columns:120px"] { grid-template-columns:1fr !important; }
 
     /* 담당자 피커 — 전체 너비 하단 시트처럼 */
     .member-picker {
@@ -2452,14 +2451,7 @@ function renderMasterCalPage() {
     const m=i+1;
     const evts=masterEvents.filter(e=>e.month===m).sort((a,b)=>a.day-b.day);
     const isCurrentMonth=m===curMonth;
-    const suffixVal = masterTitles[m] || DEFAULT_MONTH_TITLES[m];
-    const prefix = `${m}월 — `;
-    const titleHtml = masterEditMode
-      ? `<span class="master-month-title" style="display:flex;align-items:center;gap:4px;flex:1;">
-          <span style="color:var(--gray-400);font-weight:600;white-space:nowrap">${prefix}</span>
-          <span id="mmt-${m}" onclick="editMonthTitle(${m},event)" style="cursor:pointer;text-decoration:underline dotted var(--accent);color:var(--primary);" title="클릭하여 제목 수정">${escHtml(suffixVal)}&nbsp;<span style="font-size:11px;color:var(--accent);font-weight:400">✏</span></span>
-         </span>`
-      : `<span class="master-month-title" onclick="toggleMasterMonth(${m})" style="cursor:pointer;flex:1"><span style="color:var(--gray-600)">${prefix}</span>${escHtml(suffixVal)}</span>`;
+    const titleHtml = `<span class="master-month-title" onclick="toggleMasterMonth(${m})" style="cursor:pointer;flex:1;font-size:15px;">${m}월</span>`;
     return `<div class="master-month-card" id="master-month-${m}">
       <div class="master-month-header" id="mmh-${m}">
         ${titleHtml}
@@ -2558,26 +2550,28 @@ function showInlineFormEdit(idx) {
 function buildInlineForm(m,e,idx) {
   const catOpts=MCAT_KEYS.map(k=>`<option value="${k}"${e&&e.cat===k?' selected':''}>${k}</option>`).join('');
   return `<div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:10px">${idx<0?'새 일정 추가':'일정 수정'}</div>
-    <div class="master-inline-row">
-      <div><div class="mf-label">월/일</div>
+    <div style="display:grid;grid-template-columns:120px 1fr;gap:8px;margin-bottom:8px;align-items:end;">
+      <div>
+        <div class="mf-label">월 / 일</div>
         <div style="display:flex;gap:4px;align-items:center">
-          <input class="mf-input" type="number" id="mfi-month" value="${m}" min="1" max="12" style="width:48px">
-          <span>/</span>
-          <input class="mf-input" type="number" id="mfi-day" value="${e?e.day:''}" min="1" max="31" placeholder="일" style="width:48px">
+          <input class="mf-input" type="number" id="mfi-month" value="${m}" min="1" max="12" style="width:46px;text-align:center">
+          <span style="color:var(--gray-400)">/</span>
+          <input class="mf-input" type="number" id="mfi-day" value="${e?e.day:''}" min="1" max="31" placeholder="일" style="width:46px;text-align:center">
         </div>
       </div>
-      <div><div class="mf-label">카테고리</div><select class="mf-select" id="mfi-cat">${catOpts}</select></div>
-      <div><div class="mf-label">마감 여부</div>
-        <label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-top:6px">
-          <input type="checkbox" id="mfi-deadline" ${e&&e.deadline?'checked':''}>마감일
-        </label>
+      <div>
+        <div class="mf-label">카테고리</div>
+        <select class="mf-select" id="mfi-cat" style="width:100%">${catOpts}</select>
       </div>
     </div>
-    <div class="master-inline-row2">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
       <div><div class="mf-label">제목 *</div><input class="mf-input" type="text" id="mfi-title" value="${e?escHtml(e.title):''}" placeholder="일정 제목"></div>
-      <div><div class="mf-label">설명</div><input class="mf-input" type="text" id="mfi-desc" value="${e?escHtml(e.desc||''):''}" placeholder="간단한 설명 (선택)"></div>
+      <div><div class="mf-label">설명 <span style="font-weight:400;color:var(--gray-400)">(선택)</span></div><input class="mf-input" type="text" id="mfi-desc" value="${e?escHtml(e.desc||''):''}" placeholder="간단한 설명"></div>
     </div>
-    <div style="display:flex;gap:8px">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;white-space:nowrap;">
+        <input type="checkbox" id="mfi-deadline" ${e&&e.deadline?'checked':''}>마감일
+      </label>
       <button class="btn btn-primary btn-sm" onclick="saveMasterInlineForm(${m},${idx})">저장</button>
       <button class="btn btn-sm" onclick="closeInlineForm(${m})">취소</button>
     </div>`;
