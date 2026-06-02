@@ -94,9 +94,9 @@
   .task-table tr.row-overdue:hover td{background:#fee2e2;}
   .task-table tr.row-urgent:hover td{background:#fef3c7;}
 
-  .col-check{width:36px;} .col-date{width:86px;} .col-title{min-width:120px;}
+  .col-check{width:36px;} .col-date{width:104px;} .col-title{min-width:110px;}
   .col-member{width:110px;} .col-cat{width:110px;} .col-status{width:106px;}
-  .col-note{width:120px;} .col-action{width:84px;}
+  .col-note{width:120px;} .col-action{width:106px;}
 
   /* D-DAY */
   .dday-badge{display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:700;font-family:var(--font-mono);margin-top:3px;letter-spacing:0.2px;line-height:1.4;}
@@ -243,7 +243,18 @@
   .member-group-header .avatar{width:20px;height:20px;font-size:10px;flex-shrink:0;}
   .member-group-header .mg-count{margin-left:auto;font-size:11px;color:var(--gray-400);font-weight:400;}
 
-  /* QUICK ADD ROW */
+  .task-table tr.row-selected td { background:#eef4ff !important; }
+  .btn-done { background:#dcfce7; color:#16a34a; border-color:#bbf7d0; font-weight:700; }
+  .btn-done:hover { background:#bbf7d0; }
+
+  /* BULK ACTION */
+  .bulk-bar { display:none; align-items:center; gap:10px; padding:8px 14px; background:#eef4ff; border:1px solid var(--accent-light); border-radius:var(--radius); margin-bottom:10px; font-size:13px; }
+  .bulk-bar.show { display:flex; }
+  .bulk-bar-label { color:var(--accent); font-weight:600; flex:1; }
+  .bulk-status-select { padding:5px 10px; border:1px solid var(--accent-light); border-radius:var(--radius); font-size:12.5px; font-family:var(--font); outline:none; background:#fff; cursor:pointer; }
+  .bulk-status-select:focus { border-color:var(--accent); }
+
+
   .quick-add-row td { background: #f0f5ff; border-bottom: 2px solid var(--accent-light); padding: 6px 10px; }
   .qa-input { width:100%; padding:5px 8px; border:1px solid var(--border); border-radius:var(--radius); font-size:12.5px; font-family:var(--font); outline:none; background:#fff; }
   .qa-input:focus { border-color:var(--accent); }
@@ -541,6 +552,20 @@
           <button class="btn btn-primary" onclick="openExcelModal()">&#8679; 엑셀 올리기</button>
         </div>
       </div>
+      <!-- 일괄 상태 변경 바 -->
+      <div class="bulk-bar" id="bulkBar">
+        <span class="bulk-bar-label" id="bulkBarLabel">0건 선택됨</span>
+        <span style="font-size:12px;color:var(--gray-500)">일괄 변경:</span>
+        <select class="bulk-status-select" id="bulkStatusSelect">
+          <option value="">상태 선택...</option>
+          <option value="todo">예정</option>
+          <option value="진행중">진행 중</option>
+          <option value="완료">완료</option>
+          <option value="보류">보류</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="applyBulkStatus()">적용</button>
+        <button class="btn btn-sm" onclick="clearBulkSelect()">선택 해제</button>
+      </div>
 
       <div class="task-table-wrap">
         <table class="task-table">
@@ -551,7 +576,8 @@
           </colgroup>
           <thead>
             <tr>
-              <th></th><th>일정</th><th>업무명</th><th>담당자</th>
+              <th><input type="checkbox" id="checkAll" title="전체 선택" onchange="toggleCheckAll(this.checked)"></th>
+              <th>일정</th><th>업무명</th><th>담당자</th>
               <th>카테고리</th><th>상태</th>
               <th style="text-align:center">관리</th>
             </tr>
@@ -1197,17 +1223,19 @@ function renderTable() {
   tbody.innerHTML = filtered.map(t=>{
     const isDone = t.status==='완료';
     const urgency = getRowUrgencyClass(t);
-    return `<tr class="${isDone?'done':''} ${urgency}">
-      <td><input type="checkbox" class="task-check" ${isDone?'checked':''} onchange="toggleDone(${t.id},this.checked)"></td>
-      <td style="font-family:var(--font-mono);font-size:12px;color:var(--gray-500);line-height:1.3">
+    const checked = selectedIds.has(t.id);
+    return `<tr class="${isDone?'done':''} ${urgency}${checked?' row-selected':''}">
+      <td><input type="checkbox" class="task-check" data-id="${t.id}" ${checked?'checked':''} onchange="onRowCheck(${t.id},this.checked)"></td>
+      <td style="font-family:var(--font-mono);font-size:12px;color:var(--gray-500);line-height:1.3;white-space:nowrap;">
         ${fmtDate(t.date)}${ddayBadge(t.date,t.status)}
       </td>
       <td><span class="task-title">${escHtml(t.title)}</span></td>
-      <td><div style="display:flex;align-items:center"><span class="avatar avatar-${t.member}">${t.member[0]}</span><span style="font-size:12.5px">${t.member}</span></div></td>
+      <td><div style="display:flex;align-items:center;gap:5px"><span class="avatar avatar-${t.member}">${t.member[0]}</span><span style="font-size:12.5px">${t.member}</span></div></td>
       <td>${catSelect(t.id, t.cat)}</td>
       <td>${statusBadge(t.status, t.id)}</td>
       <td>
         <div class="action-btns">
+          ${!isDone ? `<button class="btn btn-sm btn-done" onclick="markDone(${t.id})" title="완료">✓</button>` : `<button class="btn btn-sm" style="opacity:0.35;cursor:default" disabled title="완료됨">✓</button>`}
           <button class="btn btn-sm" onclick="openEditModal(${t.id})" title="수정">&#9998;</button>
           <button class="btn btn-sm btn-danger" onclick="deleteTask(${t.id})" title="삭제">&#10005;</button>
         </div>
@@ -1277,6 +1305,72 @@ function updateCounts() {
   populateMonthFilter();
 }
 
+// ── SELECTION & BULK ──
+let selectedIds = new Set();
+
+function onRowCheck(id, checked) {
+  if (checked) selectedIds.add(id); else selectedIds.delete(id);
+  updateBulkBar();
+  // 전체선택 체크박스 상태 동기화
+  const all = document.querySelectorAll('.task-check');
+  const ca = document.getElementById('checkAll');
+  if (ca) ca.checked = all.length > 0 && [...all].every(c => c.checked);
+}
+
+function toggleCheckAll(checked) {
+  const filtered = getFiltered();
+  if (checked) filtered.forEach(t => selectedIds.add(t.id));
+  else selectedIds.clear();
+  updateBulkBar();
+  renderTable();
+}
+
+function updateBulkBar() {
+  const bar = document.getElementById('bulkBar');
+  const label = document.getElementById('bulkBarLabel');
+  if (!bar) return;
+  if (selectedIds.size > 0) {
+    bar.classList.add('show');
+    label.textContent = `${selectedIds.size}건 선택됨`;
+  } else {
+    bar.classList.remove('show');
+    document.getElementById('bulkStatusSelect').value = '';
+  }
+}
+
+function clearBulkSelect() {
+  selectedIds.clear();
+  const ca = document.getElementById('checkAll');
+  if (ca) ca.checked = false;
+  updateBulkBar();
+  renderTable();
+}
+
+async function applyBulkStatus() {
+  const newStatus = document.getElementById('bulkStatusSelect').value;
+  if (!newStatus) { showToast('변경할 상태를 선택하세요.', 'error'); return; }
+  if (selectedIds.size === 0) { showToast('선택된 항목이 없습니다.', 'error'); return; }
+  const ids = [...selectedIds];
+  let successCount = 0;
+  for (const id of ids) {
+    const updated = await dbUpdate(id, { status: newStatus });
+    if (updated) { const t = tasks.find(t => t.id === id); if (t) t.status = newStatus; successCount++; }
+  }
+  if (successCount > 0) {
+    showToast(`${successCount}건을 '${newStatus === 'todo' ? '예정' : newStatus === '진행중' ? '진행 중' : newStatus}'으로 변경했습니다.`);
+    selectedIds.clear();
+    document.getElementById('bulkStatusSelect').value = '';
+    updateBulkBar();
+    renderTable();
+  }
+}
+
+async function markDone(id) {
+  const t = tasks.find(t => t.id === id); if (!t) return;
+  const updated = await dbUpdate(id, { status: '완료' });
+  if (updated) { t.status = '완료'; renderTable(); showToast('완료로 변경했습니다.'); }
+}
+
 // ── ACTIONS ──
 async function toggleDone(id, checked) {
   const t=tasks.find(t=>t.id===id); if(!t) return;
@@ -1341,13 +1435,26 @@ async function saveTask() {
   if (!title)  { alert('업무명을 입력하세요.'); return; }
   if (!member) { alert('담당자를 선택하세요.'); return; }
   if (!date)   { alert('날짜를 선택하세요.'); return; }
+
+  const isOnDash = document.getElementById('view-dashboard').style.display !== 'none';
+
   if (editId) {
     const fields={title,member,cat,date,status,note};
     const updated=await dbUpdate(editId,fields);
-    if (updated) { const t=tasks.find(t=>t.id===editId); if(t) Object.assign(t,fields); closeModal(); renderTable(); showToast('수정했습니다.'); }
+    if (updated) {
+      const t=tasks.find(t=>t.id===editId); if(t) Object.assign(t,fields);
+      closeModal();
+      if (isOnDash) renderDash(); else renderTable();
+      showToast('수정했습니다.');
+    }
   } else {
     const newTask=await dbInsert({title,member,cat,date,status,note});
-    if (newTask) { tasks.push(newTask); closeModal(); renderTable(); showToast('추가했습니다.'); }
+    if (newTask) {
+      tasks.push(newTask);
+      closeModal();
+      if (isOnDash) renderDash(); else renderTable();
+      showToast('추가했습니다.');
+    }
   }
 }
 
