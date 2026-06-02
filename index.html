@@ -365,6 +365,26 @@
   }
 
 
+  /* MASTER CALENDAR */
+  .master-cal-toggle.on { background:var(--accent);color:#fff;border-color:var(--accent); }
+  .master-event-chip { display:flex;align-items:center;gap:3px;padding:2px 5px;border-radius:3px;font-size:10px;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;cursor:default; }
+  .master-month-card { background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:12px;overflow:hidden; }
+  .master-month-header { display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--gray-50);border-bottom:1px solid var(--border);cursor:pointer;user-select:none; }
+  .master-month-header:hover { background:#e8f0fe; }
+  .master-month-title { font-size:14px;font-weight:700;color:var(--primary); }
+  .master-month-count { font-size:11px;color:var(--gray-400); }
+  .master-event-row { display:flex;align-items:flex-start;gap:12px;padding:10px 16px;border-bottom:1px solid var(--gray-100);transition:background 0.1s; }
+  .master-event-row:last-child { border-bottom:none; }
+  .master-event-row:hover { background:var(--accent-bg); }
+  .master-event-date { font-size:11px;font-family:var(--font-mono);color:var(--gray-500);min-width:52px;padding-top:2px; }
+  .master-event-cat { font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;white-space:nowrap;flex-shrink:0; }
+  .master-event-title { font-size:13px;color:var(--gray-700);flex:1;line-height:1.5; }
+  .master-event-desc { font-size:11px;color:var(--gray-400);margin-top:2px; }
+  .master-event-add { flex-shrink:0;opacity:0;transition:opacity 0.15s; }
+  .master-event-row:hover .master-event-add { opacity:1; }
+  .legend-chip { display:flex;align-items:center;gap:5px;font-size:11px;color:var(--gray-600);background:#fff;border:1px solid var(--border);padding:3px 10px;border-radius:99px; }
+  .legend-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0; }
+
   .week-nav{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
   .week-label{font-size:15px;font-weight:600;color:var(--primary);min-width:160px;text-align:center;}
   .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;}
@@ -716,6 +736,7 @@
       <div class="sidebar-item" onclick="switchTab('tasks')">&#9998; 할 일 목록</div>
       <div class="sidebar-item" onclick="switchTab('weekly')">&#9633; 주간 보기</div>
       <div class="sidebar-item" onclick="switchTab('dashboard')">&#9636; 월별 대시보드</div>
+      <div class="sidebar-item" onclick="openMasterCalPage()">&#128197; 인사노무 Master 캘린더</div>
       <div class="sidebar-item" onclick="openMemberSettingModal()">&#9711; 팀원 설정</div>
       <div class="sidebar-item" onclick="openConfigPanel()">&#9881; DB 설정 변경</div>
     </div>
@@ -844,6 +865,11 @@
           <span class="cal-month-label" id="calMonthLabel"></span>
           <button class="btn btn-sm" onclick="shiftCalMonth(1)">다음 달 &#8594;</button>
           <button class="btn btn-sm" onclick="goCalToday()">이번 달</button>
+          <div style="margin-left:auto">
+            <button class="btn btn-sm master-cal-toggle" id="masterCalToggleBtn" onclick="toggleMasterCal()" title="인사노무 Master 캘린더 on/off">
+              <span id="masterCalToggleIcon">📅</span> Master 캘린더 <span id="masterCalToggleStatus" style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--gray-200);color:var(--gray-500);margin-left:4px">OFF</span>
+            </button>
+          </div>
         </div>
         <div class="cal-legend" id="calLegend"></div>
         <div class="cal-grid-wrap">
@@ -969,6 +995,29 @@
   <span class="fab-icon">👥</span>
   <span class="fab-text">인원현황 바로가기</span>
 </a>
+
+<!-- MASTER CALENDAR PAGE -->
+<div class="modal-overlay" id="masterCalModal" style="display:none;align-items:flex-start;padding-top:0" onclick="closeMasterCalPage(event)">
+  <div class="modal" style="width:min(860px,100vw);max-height:100vh;border-radius:0 0 var(--radius-lg) var(--radius-lg);margin-top:58px;display:flex;flex-direction:column" onclick="event.stopPropagation()">
+    <div class="modal-header" style="background:var(--primary);color:#fff;border-radius:0">
+      <div class="modal-title" style="color:#fff;font-size:16px">📅 인사노무 Master 캘린더</div>
+      <button class="modal-close" onclick="closeMasterCalPage()" style="color:#fff;opacity:0.8">&#10005;</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:20px 24px">
+      <!-- 연도 선택 -->
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+        <button class="btn btn-sm" onclick="shiftMasterYear(-1)">&#8592;</button>
+        <span id="masterYearLabel" style="font-size:17px;font-weight:700;color:var(--primary);min-width:60px;text-align:center"></span>
+        <button class="btn btn-sm" onclick="shiftMasterYear(1)">&#8594;</button>
+        <span style="font-size:12px;color:var(--gray-400);margin-left:8px">법정 기한이 있는 항목은 클릭하면 할 일에 추가할 수 있습니다.</span>
+      </div>
+      <!-- 범례 -->
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px" id="masterLegend"></div>
+      <!-- 월별 아코디언 -->
+      <div id="masterCalContent"></div>
+    </div>
+  </div>
+</div>
 
 <!-- EXCEL UPLOAD MODAL -->
 <div class="modal-overlay" id="excelModal">
@@ -1348,6 +1397,7 @@ async function startApp() {
 function renderAll() {
   renderSidebar();
   initDashDates();
+  initMasterCalToggle();
   switchTab('tasks');
 }
 
@@ -2071,6 +2121,158 @@ function goToTasksWithFilter(status) {
   switchTab('tasks');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+// ══════════════════════════════════════════════
+//  MASTER CALENDAR (인사노무 법정 연간 일정)
+// ══════════════════════════════════════════════
+let masterCalOn = localStorage.getItem('hr_master_cal') === '1';
+let masterCalYear = new Date().getFullYear();
+
+const MCAT = {
+  '급여·세금':  { bg:'#dbeafe', tx:'#1d4ed8', dot:'#3b82f6' },
+  '4대보험':    { bg:'#d1fae5', tx:'#065f46', dot:'#10b981' },
+  '연차휴가':   { bg:'#fef3c7', tx:'#92400e', dot:'#f59e0b' },
+  '노사협의':   { bg:'#ede9fe', tx:'#5b21b6', dot:'#8b5cf6' },
+  '법정교육':   { bg:'#fee2e2', tx:'#991b1b', dot:'#ef4444' },
+  '채용·계약':  { bg:'#fce7f3', tx:'#9d174d', dot:'#ec4899' },
+  '고용정책':   { bg:'#e0f2fe', tx:'#0c4a6e', dot:'#0284c7' },
+};
+
+const MASTER_EVENTS = [
+  // 1월
+  { month:1,  day:10,  cat:'급여·세금', title:'전월 근로소득 원천세 신고·납부', desc:'매월 10일 마감 (반기 납부 특례 사업장 제외)', deadline:true },
+  { month:1,  day:15,  cat:'4대보험',   title:'전월 4대보험 취득·상실 신고', desc:'사유 발생일이 속한 달의 다음달 15일까지', deadline:true },
+  { month:1,  day:20,  cat:'급여·세금', title:'연말정산 서류 배포 및 취합 시작', desc:'전 직원 근로소득 연말정산 진행 (~2월)', deadline:false },
+  { month:1,  day:31,  cat:'급여·세금', title:'근로소득 간이지급명세서 제출', desc:'지급월 다음달 말일까지 국세청 제출', deadline:true },
+  // 2월
+  { month:2,  day:10,  cat:'급여·세금', title:'전월 원천세 신고·납부', desc:'매월 10일 마감', deadline:true },
+  { month:2,  day:28,  cat:'급여·세금', title:'연말정산 마감 및 원천징수영수증 발급', desc:'근로자에게 결과 안내 및 환급·추징 처리', deadline:true },
+  { month:2,  day:28,  cat:'4대보험',   title:'장애인 고용부담금 신고·납부', desc:'상시 100인 이상, 의무고용률(3.1%) 미달 기업', deadline:true },
+  // 3월
+  { month:3,  day:10,  cat:'급여·세금', title:'연말정산 지급명세서 국세청 제출', desc:'원천세 신고 포함 (마감: 3/10)', deadline:true },
+  { month:3,  day:10,  cat:'급여·세금', title:'전월 원천세 신고·납부', desc:'매월 10일 마감', deadline:true },
+  { month:3,  day:15,  cat:'4대보험',   title:'고용·산재보험 보수총액 신고', desc:'전년도 실제 지급 보수총액 신고 (마감: 3/15)', deadline:true },
+  { month:3,  day:31,  cat:'고용정책',  title:'고용형태공시 입력 (300인↑)', desc:'고용안정정보망, 전년도 3/1 기준 현황 공시', deadline:true },
+  // 4월
+  { month:4,  day:10,  cat:'급여·세금', title:'전월 원천세 신고·납부', desc:'매월 10일 마감', deadline:true },
+  { month:4,  day:10,  cat:'4대보험',   title:'건강보험 보수총액 신고 마감', desc:'전년도 보수총액 기준 건강보험료 정산', deadline:true },
+  { month:4,  day:25,  cat:'4대보험',   title:'건강보험 연말정산 보험료 4월 급여 반영', desc:'정산 결과 반영 (사전 직원 안내 필수)', deadline:false },
+  { month:4,  day:30,  cat:'채용·계약', title:'상반기 계약직 만료 여부 사전 확인', desc:'근로계약 갱신·종료 여부 검토', deadline:false },
+  // 5월
+  { month:5,  day:10,  cat:'급여·세금', title:'전월 원천세 신고·납부', desc:'매월 10일 마감', deadline:true },
+  { month:5,  day:31,  cat:'급여·세금', title:'종합소득세 신고 기간 종료', desc:'중도퇴사자·프리랜서(3.3%) 원천징수영수증 재발급 지원', deadline:true },
+  // 6월
+  { month:6,  day:10,  cat:'급여·세금', title:'전월 원천세 신고·납부', desc:'매월 10일 마감', deadline:true },
+  { month:6,  day:30,  cat:'노사협의',  title:'2분기 노사협의회 개최', desc:'상시 30인 이상 사업장 분기별 의무 (회의록 보관)', deadline:true },
+  { month:6,  day:30,  cat:'채용·계약', title:'상반기 연장근로 한도 점검', desc:'주 52시간(연장 12시간) 준수 여부 확인', deadline:false },
+  // 7월
+  { month:7,  day:1,   cat:'연차휴가',  title:'★ 연차 사용촉진 1차 조치 시작 (7/1~7/10)', desc:'회계연도 기준 기업: 근로자별 미사용 연차 서면 통보 시작', deadline:false },
+  { month:7,  day:10,  cat:'연차휴가',  title:'★ 연차 사용촉진 1차 조치 마감', desc:'이 시기를 놓치면 미사용 연차수당 전액 지급 의무 발생', deadline:true },
+  { month:7,  day:10,  cat:'급여·세금', title:'전월 원천세 신고·납부', desc:'매월 10일 마감', deadline:true },
+  { month:7,  day:15,  cat:'4대보험',   title:'국민연금 기준소득월액 정기결정 적용', desc:'7월분~익년 6월분 보험료에 재산정 금액 적용 시작', deadline:false },
+  // 8월
+  { month:8,  day:5,   cat:'고용정책',  title:'내년도 최저임금 고시 확인', desc:'고용노동부 고시 (법정기한 8/5) → 연봉테이블·인건비 시뮬레이션 준비', deadline:false },
+  { month:8,  day:10,  cat:'급여·세금', title:'전월 원천세 신고·납부', desc:'매월 10일 마감', deadline:true },
+  // 9월
+  { month:9,  day:10,  cat:'급여·세금', title:'전월 원천세 신고·납부', desc:'매월 10일 마감', deadline:true },
+  { month:9,  day:30,  cat:'노사협의',  title:'3분기 노사협의회 개최', desc:'상시 30인 이상 사업장 분기별 의무', deadline:true },
+  { month:9,  day:25,  cat:'급여·세금', title:'추석 명절 전 임금 체불 점검', desc:'명절 전 급여 지급 여부 및 휴일 대체 합의서 점검', deadline:false },
+  // 10월
+  { month:10, day:10,  cat:'급여·세금', title:'전월 원천세 신고·납부', desc:'매월 10일 마감', deadline:true },
+  { month:10, day:31,  cat:'연차휴가',  title:'★ 연차 사용촉진 2차 조치 마감 (시기지정)', desc:'7월 촉진 후 미사용자에게 회사가 사용일 강제 지정·서면 통보', deadline:true },
+  // 11월
+  { month:11, day:10,  cat:'급여·세금', title:'전월 원천세 신고·납부', desc:'매월 10일 마감', deadline:true },
+  { month:11, day:30,  cat:'법정교육',  title:'5대 법정의무교육 이수 현황 중간 점검', desc:'성희롱예방·개인정보보호·장애인인식개선·퇴직연금·산업안전보건', deadline:false },
+  { month:11, day:30,  cat:'채용·계약', title:'내년도 근로계약서·연봉계약서 준비', desc:'최저임금 인상분 반영 및 연봉협상 결과 준비', deadline:false },
+  // 12월
+  { month:12, day:10,  cat:'급여·세금', title:'전월 원천세 신고·납부', desc:'매월 10일 마감', deadline:true },
+  { month:12, day:31,  cat:'법정교육',  title:'★ 5대 법정의무교육 완료 마감', desc:'수료증 취합·보관 필수 (미이수 시 과태료 수백만 원)', deadline:true },
+  { month:12, day:31,  cat:'노사협의',  title:'4분기 노사협의회 개최 및 연간 보고', desc:'한 해 마무리 및 차년도 계획 수립', deadline:true },
+  { month:12, day:31,  cat:'채용·계약', title:'연말 계약직 만료·갱신 처리', desc:'연말 계약 정리 및 서류 보관', deadline:true },
+];
+
+function toggleMasterCal() {
+  masterCalOn = !masterCalOn;
+  localStorage.setItem('hr_master_cal', masterCalOn ? '1' : '0');
+  const btn = document.getElementById('masterCalToggleBtn');
+  const status = document.getElementById('masterCalToggleStatus');
+  if (masterCalOn) {
+    btn.classList.add('on');
+    status.textContent = 'ON'; status.style.background='#d1fae5'; status.style.color='#065f46';
+  } else {
+    btn.classList.remove('on');
+    status.textContent = 'OFF'; status.style.background='var(--gray-200)'; status.style.color='var(--gray-500)';
+  }
+  const {year,month} = getCalYM(); renderCalendar(year, month);
+}
+
+function initMasterCalToggle() {
+  const btn = document.getElementById('masterCalToggleBtn');
+  const status = document.getElementById('masterCalToggleStatus');
+  if (!btn || !status) return;
+  if (masterCalOn) {
+    btn.classList.add('on');
+    status.textContent='ON'; status.style.background='#d1fae5'; status.style.color='#065f46';
+  }
+}
+
+function getMasterEventsForDate(dateStr) {
+  if (!masterCalOn) return [];
+  const d = new Date(dateStr+'T00:00:00');
+  return MASTER_EVENTS.filter(e => e.month===d.getMonth()+1 && e.day===d.getDate());
+}
+
+function openMasterCalPage() {
+  masterCalYear = new Date().getFullYear();
+  renderMasterCalPage();
+  document.getElementById('masterCalModal').style.display='flex';
+  closeMobileDrawer();
+}
+function closeMasterCalPage(e) {
+  if (e && e.target !== document.getElementById('masterCalModal')) return;
+  document.getElementById('masterCalModal').style.display='none';
+}
+function shiftMasterYear(dir) { masterCalYear+=dir; renderMasterCalPage(); }
+
+function renderMasterCalPage() {
+  document.getElementById('masterYearLabel').textContent = masterCalYear+'년';
+  document.getElementById('masterLegend').innerHTML = Object.entries(MCAT).map(([k,v])=>
+    `<div class="legend-chip"><div class="legend-dot" style="background:${v.dot}"></div>${k}</div>`).join('');
+  const MN=['1월 — 연말정산·신고 시작','2월 — 연말정산 마감·부담금','3월 — 보수총액·지급명세서','4월 — 건강보험 정산','5월 — 종합소득세','6월 — 노사협의·계약 점검','7월 — ★연차 촉진 1차','8월 — 최저임금 고시','9월 — 노사협의·명절','10월 — ★연차 촉진 2차','11월 — 법정교육 점검','12월 — 법정교육·연간 마감'];
+  document.getElementById('masterCalContent').innerHTML = Array.from({length:12},(_,i)=>{
+    const m=i+1;
+    const evts=MASTER_EVENTS.filter(e=>e.month===m).sort((a,b)=>a.day-b.day);
+    return `<div class="master-month-card">
+      <div class="master-month-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+        <span class="master-month-title">${MN[i]}</span>
+        <span class="master-month-count">${evts.length}건</span>
+        <span style="margin-left:auto;font-size:11px;color:var(--gray-400)">▼</span>
+      </div>
+      <div class="master-month-body" style="${i<3?'':'display:none'}">
+        ${evts.map(e=>{
+          const c=MCAT[e.cat]||MCAT['급여·세금'];
+          const ds=`${masterCalYear}-${String(m).padStart(2,'0')}-${String(e.day).padStart(2,'0')}`;
+          return `<div class="master-event-row">
+            <div class="master-event-date">${m}/${e.day}${e.deadline?'<br><span style="font-size:9px;background:#fee2e2;color:var(--danger);padding:1px 4px;border-radius:3px;font-weight:700">마감</span>':''}</div>
+            <div class="master-event-cat" style="background:${c.bg};color:${c.tx}">${e.cat}</div>
+            <div style="flex:1;min-width:0">
+              <div class="master-event-title">${e.title}</div>
+              <div class="master-event-desc">${e.desc}</div>
+            </div>
+            <button class="btn btn-sm master-event-add" onclick="addMasterEventAsTask('${e.title.replace(/'/g,"\\'")}','${ds}')" title="할 일에 추가">＋ 추가</button>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function addMasterEventAsTask(title, date) {
+  if (!MEMBERS.length) { showToast('팀원을 먼저 설정하세요.','error'); return; }
+  const newTask = await dbInsert({title, member:MEMBERS[0], cat:'노무', date, time:'', status:'todo', note:'[법정일정]'});
+  if (newTask) { tasks.push(newTask); showToast(`'${title}' 을(를) 할 일에 추가했습니다.`); }
+}
+
+// ── 대시보드 카드 접기/펼치기 ──
 function toggleDashCard(id) {
   const card = document.getElementById(id);
   if (card) card.classList.toggle('expanded');
@@ -2377,6 +2579,16 @@ function renderCalendar(year, month) {
       </div>`;
     }).join('');
 
+    // Master 캘린더 이벤트 칩
+    const masterEvts = getMasterEventsForDate(dateStr);
+    const masterChips = masterEvts.map(e => {
+      const c = MCAT[e.cat] || MCAT['급여·세금'];
+      return `<div class="cal-chip" style="background:${c.bg};color:${c.tx};cursor:default;border-left:3px solid ${c.dot};"
+        title="[법정일정] ${e.title}">
+        <span class="cal-chip-title" style="font-weight:600">${e.deadline?'⚑ ':''}${e.title}</span>
+      </div>`;
+    }).join('');
+
     const moreBtn = hiddenCnt > 0
       ? `<div class="cal-more" onclick="event.stopPropagation();openCalMore('${dateStr}')">+${hiddenCnt}개 더보기</div>`
       : '';
@@ -2385,7 +2597,7 @@ function renderCalendar(year, month) {
       data-date="${dateStr}"
       onclick="calCellClick('${dateStr}', event)">
       <div class="cal-day-num">${cellDate.getDate()}</div>
-      ${chips}${moreBtn}
+      ${masterChips}${chips}${moreBtn}
     </div>`;
   }
   document.getElementById('calGrid').innerHTML = html;
