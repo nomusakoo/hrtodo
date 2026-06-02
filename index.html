@@ -94,9 +94,9 @@
   .task-table tr.row-overdue:hover td{background:#fee2e2;}
   .task-table tr.row-urgent:hover td{background:#fef3c7;}
 
-  .col-check{width:36px;} .col-date{width:82px;} .col-title{min-width:140px;}
-  .col-member{width:96px;} .col-cat{width:98px;} .col-status{width:90px;}
-  .col-note{width:120px;} .col-action{width:68px;}
+  .col-check{width:36px;} .col-date{width:86px;} .col-title{min-width:120px;}
+  .col-member{width:110px;} .col-cat{width:110px;} .col-status{width:106px;}
+  .col-note{width:120px;} .col-action{width:84px;}
 
   /* D-DAY */
   .dday-badge{display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:700;font-family:var(--font-mono);margin-top:3px;letter-spacing:0.2px;line-height:1.4;}
@@ -179,6 +179,13 @@
   .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px;}
   .dash-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow-sm);}
   .dash-card-title{font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+  /* 접기 가능한 대시보드 카드 */
+  .dash-card.collapsible .dash-card-title { cursor:pointer; user-select:none; margin-bottom:0; }
+  .dash-card.collapsible .dash-card-title:hover { color:var(--accent); }
+  .dash-card.collapsible .dash-card-body { overflow:hidden; transition:max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease; max-height:0; opacity:0; margin-top:0; }
+  .dash-card.collapsible.expanded .dash-card-body { max-height:600px; opacity:1; margin-top:14px; }
+  .dash-card-toggle { margin-left:auto; font-size:11px; color:var(--gray-400); transition:transform 0.3s; display:inline-block; }
+  .dash-card.collapsible.expanded .dash-card-toggle { transform:rotate(180deg); }
   .prog-item{margin-bottom:12px;}
   .prog-header{display:flex;justify-content:space-between;font-size:12.5px;color:var(--gray-600);margin-bottom:5px;}
   .prog-bar{height:7px;background:var(--gray-100);border-radius:4px;overflow:hidden;}
@@ -268,13 +275,17 @@
   .cal-chip-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
   .cal-more { font-size:10px; color:var(--accent); cursor:pointer; padding:1px 4px; font-weight:600; }
   .cal-grid-wrap { overflow-x:auto; }
+  .cal-cell { cursor:pointer; }
+  .cal-cell:hover { background:#f5f8ff !important; }
+  .cal-cell.cal-other-month:hover { background:#f0f1f3 !important; }
   @media(max-width:700px){.cal-cell{min-height:60px;}.cal-chip{font-size:9px;padding:1px 3px;}}
 
-display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+  /* WEEKLY */
+  .week-nav{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
   .week-label{font-size:15px;font-weight:600;color:var(--primary);min-width:160px;text-align:center;}
   .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;}
   .week-day-col{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);min-height:120px;}
-  .week-day-header{padding:8px 10px;text-align:center;font-size:12px;font-weight:600;border-bottom:1px solid var(--border);background:var(--gray-50);}
+  .week-day-header{padding:8px 10px;text-align:center;font-size:12px;font-weight:600;border-bottom:1px solid var(--border);background:var(--gray-50);min-height:72px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
   .week-day-header .wd-name{color:var(--gray-600);}
   .week-day-header .wd-date{font-size:18px;font-weight:700;color:var(--primary);font-family:var(--font-mono);margin:2px 0;}
   .week-day-header.is-today{background:var(--accent-bg);}
@@ -505,13 +516,13 @@ display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
 
   <main class="main-content">
     <div class="tab-bar">
-      <button class="tab-btn" id="tab-tasks" onclick="switchTab('tasks')">&#9998; 할 일 관리</button>
+      <button class="tab-btn active" id="tab-tasks" onclick="switchTab('tasks')">&#9998; 할 일 관리</button>
+      <button class="tab-btn" id="tab-dashboard" onclick="switchTab('dashboard')">&#9636; 월별 대시보드</button>
       <button class="tab-btn" id="tab-weekly" onclick="switchTab('weekly')">&#9633; 주간 보기</button>
-      <button class="tab-btn active" id="tab-dashboard" onclick="switchTab('dashboard')">&#9636; 월별 대시보드</button>
     </div>
 
     <!-- TASKS TAB -->
-    <div id="view-tasks" style="display:none">
+    <div id="view-tasks">
       <div class="page-header">
         <div class="page-title">할 일 관리<span id="taskCountLabel"></span></div>
       </div>
@@ -596,7 +607,7 @@ display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
     </div>
 
     <!-- DASHBOARD TAB -->
-    <div id="view-dashboard">
+    <div id="view-dashboard" style="display:none">
       <div class="page-header"><div class="page-title">월별 대시보드</div></div>
       <div class="stat-grid" id="dashStats"></div>
       <div style="font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:12px">&#9650; 팀원 업무 현황판</div>
@@ -1030,10 +1041,8 @@ async function startApp() {
 
 function renderAll() {
   renderSidebar();
-  renderTable();
   initDashDates();
-  renderDash();
-  renderWeekly();
+  switchTab('tasks');
 }
 
 function showLoading(v) { document.getElementById('loadingOverlay').classList.toggle('hidden', !v); }
@@ -1296,13 +1305,13 @@ async function deleteTask(id) {
 }
 
 // ── MODAL ──
-function openAddModal() {
+function openAddModal(prefillDate) {
   editId=null;
   document.getElementById('modalTitle').textContent='할 일 추가';
   document.getElementById('f-title').value='';
   document.getElementById('f-member').value='';
   document.getElementById('f-cat').value='기타';
-  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('f-date').value=prefillDate || new Date().toISOString().split('T')[0];
   document.getElementById('f-status').value='todo';
   document.getElementById('f-note').value='';
   document.getElementById('taskModal').classList.add('open');
@@ -1533,6 +1542,19 @@ function copyTableSQL() {
   });
 }
 
+// ── 대시보드 카드 접기/펼치기 ──
+function toggleDashCard(id) {
+  const card = document.getElementById(id);
+  if (card) card.classList.toggle('expanded');
+}
+
+// ── 캘린더 셀 클릭 → 해당 날짜로 업무 추가 모달 열기 ──
+function calCellClick(dateStr, event) {
+  // 칩 클릭은 수정 모달이 열리므로 셀 배경 클릭만 처리
+  if (event.target.closest('.cal-chip') || event.target.closest('.cal-more')) return;
+  openAddModal(dateStr);
+}
+
 // ══════════════════════════════════════════════
 //  WEEKLY VIEW
 // ══════════════════════════════════════════════
@@ -1690,13 +1712,19 @@ function renderDash() {
   const maxC=Math.max(...cats.map(c=>inRange.filter(t=>t.cat===c).length),1);
 
   document.getElementById('dashCharts').innerHTML=`
-    <div class="dash-card"><div class="dash-card-title">&#9650; 팀원별 완료 현황</div>
-      ${members.map((m,i)=>{const cnt=inRange.filter(t=>t.member===m).length;const dc=inRange.filter(t=>t.member===m&&t.status==='완료').length;const pct=Math.round(cnt/maxM*100);
-        return `<div class="prog-item"><div class="prog-header"><span style="display:flex;align-items:center;gap:6px"><span class="avatar avatar-${m}" style="width:20px;height:20px;font-size:10px">${m[0]}</span>${m}</span><span>${cnt}건 (완료 ${dc} / ${cnt?Math.round(dc/cnt*100):0}%)</span></div><div class="prog-bar"><div class="prog-fill ${memberColors[i]}" style="width:${pct}%"></div></div></div>`;}).join('')}
+    <div class="dash-card collapsible" id="cardMember" onclick="toggleDashCard('cardMember')">
+      <div class="dash-card-title">&#9650; 팀원별 완료 현황 <span class="dash-card-toggle">▼</span></div>
+      <div class="dash-card-body">
+        ${members.map((m,i)=>{const cnt=inRange.filter(t=>t.member===m).length;const dc=inRange.filter(t=>t.member===m&&t.status==='완료').length;const pct=Math.round(cnt/maxM*100);
+          return `<div class="prog-item"><div class="prog-header"><span style="display:flex;align-items:center;gap:6px"><span class="avatar avatar-${m}" style="width:20px;height:20px;font-size:10px">${m[0]}</span>${m}</span><span>${cnt}건 (완료 ${dc} / ${cnt?Math.round(dc/cnt*100):0}%)</span></div><div class="prog-bar"><div class="prog-fill ${memberColors[i]}" style="width:${pct}%"></div></div></div>`;}).join('')}
+      </div>
     </div>
-    <div class="dash-card"><div class="dash-card-title">&#9632; 카테고리별 분포</div>
-      ${cats.map((c,i)=>{const cnt=inRange.filter(t=>t.cat===c).length;if(!cnt)return'';const pct=Math.round(cnt/maxC*100);
-        return `<div class="prog-item"><div class="prog-header"><span><span class="cat-tag cat-${c}" style="margin-right:6px">${c}</span></span><span>${cnt}건</span></div><div class="prog-bar"><div class="prog-fill ${catColors[i]}" style="width:${pct}%"></div></div></div>`;}).filter(Boolean).join('')}
+    <div class="dash-card collapsible" id="cardCat" onclick="toggleDashCard('cardCat')">
+      <div class="dash-card-title">&#9632; 카테고리별 분포 <span class="dash-card-toggle">▼</span></div>
+      <div class="dash-card-body">
+        ${cats.map((c,i)=>{const cnt=inRange.filter(t=>t.cat===c).length;if(!cnt)return'';const pct=Math.round(cnt/maxC*100);
+          return `<div class="prog-item"><div class="prog-header"><span><span class="cat-tag cat-${c}" style="margin-right:6px">${c}</span></span><span>${cnt}건</span></div><div class="prog-bar"><div class="prog-fill ${catColors[i]}" style="width:${pct}%"></div></div></div>`;}).filter(Boolean).join('')}
+      </div>
     </div>`;
 
   // ── 캘린더 렌더링 ──
@@ -1750,7 +1778,8 @@ function renderCalendar(year, month) {
 
     const moreBtn = hidden > 0 ? `<div class="cal-more">+${hidden}개 더보기</div>` : '';
 
-    html += `<div class="cal-cell${isOtherMonth?' cal-other-month':''}${isToday?' cal-today':''}${isSun?' cal-sunday':''}${isSat?' cal-saturday':''}">
+    html += `<div class="cal-cell${isOtherMonth?' cal-other-month':''}${isToday?' cal-today':''}${isSun?' cal-sunday':''}${isSat?' cal-saturday':''}"
+      onclick="calCellClick('${dateStr}', event)">
       <div class="cal-day-num">${cellDate.getDate()}</div>
       ${chips}${moreBtn}
     </div>`;
