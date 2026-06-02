@@ -507,8 +507,8 @@
     .task-table td:before { display:none; }
     .task-table td:nth-child(1) { position:absolute; top:10px; right:10px; width:auto; padding:0; }
 
-    /* 업무명 — 최상단 굵게 */
-    .task-table td:nth-child(3) { order:-1; padding-right:24px; padding-bottom:4px; }
+    /* 업무명 — 최상단 굵게, 오른쪽 버튼 공간 확보 */
+    .task-table td:nth-child(3) { order:-1; padding-right:56px; padding-bottom:4px; }
     .task-table td:nth-child(3) .task-title { font-size:14px; font-weight:600; color:var(--primary); white-space:normal; word-break:keep-all; }
     .task-table td:nth-child(3):before { display:none; }
 
@@ -516,27 +516,40 @@
     .task-table td:nth-child(2) { display:inline-flex; align-items:center; margin-right:6px; }
     .task-table td:nth-child(2):before { display:none; }
 
-    /* 담당자+카테고리+상태+관리 한 줄 */
+    /* 담당자+카테고리+상태 한 줄 — 간격 넓힘 */
     .task-table td:nth-child(4),
     .task-table td:nth-child(5),
-    .task-table td:nth-child(6),
-    .task-table td:nth-child(7) {
+    .task-table td:nth-child(6) {
       display:inline-flex;
       align-items:center;
       vertical-align:middle;
-      padding:0 4px 0 0;
+      padding:0 8px 0 0;
     }
     .task-table td:nth-child(4):before,
     .task-table td:nth-child(5):before,
-    .task-table td:nth-child(6):before,
-    .task-table td:nth-child(7):before { display:none; }
+    .task-table td:nth-child(6):before { display:none; }
 
-    /* 관리 버튼 줄 */
-    .task-table td:nth-child(7) .action-btns { display:flex; gap:4px; }
+    /* 관리 버튼 — 체크박스 라인 맞춰 오른쪽 절대 배치 */
+    .task-table td:nth-child(7) {
+      position:absolute; top:28px; right:10px;
+      width:auto; padding:0; display:block;
+    }
+    .task-table td:nth-child(7):before { display:none; }
+    .task-table td:nth-child(7) .action-btns { display:flex; flex-direction:column; gap:5px; align-items:flex-end; }
 
     /* col 너비 무효화 */
     .task-table colgroup { display:none; }
     .task-table tbody tr td { height:auto; }
+
+    /* 모달 날짜/시간/상태 — 모바일에서 컴팩트하게 */
+    .form-row-3 { grid-template-columns:1fr 1fr 1fr; gap:6px; }
+    .form-row-3 .form-input,
+    .form-row-3 .form-select {
+      padding:6px 4px;
+      font-size:12px;
+      height:36px;
+    }
+    .form-row-3 .form-label { font-size:10px; margin-bottom:3px; }
 
     /* 빠른입력행 */
     #quickAddRow { display:flex !important; flex-direction:column; gap:6px; padding:10px; background:#f0f5ff; border-radius:var(--radius-lg); border:1px solid var(--accent-light); margin-bottom:10px; }
