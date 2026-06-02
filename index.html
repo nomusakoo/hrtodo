@@ -203,10 +203,7 @@
   /* WORKLOAD BOARD */
   .workload-board{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;}
   .workload-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden;}
-  .workload-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;}
-  .workload-card.wc-이상원::before{background:#22c55e;}
-  .workload-card.wc-구우회::before{background:var(--accent);}
-  .workload-card.wc-이호동::before{background:#8b5cf6;}
+  .workload-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:var(--m-color,var(--gray-300));}
   .workload-member{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
   .workload-member .avatar{width:32px;height:32px;font-size:14px;margin-right:0;}
   .workload-member .name{font-size:15px;font-weight:600;color:var(--primary);}
@@ -1913,7 +1910,7 @@ function renderWeekly() {
     const headerCls=isToday?'is-today':isWeekend?'is-weekend':'';
     const chips=dayTasks.length===0
       ?`<div style="padding:16px 8px;text-align:center;font-size:11px;color:var(--gray-300)">업무 없음</div>`
-      :dayTasks.map(t=>`<div class="week-task-chip wc-${t.member} ${t.status==='완료'?'is-done':''}" title="${escHtml(t.title)}">
+      :dayTasks.map(t=>`<div class="week-task-chip ${t.status==='완료'?'is-done':''}" style="background:${memberBg(t.member)};border-left-color:${memberColor(t.member)}" title="${escHtml(t.title)}">
           <span class="chip-title">${escHtml(t.title)}</span>
           <div class="chip-meta">
             <span style="width:14px;height:14px;border-radius:50%;background:${memberBg(t.member)};color:${memberTx(t.member)};font-size:8px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">${t.member[0]}</span>
@@ -2012,9 +2009,10 @@ function renderDash() {
     const pct=Math.round(mt.length/maxLoad*100);
     const dr=mt.length?Math.round(md/mt.length*100):0;
     const pending=mt.filter(t=>t.status!=='완료'&&t.status!=='보류').sort((a,b)=>(a.date||'')>(b.date||'')?1:-1).slice(0,5);
-    return `<div class="workload-card wc-${m}">
-      <div class="workload-member"><span class="avatar avatar-${m}" style="width:32px;height:32px;font-size:14px;margin-right:0">${m[0]}</span>
-        <div><div class="name">${m}</div><div style="font-size:11px;color:var(--gray-400)">완료율 ${dr}%</div></div></div>
+    const mColor = memberColor(m);
+    return `<div class="workload-card" style="--m-color:${mColor}">
+      <div class="workload-member"><span class="avatar avatar-${m}" style="width:32px;height:32px;font-size:14px;margin-right:0;background:${memberBg(m)};color:${memberTx(m)}">${m[0]}</span>
+        <div><div class="name">${m}${m===LEADER?' <span style="font-size:10px;background:#1a1a1a;color:#fff;padding:1px 5px;border-radius:3px;font-weight:600;vertical-align:middle;margin-left:4px">팀장</span>':''}</div><div style="font-size:11px;color:var(--gray-400)">완료율 ${dr}%</div></div></div>
       <div class="workload-numbers">
         <div class="wl-num"><span class="n">${mt.length}</span><span class="l">전체</span></div>
         <div class="wl-num"><span class="n" style="color:var(--success)">${md}</span><span class="l">완료</span></div>
@@ -2023,7 +2021,7 @@ function renderDash() {
       </div>
       <div class="workload-bar-wrap">
         <div class="workload-bar-label"><span>업무 비중</span><span>${mt.length}건</span></div>
-        <div class="workload-bar"><div class="workload-bar-fill wbf-${m}" style="width:${pct}%"></div></div>
+        <div class="workload-bar"><div class="workload-bar-fill" style="width:${pct}%;background:${mColor}"></div></div>
       </div>
       ${pending.length?`<div class="wl-pending-list">${pending.map(t=>{
         const diff=getDdayDiff(t.date);
