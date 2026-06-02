@@ -1257,15 +1257,14 @@ function statusBadge(s, id) {
   return `<span class="badge ${cls}${cycleable?' clickable':''}" ${clickAttr}>${ico} ${lbl}</span>`;
 }
 
-// STATUS CELL — 상태뱃지 + 완료 토글 버튼 가로 배치
+// STATUS CELL — 상태뱃지 + 완료 토글 버튼 가로 배치 (고정 너비)
 function statusCell(s, id) {
   const isDone = s === '완료';
-  // 완료 버튼: 활성(초록 체크) / 비활성(회색 동그라미) — 텍스트 없이 아이콘만
   const doneBtnCls = isDone ? 'badge badge-done-btn active clickable' : 'badge badge-done-btn clickable';
   const doneIco    = isDone ? '&#10003;' : '&#9675;';
   const doneTitle  = isDone ? '완료 취소' : '완료로 변경';
-  return `<div style="display:flex;align-items:center;gap:5px;flex-wrap:nowrap;">
-    ${statusBadge(s, id)}
+  return `<div style="display:flex;align-items:center;gap:10px;">
+    <span style="display:inline-block;min-width:68px;">${statusBadge(s, id)}</span>
     <span class="${doneBtnCls}" onclick="toggleDoneBtn(${id})" title="${doneTitle}">${doneIco}</span>
   </div>`;
 }
