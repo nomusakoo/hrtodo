@@ -183,6 +183,8 @@
   .stat-sub{font-size:11.5px;color:var(--gray-400);margin-top:4px;}
   .stat-card.accent{border-top:3px solid var(--accent);} .stat-card.success{border-top:3px solid var(--success);}
   .stat-card.warning{border-top:3px solid #d97706;} .stat-card.danger{border-top:3px solid var(--danger);}
+  .stat-clickable{cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;}
+  .stat-clickable:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.10);}
   .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px;}
   .dash-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow-sm);}
   .dash-card-title{font-size:13px;font-weight:600;color:var(--gray-700);margin-bottom:14px;display:flex;align-items:center;gap:7px;}
@@ -1927,7 +1929,19 @@ function copyTableSQL() {
   });
 }
 
-// ── 대시보드 카드 접기/펼치기 ──
+// ── 대시보드 stat 카드 → 할 일 관리 이동 + 상태 필터 ──
+function goToTasksWithFilter(status) {
+  // 상태 필터 초기화 후 지정값 설정
+  filterStatusVal = status;
+  filterMemberVal = 'all';
+  // 사이드바 active 상태 업데이트
+  document.querySelectorAll('.sidebar-item[data-member]').forEach(el =>
+    el.classList.toggle('active', el.dataset.member === 'all'));
+  document.querySelectorAll('.sidebar-item[data-status]').forEach(el =>
+    el.classList.toggle('active', el.dataset.status === status));
+  switchTab('tasks');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 function toggleDashCard(id) {
   const card = document.getElementById(id);
   if (card) card.classList.toggle('expanded');
@@ -2055,10 +2069,10 @@ function renderDash() {
   const rate=total?Math.round(done/total*100):0;
 
   document.getElementById('dashStats').innerHTML=`
-    <div class="stat-card accent"><div class="stat-label">전체 업무</div><div class="stat-value">${total}<span>건</span></div><div class="stat-sub">${range[0]} ~ ${range[range.length-1]}</div></div>
-    <div class="stat-card success"><div class="stat-label">완료</div><div class="stat-value">${done}<span>건</span></div><div class="stat-sub">완료율 ${rate}%</div></div>
-    <div class="stat-card warning"><div class="stat-label">진행 중</div><div class="stat-value">${progress}<span>건</span></div><div class="stat-sub">전체의 ${total?Math.round(progress/total*100):0}%</div></div>
-    <div class="stat-card"><div class="stat-label">예정</div><div class="stat-value">${todo}<span>건</span></div><div class="stat-sub">전체의 ${total?Math.round(todo/total*100):0}%</div></div>`;
+    <div class="stat-card accent stat-clickable" onclick="goToTasksWithFilter('')" title="전체 업무 보기"><div class="stat-label">전체 업무</div><div class="stat-value">${total}<span>건</span></div><div class="stat-sub">${range[0]} ~ ${range[range.length-1]}</div></div>
+    <div class="stat-card success stat-clickable" onclick="goToTasksWithFilter('완료')" title="완료 업무 보기"><div class="stat-label">완료</div><div class="stat-value">${done}<span>건</span></div><div class="stat-sub">완료율 ${rate}%</div></div>
+    <div class="stat-card warning stat-clickable" onclick="goToTasksWithFilter('진행중')" title="진행 중 업무 보기"><div class="stat-label">진행 중</div><div class="stat-value">${progress}<span>건</span></div><div class="stat-sub">전체의 ${total?Math.round(progress/total*100):0}%</div></div>
+    <div class="stat-card stat-clickable" onclick="goToTasksWithFilter('todo')" title="예정 업무 보기"><div class="stat-label">예정</div><div class="stat-value">${todo}<span>건</span></div><div class="stat-sub">전체의 ${total?Math.round(todo/total*100):0}%</div></div>`;
 
   const members = MEMBERS;
   const maxLoad = Math.max(...members.map(m=>inRange.filter(t=>t.member===m).length), 1);
