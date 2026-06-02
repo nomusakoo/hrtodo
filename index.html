@@ -414,6 +414,15 @@
   }
 
 
+  /* 대시보드 Master 캘린더 버튼 — PC: cal-header 안, 모바일: page-header 안 */
+  .dash-master-btn { display:none; }
+  .cal-master-btn-wrap { display:block; }
+  @media(max-width:900px) {
+    .dash-master-btn { display:inline-flex; font-size:11px; padding:4px 10px; }
+    .cal-master-btn-wrap { display:none !important; }
+    .cal-header { flex-wrap:wrap; }
+  }
+
   #masterCalModal { overflow-y:auto; align-items:flex-start; }
   .master-month-card { background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:12px;overflow:hidden; }
   .master-month-header { display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--gray-50);border-bottom:1px solid var(--border);cursor:pointer;user-select:none; }
@@ -926,7 +935,12 @@
 
     <!-- DASHBOARD TAB -->
     <div id="view-dashboard" style="display:none">
-      <div class="page-header"><div class="page-title">월별 대시보드</div></div>
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div class="page-title">월별 대시보드</div>
+        <button class="btn btn-sm master-cal-toggle dash-master-btn" id="masterCalToggleBtn" onclick="toggleMasterCal()" title="인사노무 Master 캘린더 on/off">
+          <span>📅</span> Master 캘린더 <span id="masterCalToggleStatus" style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--gray-200);color:var(--gray-500);margin-left:4px">OFF</span>
+        </button>
+      </div>
       <!-- 캘린더 (최상단) -->
       <div class="cal-section" style="margin-bottom:20px">
         <div class="cal-header">
@@ -934,9 +948,9 @@
           <span class="cal-month-label" id="calMonthLabel"></span>
           <button class="btn btn-sm" onclick="shiftCalMonth(1)">다음 달 &#8594;</button>
           <button class="btn btn-sm" onclick="goCalToday()">이번 달</button>
-          <div style="margin-left:auto">
-            <button class="btn btn-sm master-cal-toggle" id="masterCalToggleBtn" onclick="toggleMasterCal()" title="인사노무 Master 캘린더 on/off">
-              <span id="masterCalToggleIcon">📅</span> Master 캘린더 <span id="masterCalToggleStatus" style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--gray-200);color:var(--gray-500);margin-left:4px">OFF</span>
+          <div style="margin-left:auto" class="cal-master-btn-wrap">
+            <button class="btn btn-sm master-cal-toggle" id="masterCalToggleBtnPC" onclick="toggleMasterCal()" title="인사노무 Master 캘린더 on/off">
+              📅 Master 캘린더 <span id="masterCalToggleStatusPC" style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--gray-200);color:var(--gray-500);margin-left:4px">OFF</span>
             </button>
           </div>
         </div>
@@ -2296,20 +2310,27 @@ let masterEvents = loadMasterEvents();
 let masterTitles = loadMasterTitles();
 
 // ── Toggle (calendar overlay) ──
+function _applyMasterCalBtn(on) {
+  ['masterCalToggleBtn','masterCalToggleBtnPC'].forEach(id=>{
+    const btn=document.getElementById(id);
+    if(!btn)return;
+    if(on){btn.classList.add('on');}else{btn.classList.remove('on');}
+  });
+  ['masterCalToggleStatus','masterCalToggleStatusPC'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el)return;
+    if(on){el.textContent='ON';el.style.background='#d1fae5';el.style.color='#065f46';}
+    else{el.textContent='OFF';el.style.background='var(--gray-200)';el.style.color='var(--gray-500)';}
+  });
+}
 function toggleMasterCal() {
-  masterCalOn = !masterCalOn;
-  localStorage.setItem('hr_master_cal', masterCalOn?'1':'0');
-  const btn=document.getElementById('masterCalToggleBtn');
-  const status=document.getElementById('masterCalToggleStatus');
-  if(masterCalOn){btn.classList.add('on');status.textContent='ON';status.style.background='#d1fae5';status.style.color='#065f46';}
-  else{btn.classList.remove('on');status.textContent='OFF';status.style.background='var(--gray-200)';status.style.color='var(--gray-500)';}
+  masterCalOn=!masterCalOn;
+  localStorage.setItem('hr_master_cal',masterCalOn?'1':'0');
+  _applyMasterCalBtn(masterCalOn);
   const {year,month}=getCalYM(); renderCalendar(year,month);
 }
 function initMasterCalToggle() {
-  const btn=document.getElementById('masterCalToggleBtn');
-  const status=document.getElementById('masterCalToggleStatus');
-  if(!btn||!status)return;
-  if(masterCalOn){btn.classList.add('on');status.textContent='ON';status.style.background='#d1fae5';status.style.color='#065f46';}
+  _applyMasterCalBtn(masterCalOn);
 }
 function getMasterEventsForDate(dateStr) {
   if(!masterCalOn)return[];
@@ -2414,7 +2435,8 @@ function renderMasterEventRow(e,m,idx) {
 }
 
 function toggleMasterMonth(m,e) {
-  if(e&&e.target.closest('.master-btn-add-evt,.master-month-title-input'))return;
+  if(e&&e.target.closest('.master-btn-add-evt,.master-month-title-input,[id^="mmt-"]'))return;
+  if(masterEditMode&&e&&e.target.closest('.master-month-title'))return;
   const body=document.getElementById('mmb-'+m);
   const chev=document.getElementById('mchev-'+m);
   const hidden=body.style.display==='none';
