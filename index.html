@@ -800,6 +800,13 @@ grant usage, select on sequence hr_tasks_id_seq to anon;</pre>
 
 <script>
 // ══════════════════════════════════════════════
+//  PIN LOCK 상수 (saveConfig 등에서 참조하므로 최상단 선언)
+// ══════════════════════════════════════════════
+const APP_PIN = '1234';
+let pinBuffer = '';
+const PIN_SESSION_KEY = 'hr_pin_unlocked';
+
+// ══════════════════════════════════════════════
 //  CONFIG & DATA LAYER
 // ══════════════════════════════════════════════
 const CFG_KEY = 'hr_supabase_cfg';
@@ -832,7 +839,8 @@ function saveConfig() {
   useLocal = false;
   if (initSupabase(url, key)) {
     document.getElementById('configPanel').classList.add('hidden');
-    startApp();
+    if (sessionStorage.getItem(PIN_SESSION_KEY) === '1') { startApp(); }
+    else { showPinOverlay(); startApp(); }
   } else { alert('Supabase 초기화에 실패했습니다. URL과 키를 확인하세요.'); }
 }
 
@@ -1756,13 +1764,8 @@ document.getElementById('taskModal').addEventListener('click',function(e){if(e.t
 document.getElementById('excelModal').addEventListener('click',function(e){if(e.target===this)closeExcelModal();});
 
 // ══════════════════════════════════════════════
-//  PIN LOCK
-//  ★ 비밀번호 변경: 아래 APP_PIN 수정
+//  PIN LOCK 함수
 // ══════════════════════════════════════════════
-const APP_PIN = '1234';
-let pinBuffer = '';
-const PIN_SESSION_KEY = 'hr_pin_unlocked';
-
 function showPinOverlay() { pinBuffer=''; updatePinDots(); document.getElementById('pinErrorMsg').textContent=''; document.getElementById('pinOverlay').classList.remove('hidden'); }
 function hidePinOverlay() { document.getElementById('pinOverlay').classList.add('hidden'); sessionStorage.setItem(PIN_SESSION_KEY,'1'); }
 function pinInput(digit) { if(pinBuffer.length>=4)return; pinBuffer+=digit; updatePinDots(); if(pinBuffer.length===4)setTimeout(checkPin,120); }
