@@ -413,15 +413,25 @@
   }
 
 
+  /* 법정/임원 일정 토글 버튼 */
+  .legal-cal-toggle.on { background:#1d4ed8;color:#fff;border-color:#1d4ed8; }
+  .exec-cal-toggle.on  { background:#92720a;color:#fff;border-color:#c9a227; }
   /* 대시보드 Master 캘린더 버튼 — PC: cal-header 안, 모바일: page-header 안 */
   .dash-master-btn { display:none; }
-  .cal-master-btn-wrap { display:block; }
+  .cal-master-btn-wrap { display:flex; }
   @media(max-width:900px) {
-    .dash-master-btn { display:inline-flex; font-size:11px; padding:4px 10px; }
+    .dash-master-btn { display:inline-flex; font-size:11px; padding:4px 8px; }
     .cal-master-btn-wrap { display:none !important; }
     .cal-header { flex-wrap:wrap; }
   }
 
+  /* 법정/임원 탭 */
+  .master-tab-bar { display:flex; border-bottom:2px solid var(--border); margin-bottom:16px; }
+  .master-tab-btn { padding:8px 20px; font-size:13px; font-weight:600; color:var(--gray-500); background:none; border:none; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; font-family:var(--font); transition:color 0.15s; }
+  .master-tab-btn:hover { color:var(--accent); }
+  .master-tab-btn.active { color:var(--accent); border-bottom-color:var(--accent); }
+  .master-tab-pane { display:none; }
+  .master-tab-pane.active { display:block; }
   #masterCalModal { overflow-y:auto; align-items:flex-start; }
   .master-month-card { background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:12px;overflow:hidden; }
   .master-month-header { display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--gray-50);border-bottom:1px solid var(--border);cursor:pointer;user-select:none; }
@@ -813,7 +823,7 @@
       <div class="sidebar-item" onclick="switchTab('tasks')">&#9998; 할 일 목록</div>
       <div class="sidebar-item" onclick="switchTab('weekly')">&#9633; 주간 보기</div>
       <div class="sidebar-item" onclick="switchTab('dashboard')">&#9636; 월별 대시보드</div>
-      <div class="sidebar-item" onclick="openMasterCalPage()">&#128197; 인사노무 Master 캘린더</div>
+      <div class="sidebar-item" onclick="openMasterCalPage()">&#128197; 법정/임원 일정</div>
       <div class="sidebar-item" onclick="openMemberSettingModal()">&#9711; 팀원 설정</div>
       <div class="sidebar-item" onclick="openConfigPanel()">&#9881; DB 설정 변경</div>
     </div>
@@ -936,9 +946,14 @@
     <div id="view-dashboard" style="display:none">
       <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <div class="page-title">월별 대시보드</div>
-        <button class="btn btn-sm master-cal-toggle dash-master-btn" id="masterCalToggleBtn" onclick="toggleMasterCal()" title="인사노무 Master 캘린더 on/off">
-          <span>📅</span> Master 캘린더 <span id="masterCalToggleStatus" style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--gray-200);color:var(--gray-500);margin-left:4px">OFF</span>
-        </button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn btn-sm legal-cal-toggle dash-master-btn" id="legalCalToggleBtn" onclick="toggleLegalCal()" title="법정 일정 on/off">
+            ⚖ 법정 <span id="legalCalToggleStatus" style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--gray-200);color:var(--gray-500);margin-left:2px">OFF</span>
+          </button>
+          <button class="btn btn-sm exec-cal-toggle dash-master-btn" id="execCalToggleBtn" onclick="toggleExecCal()" title="임원 일정 on/off">
+            👔 임원 <span id="execCalToggleStatus" style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--gray-200);color:var(--gray-500);margin-left:2px">OFF</span>
+          </button>
+        </div>
       </div>
       <!-- 캘린더 (최상단) -->
       <div class="cal-section" style="margin-bottom:20px">
@@ -947,9 +962,12 @@
           <span class="cal-month-label" id="calMonthLabel"></span>
           <button class="btn btn-sm" onclick="shiftCalMonth(1)">다음 달 &#8594;</button>
           <button class="btn btn-sm" onclick="goCalToday()">이번 달</button>
-          <div style="margin-left:auto" class="cal-master-btn-wrap">
-            <button class="btn btn-sm master-cal-toggle" id="masterCalToggleBtnPC" onclick="toggleMasterCal()" title="인사노무 Master 캘린더 on/off">
-              📅 Master 캘린더 <span id="masterCalToggleStatusPC" style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--gray-200);color:var(--gray-500);margin-left:4px">OFF</span>
+          <div style="margin-left:auto;display:flex;gap:6px;" class="cal-master-btn-wrap">
+            <button class="btn btn-sm legal-cal-toggle" id="legalCalToggleBtnPC" onclick="toggleLegalCal()" title="법정 일정 on/off">
+              ⚖ 법정 일정 <span id="legalCalToggleStatusPC" style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--gray-200);color:var(--gray-500);margin-left:2px">OFF</span>
+            </button>
+            <button class="btn btn-sm exec-cal-toggle" id="execCalToggleBtnPC" onclick="toggleExecCal()" title="임원 일정 on/off">
+              👔 임원 일정 <span id="execCalToggleStatusPC" style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--gray-200);color:var(--gray-500);margin-left:2px">OFF</span>
             </button>
           </div>
         </div>
@@ -1082,7 +1100,7 @@
 <div class="modal-overlay" id="masterCalModal" style="display:none;align-items:flex-start;padding-top:0;overflow-y:auto;" onclick="closeMasterCalPage(event)">
   <div class="modal" style="width:min(900px,100vw);min-height:100vh;border-radius:0;margin-top:58px;display:flex;flex-direction:column;box-shadow:none;max-height:none;overflow-y:visible;" onclick="event.stopPropagation()">
     <div class="modal-header" style="background:var(--primary);color:#fff;border-radius:0;flex-wrap:wrap;gap:8px;">
-      <div class="modal-title" style="color:#fff;font-size:15px">📅 인사노무 Master 캘린더</div>
+      <div class="modal-title" style="color:#fff;font-size:15px">📅 법정/임원 일정</div>
       <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap;">
         <button class="btn btn-sm" onclick="shiftMasterYear(-1)" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.3)">&#8592;</button>
         <span id="masterYearLabel" style="font-size:14px;font-weight:700;color:#fff;min-width:54px;text-align:center"></span>
@@ -1094,7 +1112,11 @@
       </div>
     </div>
     <div style="flex:1;padding:16px 20px" id="masterCalScrollArea">
-      <div style="font-size:12px;color:var(--gray-400);margin-bottom:12px" id="masterCalModeHint">조회 모드 — 각 일정의 <b>→ 할 일</b> 버튼으로 담당자를 지정해 업무를 추가할 수 있습니다.</div>
+      <div class="master-tab-bar">
+        <button class="master-tab-btn active" id="mtab-legal" onclick="switchMasterTab('legal')">⚖ 법정 일정</button>
+        <button class="master-tab-btn" id="mtab-exec" onclick="switchMasterTab('exec')">👔 임원 일정</button>
+      </div>
+      <div id="masterCalModeHint" style="font-size:12px;color:var(--gray-400);margin-bottom:12px">조회 모드 — 각 일정의 <b>→ 할 일</b> 버튼으로 담당자를 지정해 업무를 추가할 수 있습니다.</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px" id="masterLegend"></div>
       <div id="masterCalContent" class="master-view-mode"></div>
     </div>
@@ -2213,8 +2235,11 @@ function goToTasksWithFilter(status) {
 // ══════════════════════════════════════════════
 //  MASTER CALENDAR (인사노무 법정 연간 일정)
 // ══════════════════════════════════════════════
-let masterCalOn = localStorage.getItem('hr_master_cal') === '1';
+// 법정/임원 일정 토글 상태
+let legalCalOn = localStorage.getItem('hr_legal_cal') === '1';
+let execCalOn  = localStorage.getItem('hr_exec_cal')  === '1';
 let masterCalYear = new Date().getFullYear();
+let masterActiveTab = 'legal'; // 'legal' | 'exec'
 let masterEditMode = false;
 let masterPickerPending = null; // { title, dateStr }
 
@@ -2365,51 +2390,72 @@ let masterEvents = [];
 let masterTitles = {...DEFAULT_MONTH_TITLES};
 
 // ── Toggle (calendar overlay) ──
-function _applyMasterCalBtn(on) {
-  ['masterCalToggleBtn','masterCalToggleBtnPC'].forEach(id=>{
-    const btn=document.getElementById(id);
-    if(!btn)return;
-    if(on){btn.classList.add('on');}else{btn.classList.remove('on');}
-  });
-  ['masterCalToggleStatus','masterCalToggleStatusPC'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(!el)return;
-    if(on){el.textContent='ON';el.style.background='#d1fae5';el.style.color='#065f46';}
-    else{el.textContent='OFF';el.style.background='var(--gray-200)';el.style.color='var(--gray-500)';}
-  });
+// ── 법정/임원 토글 ──
+function _applyToggleBtn(ids, statusIds, on, onBg, onTx) {
+  ids.forEach(id=>{ const b=document.getElementById(id); if(b){if(on)b.classList.add('on');else b.classList.remove('on');} });
+  statusIds.forEach(id=>{ const el=document.getElementById(id); if(!el)return;
+    if(on){el.textContent='ON';el.style.background=onBg;el.style.color=onTx;}
+    else{el.textContent='OFF';el.style.background='var(--gray-200)';el.style.color='var(--gray-500)';} });
 }
-function toggleMasterCal() {
-  masterCalOn=!masterCalOn;
-  localStorage.setItem('hr_master_cal',masterCalOn?'1':'0');
-  _applyMasterCalBtn(masterCalOn);
+function toggleLegalCal() {
+  legalCalOn=!legalCalOn;
+  localStorage.setItem('hr_legal_cal',legalCalOn?'1':'0');
+  _applyToggleBtn(['legalCalToggleBtn','legalCalToggleBtnPC'],['legalCalToggleStatus','legalCalToggleStatusPC'],legalCalOn,'#dbeafe','#1d4ed8');
+  const {year,month}=getCalYM(); renderCalendar(year,month);
+}
+function toggleExecCal() {
+  execCalOn=!execCalOn;
+  localStorage.setItem('hr_exec_cal',execCalOn?'1':'0');
+  _applyToggleBtn(['execCalToggleBtn','execCalToggleBtnPC'],['execCalToggleStatus','execCalToggleStatusPC'],execCalOn,'#fdf6e3','#92720a');
   const {year,month}=getCalYM(); renderCalendar(year,month);
 }
 function initMasterCalToggle() {
-  _applyMasterCalBtn(masterCalOn);
+  _applyToggleBtn(['legalCalToggleBtn','legalCalToggleBtnPC'],['legalCalToggleStatus','legalCalToggleStatusPC'],legalCalOn,'#dbeafe','#1d4ed8');
+  _applyToggleBtn(['execCalToggleBtn','execCalToggleBtnPC'],['execCalToggleStatus','execCalToggleStatusPC'],execCalOn,'#fdf6e3','#92720a');
 }
 function getMasterEventsForDate(dateStr) {
-  if(!masterCalOn)return[];
+  if(!legalCalOn && !execCalOn) return [];
   const d=new Date(dateStr+'T00:00:00');
-  return masterEvents.filter(e=>e.month===d.getMonth()+1&&e.day===d.getDate());
+  const m=d.getMonth()+1, day=d.getDate();
+  return masterEvents.filter(e=>{
+    if(e.month!==m||e.day!==day) return false;
+    if(e.cat==='임원 일정') return execCalOn;
+    return legalCalOn;
+  });
+}
+
+// ── 팝업 탭 전환 ──
+function switchMasterTab(tab) {
+  masterActiveTab=tab;
+  ['legal','exec'].forEach(t=>{
+    const btn=document.getElementById('mtab-'+t);
+    if(btn) btn.classList.toggle('active', t===tab);
+  });
+  renderMasterCalPage();
 }
 
 // ── Page open/close ──
 async function openMasterCalPage() {
   masterCalYear=new Date().getFullYear();
   masterEditMode=false;
-  // Supabase에서 최신 데이터 로드
-  showToast('캘린더 데이터 불러오는 중...');
+  // 캐시된 데이터 있으면 즉시 렌더 (빠른 열기)
+  if(masterEvents.length > 0) {
+    renderMasterCalPage();
+    document.getElementById('masterCalModal').style.display='flex';
+    closeMobileDrawer();
+    setTimeout(()=>{ const el=document.getElementById('master-month-'+(new Date().getMonth()+1)); if(el)el.scrollIntoView({behavior:'smooth',block:'start'}); },80);
+    // 백그라운드에서 최신 데이터 갱신
+    loadMasterEvents().then(d=>{ masterEvents=d; });
+    loadMasterTitles().then(d=>{ masterTitles=d; });
+    return;
+  }
+  // 캐시 없으면 로드 후 렌더
   masterEvents = await loadMasterEvents();
   masterTitles = await loadMasterTitles();
   renderMasterCalPage();
   document.getElementById('masterCalModal').style.display='flex';
   closeMobileDrawer();
-  // 현재 월로 스크롤
-  setTimeout(()=>{
-    const cur=new Date().getMonth()+1;
-    const el=document.getElementById('master-month-'+cur);
-    if(el){el.scrollIntoView({behavior:'smooth',block:'start'});}
-  },120);
+  setTimeout(()=>{ const el=document.getElementById('master-month-'+(new Date().getMonth()+1)); if(el)el.scrollIntoView({behavior:'smooth',block:'start'}); },80);
 }
 function closeMasterCalPage(e) {
   if(e&&e.target!==document.getElementById('masterCalModal'))return;
@@ -2437,19 +2483,28 @@ function toggleMasterEditMode() {
   }
 }
 
-// ── Render ──
 function renderMasterCalPage() {
   const curMonth=new Date().getMonth()+1;
   document.getElementById('masterYearLabel').textContent=masterCalYear+'년';
-  document.getElementById('masterLegend').innerHTML=Object.entries(MCAT).map(([k,v])=>
-    `<div class="legend-chip"><div class="legend-dot" style="background:${v.dot}"></div>${k}</div>`).join('');
+
+  // 탭별 범례
+  const isExecTab = masterActiveTab==='exec';
+  const legendCats = isExecTab ? ['임원 일정'] : Object.keys(MCAT).filter(k=>k!=='임원 일정');
+  document.getElementById('masterLegend').innerHTML=legendCats.map(k=>{
+    const v=MCAT[k]; return `<div class="legend-chip"><div class="legend-dot" style="background:${v.dot}"></div>${k}</div>`;
+  }).join('');
+
+  // 탭별 이벤트 필터
+  const tabEvents = isExecTab
+    ? masterEvents.filter(e=>e.cat==='임원 일정')
+    : masterEvents.filter(e=>e.cat!=='임원 일정');
 
   const content=document.getElementById('masterCalContent');
   content.className=masterEditMode?'master-edit-mode':'master-view-mode';
 
   content.innerHTML=Array.from({length:12},(_,i)=>{
     const m=i+1;
-    const evts=masterEvents.filter(e=>e.month===m).sort((a,b)=>a.day-b.day);
+    const evts=tabEvents.filter(e=>e.month===m).sort((a,b)=>a.day-b.day);
     const isCurrentMonth=m===curMonth;
     const titleHtml = `<span class="master-month-title" onclick="toggleMasterMonth(${m})" style="cursor:pointer;flex:1;font-size:15px;">${m}월</span>`;
     return `<div class="master-month-card" id="master-month-${m}">
@@ -2460,7 +2515,10 @@ function renderMasterCalPage() {
         <span style="font-size:11px;color:var(--gray-400);flex-shrink:0;cursor:pointer" id="mchev-${m}" onclick="toggleMasterMonth(${m})">${isCurrentMonth?'▼':'▶'}</span>
       </div>
       <div class="master-month-body" id="mmb-${m}" style="${isCurrentMonth?'':'display:none'}">
-        ${evts.map((e,idx)=>renderMasterEventRow(e,m,idx)).join('')}
+        ${evts.map((e)=>{
+          const globalIdx=masterEvents.findIndex(x=>x.month===e.month&&x.day===e.day&&x.title===e.title&&x.cat===e.cat);
+          return renderMasterEventRow(e,m,globalIdx);
+        }).join('')}
         <div class="master-inline-form" id="mf-${m}"></div>
       </div>
     </div>`;
@@ -2548,7 +2606,14 @@ function showInlineFormEdit(idx) {
 }
 
 function buildInlineForm(m,e,idx) {
-  const catOpts=MCAT_KEYS.map(k=>`<option value="${k}"${e&&e.cat===k?' selected':''}>${k}</option>`).join('');
+  const isExecTab = masterActiveTab==='exec';
+  let catOpts;
+  if(isExecTab) {
+    catOpts = `<option value="임원 일정" selected>임원 일정</option>`;
+  } else {
+    const legalCats = MCAT_KEYS.filter(k=>k!=='임원 일정');
+    catOpts = legalCats.map(k=>`<option value="${k}"${e&&e.cat===k?' selected':''}>${k}</option>`).join('');
+  }
   return `<div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:10px">${idx<0?'새 일정 추가':'일정 수정'}</div>
     <div style="display:grid;grid-template-columns:120px 1fr;gap:8px;margin-bottom:8px;align-items:end;">
       <div>
