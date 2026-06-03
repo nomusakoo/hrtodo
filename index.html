@@ -449,10 +449,7 @@
   .master-event-title { font-size:13px;color:var(--gray-700);line-height:1.5; }
   .master-event-desc { font-size:11px;color:var(--gray-400);margin-top:2px; }
   .master-event-actions { display:flex;gap:4px;flex-shrink:0;align-items:flex-start;padding-top:1px; }
-  .master-edit-mode .master-btn-add-task { display:none !important; }
-  .master-view-mode .master-btn-edit,
-  .master-view-mode .master-btn-del,
-  .master-view-mode .master-btn-add-evt { display:none !important; }
+  .master-event-actions { display:flex; gap:4px; flex-shrink:0; align-items:flex-start; padding-top:1px; }
   /* 인라인 편집 폼 */
   .master-inline-form { background:#f0f5ff;border-top:2px solid var(--accent-light);padding:14px 16px;display:none; }
   .master-inline-form.open { display:block; }
@@ -1105,7 +1102,6 @@
         <button class="btn btn-sm" onclick="shiftMasterYear(-1)" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.3)">&#8592;</button>
         <span id="masterYearLabel" style="font-size:14px;font-weight:700;color:#fff;min-width:54px;text-align:center"></span>
         <button class="btn btn-sm" onclick="shiftMasterYear(1)" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.3)">&#8594;</button>
-        <button class="btn btn-sm" id="masterEditToggleBtn" onclick="toggleMasterEditMode()" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.3)">✏ 편집</button>
         <button class="btn btn-sm" onclick="exportMasterCal()" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.3)">↓ 내보내기</button>
         <label class="btn btn-sm" style="background:rgba(255,255,255,0.15);color:#fff;border-color:rgba(255,255,255,0.3);cursor:pointer;margin:0">↑ 올리기<input type="file" accept=".xlsx,.xls" style="display:none" onchange="importMasterCal(this)"></label>
         <button class="modal-close" onclick="closeMasterCalPage()" style="color:#fff;opacity:0.8">&#10005;</button>
@@ -1116,7 +1112,7 @@
         <button class="master-tab-btn" id="mtab-legal" onclick="switchMasterTab('legal')">⚖ 법정 일정</button>
         <button class="master-tab-btn active" id="mtab-exec" onclick="switchMasterTab('exec')">👔 임원 일정</button>
       </div>
-      <div id="masterCalModeHint" style="font-size:12px;color:var(--gray-400);margin-bottom:12px">조회 모드 — 각 일정의 <b>→ 할 일</b> 버튼으로 담당자를 지정해 업무를 추가할 수 있습니다.</div>
+      <div id="masterCalModeHint" style="font-size:12px;color:var(--gray-400);margin-bottom:12px">일정 추가/수정/삭제가 가능합니다. <b>→ 할 일</b> 버튼으로 담당자를 지정해 업무를 추가할 수 있습니다.</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px" id="masterLegend"></div>
       <div id="masterCalContent" class="master-view-mode"></div>
     </div>
@@ -2240,7 +2236,7 @@ let legalCalOn = localStorage.getItem('hr_legal_cal') === '1';
 let execCalOn  = localStorage.getItem('hr_exec_cal')  === '1';
 let masterCalYear = new Date().getFullYear();
 let masterActiveTab = 'exec'; // 'legal' | 'exec'
-let masterEditMode = false;
+let masterEditMode = true; // 항상 편집 가능
 let masterPickerPending = null; // { title, dateStr }
 
 const MCAT = {
@@ -2437,19 +2433,16 @@ function switchMasterTab(tab) {
 // ── Page open/close ──
 async function openMasterCalPage() {
   masterCalYear=new Date().getFullYear();
-  masterEditMode=false;
-  // 캐시된 데이터 있으면 즉시 렌더 (빠른 열기)
+  // 캐시된 데이터 있으면 즉시 렌더
   if(masterEvents.length > 0) {
     renderMasterCalPage();
     document.getElementById('masterCalModal').style.display='flex';
     closeMobileDrawer();
     setTimeout(()=>{ const el=document.getElementById('master-month-'+(new Date().getMonth()+1)); if(el)el.scrollIntoView({behavior:'smooth',block:'start'}); },80);
-    // 백그라운드에서 최신 데이터 갱신
     loadMasterEvents().then(d=>{ masterEvents=d; });
     loadMasterTitles().then(d=>{ masterTitles=d; });
     return;
   }
-  // 캐시 없으면 로드 후 렌더
   masterEvents = await loadMasterEvents();
   masterTitles = await loadMasterTitles();
   renderMasterCalPage();
@@ -2465,23 +2458,7 @@ function closeMasterCalPage(e) {
 function shiftMasterYear(dir){masterCalYear+=dir;renderMasterCalPage();}
 
 // ── Edit mode ──
-function toggleMasterEditMode() {
-  masterEditMode=!masterEditMode;
-  const btn=document.getElementById('masterEditToggleBtn');
-  const hint=document.getElementById('masterCalModeHint');
-  const content=document.getElementById('masterCalContent');
-  if(masterEditMode){
-    btn.style.background='#f59e0b';btn.style.color='#000';btn.style.borderColor='#f59e0b';
-    btn.textContent='✓ 편집 완료';
-    hint.innerHTML='<span style="color:#f59e0b;font-weight:600">✏ 편집 모드</span> — 제목을 클릭해 수정하거나, 일정을 추가·수정·삭제할 수 있습니다.';
-    content.className='master-edit-mode';
-  } else {
-    btn.style.background='rgba(255,255,255,0.15)';btn.style.color='#fff';btn.style.borderColor='rgba(255,255,255,0.3)';
-    btn.textContent='✏ 편집';
-    hint.innerHTML='조회 모드 — 각 일정의 <b>→ 할 일</b> 버튼으로 담당자를 지정해 업무를 추가할 수 있습니다.';
-    content.className='master-view-mode';
-  }
-}
+// [편집 모드 토글 제거 - 항상 편집 가능]
 
 function renderMasterCalPage() {
   const curMonth=new Date().getMonth()+1;
@@ -2500,7 +2477,7 @@ function renderMasterCalPage() {
     : masterEvents.filter(e=>e.cat!=='임원 일정');
 
   const content=document.getElementById('masterCalContent');
-  content.className=masterEditMode?'master-edit-mode':'master-view-mode';
+  content.className='master-edit-mode';
 
   content.innerHTML=Array.from({length:12},(_,i)=>{
     const m=i+1;
@@ -2555,7 +2532,7 @@ function toggleMasterMonth(m) {
 
 // ── 월 제목 인라인 편집 ──
 function editMonthTitle(m,e) {
-  if(!masterEditMode)return;
+
   e.stopPropagation();
   const span=document.getElementById('mmt-'+m);
   if(!span)return;
@@ -2586,7 +2563,7 @@ function editMonthTitle(m,e) {
 
 // ── 인라인 폼 (추가) ──
 function showInlineForm(m) {
-  if(!masterEditMode)return;
+
   const body=document.getElementById('mmb-'+m);
   if(body.style.display==='none')toggleMasterMonth(m);
   const form=document.getElementById('mf-'+m);
