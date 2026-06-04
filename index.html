@@ -757,6 +757,40 @@
 
   /* ── 임원 일정 등록/수정 모달 ── */
   .exec-deadline-label{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--gray-700);cursor:pointer;}
+
+  /* ── 붙여넣기 입력 모달 ── */
+  .paste-tab-bar{display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:14px;}
+  .paste-tab{padding:7px 18px;background:none;border:none;cursor:pointer;font-size:13px;font-weight:500;
+    color:var(--gray-500);position:relative;bottom:-2px;border-bottom:2px solid transparent;
+    font-family:var(--font);transition:color 0.15s;}
+  .paste-tab:hover{color:var(--gray-800);}
+  .paste-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .paste-format-hint{background:var(--accent-bg);border-left:3px solid var(--accent);padding:9px 13px;
+    border-radius:4px;font-size:12px;color:var(--accent);margin-bottom:12px;line-height:1.7;}
+  .paste-textarea{width:100%;height:140px;padding:11px 13px;border:1.5px solid var(--border);border-radius:var(--radius);
+    font-size:13px;font-family:var(--font-mono);color:var(--gray-700);resize:vertical;outline:none;
+    transition:border-color 0.15s;line-height:1.7;background:#fafbfc;}
+  .paste-textarea:focus{border-color:var(--accent);background:#fff;}
+  .paste-detect-label{font-size:11px;color:var(--gray-400);margin-top:5px;min-height:16px;}
+  /* 그리드 */
+  .paste-grid-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);}
+  .paste-grid-table{width:100%;border-collapse:collapse;}
+  .paste-grid-table th{background:var(--gray-50);padding:8px 10px;font-size:11px;font-weight:600;
+    color:var(--gray-500);text-align:left;border-bottom:1px solid var(--border);}
+  .paste-grid-table td{padding:4px 6px;border-bottom:1px solid var(--gray-100);}
+  .paste-grid-table tr:last-child td{border-bottom:none;}
+  .pg-input{width:100%;padding:5px 8px;border:1px solid transparent;border-radius:4px;font-size:13px;
+    font-family:var(--font);color:var(--gray-700);background:transparent;outline:none;transition:border-color 0.12s;}
+  .pg-input:focus{border-color:var(--accent-light);background:#fff;}
+  .pg-check{width:18px;height:18px;cursor:pointer;accent-color:var(--accent);}
+  .pg-del{background:none;border:none;cursor:pointer;color:var(--gray-300);font-size:15px;padding:2px 6px;
+    border-radius:4px;transition:color 0.12s;}
+  .pg-del:hover{color:var(--danger);}
+  /* 미리보기 행 상태 */
+  .paste-row-ok td{background:#f0fdf4;}
+  .paste-row-err td{background:#fff5f5;}
+  .paste-row-warn td{background:#fffbeb;}
+  .paste-valid-icon{font-size:13px;text-align:center;}
 </style>
 </head>
 <body>
@@ -1044,8 +1078,9 @@
             ✍ 등록 <span id="regModeToggleStatusExec" style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--gray-200);color:var(--gray-500);margin-left:2px">OFF</span>
           </button>
           <button class="btn btn-green btn-sm" onclick="openExecForm()">+ 임원 일정 추가</button>
+          <button class="btn btn-sm btn-primary" onclick="openPasteModal()">📋 붙여넣기 입력</button>
           <button class="btn btn-sm" onclick="exportExecEvents()">&#8595; 엑셀 내보내기</button>
-          <label class="btn btn-sm btn-primary" style="cursor:pointer;margin:0">&#8679; 엑셀 올리기<input type="file" id="execExcelInput" accept=".xlsx,.xls" style="display:none" onchange="importExecEvents(this)"></label>
+          <label class="btn btn-sm" style="cursor:pointer;margin:0">&#8679; 엑셀 올리기<input type="file" id="execExcelInput" accept=".xlsx,.xls" style="display:none" onchange="importExecEvents(this)"></label>
         </div>
       </div>
       <div class="cal-section">
@@ -1151,6 +1186,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-danger" id="modalDeleteBtn" onclick="deleteFromModal()" style="display:none;margin-right:auto">&#10005; 삭제</button>
+      <span style="font-size:11px;color:var(--gray-400);margin-right:auto">Ctrl+Enter 저장</span>
       <button class="btn" onclick="closeModal()">취소</button>
       <button class="btn btn-primary" onclick="saveTask()">&#10003; 저장</button>
     </div>
@@ -1181,6 +1217,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-danger" id="execDeleteBtn" onclick="deleteExecFromModal()" style="display:none;margin-right:auto">&#10005; 삭제</button>
+      <span style="font-size:11px;color:var(--gray-400);margin-right:auto">Ctrl+Enter 저장</span>
       <button class="btn" onclick="closeExecForm()">취소</button>
       <button class="btn btn-primary" onclick="saveExecForm()">&#10003; 저장</button>
     </div>
@@ -1275,6 +1312,90 @@
     <div class="modal-footer">
       <button class="btn" onclick="closeExcelModal()">취소</button>
       <button class="btn btn-primary" id="excelUploadBtn" onclick="uploadExcel()" disabled>&#8679; 올리기</button>
+    </div>
+  </div>
+</div>
+
+<!-- PASTE INPUT MODAL -->
+<div class="modal-overlay" id="pasteModal">
+  <div class="modal" style="width:680px;max-width:97vw">
+    <div class="modal-header">
+      <div class="modal-title">📋 임원 일정 붙여넣기 입력</div>
+      <button class="modal-close" onclick="closePasteModal()">&#10005;</button>
+    </div>
+
+    <!-- 탭 -->
+    <div class="paste-tab-bar">
+      <button class="paste-tab active" id="ptab-paste" onclick="switchPasteTab('paste')">📋 붙여넣기</button>
+      <button class="paste-tab" id="ptab-grid" onclick="switchPasteTab('grid')">✏️ 직접 입력</button>
+    </div>
+
+    <!-- 양식 안내 -->
+    <div class="paste-format-hint">
+      <strong>컬럼 순서:</strong> 날짜 · 제목 · 설명(선택) · 마감일(선택, Y/true/✓)
+      &nbsp;|&nbsp; <strong>지원 소스:</strong> 엑셀, 구글시트, Claude/Gemini 마크다운 표, CSV
+    </div>
+
+    <!-- Mode A: 붙여넣기 -->
+    <div id="paste-panel-paste">
+      <textarea id="pasteTextarea" class="paste-textarea"
+        placeholder="여기에 데이터를 붙여넣으세요 (Ctrl+V / Cmd+V)&#10;&#10;예시:&#10;2026-06-10	이사회 보고	분기 실적	N&#10;2026-06-20	주주총회		Y"
+        oninput="onPasteTextChange()" onpaste="setTimeout(onPasteTextChange,50)"></textarea>
+      <div class="paste-detect-label" id="pasteDetectLabel"></div>
+    </div>
+
+    <!-- Mode B: 그리드 직접 입력 -->
+    <div id="paste-panel-grid" style="display:none">
+      <div class="paste-grid-wrap">
+        <table class="paste-grid-table" id="pasteGrid">
+          <thead>
+            <tr>
+              <th style="width:130px">날짜 *</th>
+              <th>제목 *</th>
+              <th>설명</th>
+              <th style="width:68px;text-align:center">마감일</th>
+              <th style="width:36px"></th>
+            </tr>
+          </thead>
+          <tbody id="pasteGridBody"></tbody>
+        </table>
+      </div>
+      <button class="btn btn-sm" style="margin-top:8px" onclick="addGridRow()">+ 행 추가</button>
+    </div>
+
+    <!-- 미리보기 -->
+    <div id="pastePreviewWrap" style="display:none;margin-top:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+        <div class="form-label" style="margin:0">
+          미리보기
+          <span id="pastePreviewCount" style="color:var(--accent);font-weight:700;margin-left:6px"></span>
+          <span id="pastePreviewErrCount" style="color:var(--danger);font-size:11px;margin-left:8px"></span>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--gray-600)">
+          <input type="checkbox" id="pasteAppendCheck" checked>
+          기존 일정에 추가 <span style="color:var(--gray-400)">(체크 해제 시 전체 교체)</span>
+        </label>
+      </div>
+      <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius)">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="background:var(--gray-50);position:sticky;top:0">
+              <th style="padding:7px 10px;text-align:left;color:var(--gray-500);border-bottom:1px solid var(--border);white-space:nowrap">날짜</th>
+              <th style="padding:7px 10px;text-align:left;color:var(--gray-500);border-bottom:1px solid var(--border)">제목</th>
+              <th style="padding:7px 10px;text-align:left;color:var(--gray-500);border-bottom:1px solid var(--border)">설명</th>
+              <th style="padding:7px 10px;text-align:center;color:var(--gray-500);border-bottom:1px solid var(--border);white-space:nowrap">마감</th>
+              <th style="padding:7px 10px;text-align:center;color:var(--gray-500);border-bottom:1px solid var(--border)">검증</th>
+            </tr>
+          </thead>
+          <tbody id="pastePreviewBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="pasteErrorMsg" style="font-size:12px;color:var(--danger);margin-top:8px;min-height:16px"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closePasteModal()">취소</button>
+      <button class="btn btn-primary" id="pasteSaveBtn" onclick="savePasteData()" disabled>저장</button>
     </div>
   </div>
 </div>
@@ -1975,7 +2096,7 @@ function renderSidebar() {
   // 빠른입력 행 담당자 옵션 업데이트
   const qaMember = document.getElementById('qa-member');
   if (qaMember) {
-    const cur2 = qaMember.value;
+    const cur2 = qaMember.value || (currentUserName && MEMBERS.includes(currentUserName) ? currentUserName : '');
     qaMember.innerHTML = '<option value="">담당자</option>' + MEMBERS.map(m=>`<option ${m===cur2?'selected':''}>${m}</option>`).join('');
   }
   // 주간 범례 업데이트
@@ -2151,7 +2272,8 @@ function openAddModal(prefillDate) {
   editId=null;
   document.getElementById('modalTitle').textContent='할 일 추가';
   document.getElementById('f-title').value='';
-  document.getElementById('f-member').value='';
+  // 로그인된 팀원이 있으면 기본 담당자로 설정
+  document.getElementById('f-member').value = (currentUserName && MEMBERS.includes(currentUserName)) ? currentUserName : '';
   document.getElementById('f-cat').value='기타';
   document.getElementById('f-date').value=prefillDate || new Date().toISOString().split('T')[0];
   document.getElementById('f-time').value='';
@@ -3590,9 +3712,23 @@ document.getElementById('excelModal').addEventListener('click',function(e){if(e.
 
 
 // ── 키보드 단축키 ──
-document.addEventListener('keydown',e=>{
-  if (e.key==='Escape') closeModal();
-  if ((e.ctrlKey||e.metaKey)&&e.key==='n') { e.preventDefault(); openAddModal(); }
+document.addEventListener('keydown', e => {
+  // Escape: 열린 모달 닫기
+  if (e.key === 'Escape') closeModal();
+
+  // Ctrl+N / Cmd+N: 할 일 추가
+  if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); openAddModal(); }
+
+  // Ctrl+Enter / Cmd+Enter: 현재 열린 모달 저장
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    const taskModal = document.getElementById('taskModal');
+    const execModal = document.getElementById('execEventModal');
+    const pasteModal = document.getElementById('pasteModal');
+    if (taskModal.classList.contains('open'))  { saveTask(); return; }
+    if (execModal.classList.contains('open'))  { saveExecForm(); return; }
+    if (pasteModal.classList.contains('open') && !document.getElementById('pasteSaveBtn').disabled) { savePasteData(); return; }
+  }
 });
 
 // ══════════════════════════════════════════════
@@ -3842,6 +3978,311 @@ function importExecEvents(input) {
     input.value = '';
   };
   reader.readAsArrayBuffer(file);
+}
+
+// ══════════════════════════════════════════════
+//  PASTE INPUT MODAL (붙여넣기 / 그리드 입력)
+// ══════════════════════════════════════════════
+
+let _pasteMode = 'paste';   // 'paste' | 'grid'
+let _parsedRows = [];        // 현재 파싱된 유효+무효 행 목록
+
+// ── 열기 / 닫기 ──
+function openPasteModal() {
+  _pasteMode = 'paste';
+  _parsedRows = [];
+  document.getElementById('pasteModal').classList.add('open');
+  document.getElementById('pasteTextarea').value = '';
+  document.getElementById('pasteDetectLabel').textContent = '';
+  document.getElementById('pastePreviewWrap').style.display = 'none';
+  document.getElementById('pasteErrorMsg').textContent = '';
+  document.getElementById('pasteSaveBtn').disabled = true;
+  document.getElementById('pasteAppendCheck').checked = true;
+  switchPasteTab('paste');
+  initPasteGrid();
+  setTimeout(() => document.getElementById('pasteTextarea').focus(), 120);
+}
+function closePasteModal() {
+  document.getElementById('pasteModal').classList.remove('open');
+}
+document.getElementById('pasteModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('pasteModal')) closePasteModal();
+});
+
+// ── 탭 전환 ──
+function switchPasteTab(tab) {
+  _pasteMode = tab;
+  ['paste','grid'].forEach(t => {
+    document.getElementById(`ptab-${t}`).className = 'paste-tab' + (t === tab ? ' active' : '');
+    document.getElementById(`paste-panel-${t}`).style.display = t === tab ? '' : 'none';
+  });
+  if (tab === 'grid') refreshGridPreview();
+  else onPasteTextChange();
+}
+
+// ══════════════════════════════════════════════
+//  날짜 정규화 (다양한 포맷 → YYYY-MM-DD)
+// ══════════════════════════════════════════════
+function normalizeDate(raw) {
+  if (!raw) return '';
+  const s = String(raw).trim();
+
+  // 엑셀 시리얼 숫자 (예: 46012)
+  if (/^\d{5}$/.test(s)) {
+    const d = new Date(Math.round((parseFloat(s) - 25569) * 86400 * 1000));
+    if (!isNaN(d)) return d.toISOString().slice(0, 10);
+  }
+
+  // YYYY-MM-DD, YYYY/MM/DD, YYYY.MM.DD
+  let m = s.match(/^(\d{4})[-./](\d{1,2})[-./](\d{1,2})$/);
+  if (m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+
+  // YY-MM-DD, YY/MM/DD (두 자리 연도)
+  m = s.match(/^(\d{2})[-./](\d{1,2})[-./](\d{1,2})$/);
+  if (m) return `20${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+
+  // MM/DD 또는 MM.DD (연도 없음 → 현재 연도)
+  m = s.match(/^(\d{1,2})[./](\d{1,2})$/);
+  if (m) {
+    const y = new Date().getFullYear();
+    return `${y}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;
+  }
+
+  // 6월 10일, 6.10 등 한글/점 혼용
+  m = s.match(/^(\d{1,2})월\s*(\d{1,2})일?$/);
+  if (m) {
+    const y = new Date().getFullYear();
+    return `${y}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;
+  }
+
+  return '';   // 파싱 실패
+}
+
+// ── 날짜 유효성 검사 ──
+function isValidDate(d) {
+  if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return false;
+  const dt = new Date(d + 'T00:00:00');
+  return !isNaN(dt) && dt.toISOString().slice(0,10) === d;
+}
+
+// ── 마감일 판별 ──
+function parseDeadline(v) {
+  return /^(y|yes|true|1|마감|✓|v|✔)$/i.test(String(v||'').trim());
+}
+
+// ══════════════════════════════════════════════
+//  소스 감지 & 행 파싱
+// ══════════════════════════════════════════════
+function detectSource(text) {
+  if (text.includes('\t'))  return 'tsv';        // 엑셀/구글시트
+  if (text.includes('|'))   return 'markdown';   // Claude/Gemini 마크다운 표
+  return 'csv';                                   // 쉼표 구분
+}
+
+function splitCols(line, sep) {
+  if (sep !== 'csv') return line.split(sep === 'tsv' ? '\t' : '|').map(c => c.trim());
+  // CSV: 따옴표 안 쉼표 무시
+  const cols = []; let cur = ''; let inQ = false;
+  for (const ch of line) {
+    if (ch === '"') { inQ = !inQ; }
+    else if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
+    else cur += ch;
+  }
+  cols.push(cur.trim());
+  return cols;
+}
+
+function isHeaderRow(cols) {
+  const keywords = ['날짜','date','제목','title','일정','이벤트','event','연','월','일','설명'];
+  const joined = cols.join('').toLowerCase();
+  return keywords.some(k => joined.includes(k));
+}
+
+function isDividerRow(line) {
+  // 마크다운 구분선: |---|---|
+  return /^[\s|:\-]+$/.test(line);
+}
+
+function parseRawText(text) {
+  if (!text.trim()) return [];
+  const src = detectSource(text);
+  const sep = src === 'tsv' ? 'tsv' : src === 'markdown' ? 'md' : 'csv';
+  const lines = text.trim().split(/\r?\n/);
+  const results = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (isDividerRow(trimmed)) continue;   // |---|---| 제거
+
+    let cols = splitCols(trimmed, sep);
+
+    // 마크다운: 앞뒤 빈 컬럼 제거 (| 로 시작/끝날 때)
+    if (sep === 'md') {
+      if (cols[0] === '') cols.shift();
+      if (cols[cols.length-1] === '') cols.pop();
+    }
+
+    if (cols.length < 2) continue;
+    if (isHeaderRow(cols)) continue;
+
+    const dateRaw  = cols[0] || '';
+    const title    = cols[1] || '';
+    const desc     = cols[2] || '';
+    const dlRaw    = cols[3] || '';
+    const date     = normalizeDate(dateRaw);
+    const deadline = parseDeadline(dlRaw);
+    const valid    = isValidDate(date) && title.trim() !== '';
+
+    results.push({ dateRaw, date, title: title.trim(), desc: desc.trim(), deadline, valid });
+  }
+  return results;
+}
+
+// ══════════════════════════════════════════════
+//  Mode A: 붙여넣기 textarea
+// ══════════════════════════════════════════════
+function onPasteTextChange() {
+  const text = document.getElementById('pasteTextarea').value;
+  if (!text.trim()) {
+    document.getElementById('pasteDetectLabel').textContent = '';
+    document.getElementById('pastePreviewWrap').style.display = 'none';
+    document.getElementById('pasteSaveBtn').disabled = true;
+    _parsedRows = [];
+    return;
+  }
+
+  const src = detectSource(text);
+  const srcLabel = { tsv:'엑셀 / 구글시트', markdown:'마크다운 표 (Claude / Gemini)', csv:'CSV (쉼표 구분)' };
+  document.getElementById('pasteDetectLabel').textContent = `감지된 형식: ${srcLabel[src]}`;
+
+  _parsedRows = parseRawText(text);
+  renderPastePreview();
+}
+
+// ══════════════════════════════════════════════
+//  Mode B: 그리드 직접 입력
+// ══════════════════════════════════════════════
+function initPasteGrid() {
+  const tbody = document.getElementById('pasteGridBody');
+  tbody.innerHTML = '';
+  // 기본 3행
+  for (let i = 0; i < 3; i++) addGridRow();
+}
+
+function addGridRow() {
+  const tbody = document.getElementById('pasteGridBody');
+  const idx = tbody.children.length;
+  const tr = document.createElement('tr');
+  tr.dataset.idx = idx;
+  tr.innerHTML = `
+    <td><input class="pg-input" type="date" data-col="date" oninput="refreshGridPreview()"></td>
+    <td><input class="pg-input" type="text" data-col="title" placeholder="제목" oninput="refreshGridPreview()"
+      onkeydown="gridKeyNav(event,this)"></td>
+    <td><input class="pg-input" type="text" data-col="desc" placeholder="설명 (선택)" oninput="refreshGridPreview()"
+      onkeydown="gridKeyNav(event,this)"></td>
+    <td style="text-align:center"><input class="pg-check" type="checkbox" data-col="deadline" onchange="refreshGridPreview()"></td>
+    <td><button class="pg-del" onclick="removeGridRow(this)" title="행 삭제">✕</button></td>`;
+  tbody.appendChild(tr);
+}
+
+function removeGridRow(btn) {
+  btn.closest('tr').remove();
+  refreshGridPreview();
+}
+
+function gridKeyNav(e, el) {
+  // Tab / Enter → 다음 입력 셀로 이동
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const allInputs = [...document.querySelectorAll('#pasteGridBody .pg-input')];
+    const idx = allInputs.indexOf(el);
+    if (idx >= 0 && idx < allInputs.length - 1) allInputs[idx + 1].focus();
+    else { addGridRow(); setTimeout(() => { const a = [...document.querySelectorAll('#pasteGridBody .pg-input')]; a[idx+1]?.focus(); }, 30); }
+  }
+}
+
+function refreshGridPreview() {
+  if (_pasteMode !== 'grid') return;
+  const rows = [...document.querySelectorAll('#pasteGridBody tr')];
+  _parsedRows = rows.map(tr => {
+    const date     = tr.querySelector('[data-col="date"]').value;
+    const title    = tr.querySelector('[data-col="title"]').value.trim();
+    const desc     = tr.querySelector('[data-col="desc"]').value.trim();
+    const deadline = tr.querySelector('[data-col="deadline"]').checked;
+    const valid    = isValidDate(date) && title !== '';
+    return { dateRaw: date, date, title, desc, deadline, valid };
+  }).filter(r => r.date || r.title);  // 완전 빈 행 제외
+  renderPastePreview();
+}
+
+// ══════════════════════════════════════════════
+//  공통 미리보기 렌더링
+// ══════════════════════════════════════════════
+function renderPastePreview() {
+  const wrap = document.getElementById('pastePreviewWrap');
+  const tbody = document.getElementById('pastePreviewBody');
+  const countEl = document.getElementById('pastePreviewCount');
+  const errEl   = document.getElementById('pastePreviewErrCount');
+  const saveBtn = document.getElementById('pasteSaveBtn');
+  const errMsg  = document.getElementById('pasteErrorMsg');
+
+  if (!_parsedRows.length) {
+    wrap.style.display = 'none';
+    saveBtn.disabled = true;
+    return;
+  }
+
+  const valid   = _parsedRows.filter(r => r.valid);
+  const invalid = _parsedRows.filter(r => !r.valid);
+
+  countEl.textContent = `유효 ${valid.length}건`;
+  errEl.textContent   = invalid.length ? `오류 ${invalid.length}건 (저장 제외)` : '';
+  errMsg.textContent  = '';
+  saveBtn.disabled    = valid.length === 0;
+
+  tbody.innerHTML = _parsedRows.map(r => {
+    const rowCls = r.valid ? 'paste-row-ok' : 'paste-row-err';
+    const icon   = r.valid ? '✅' : '❌';
+    const hint   = !r.valid
+      ? (!isValidDate(r.date) ? `날짜 오류(${escHtml(r.dateRaw)})` : '제목 없음')
+      : '';
+    return `<tr class="${rowCls}">
+      <td style="padding:6px 10px;font-family:var(--font-mono);font-size:12px;white-space:nowrap">${escHtml(r.date||r.dateRaw)}</td>
+      <td style="padding:6px 10px;font-size:12px">${escHtml(r.title)}</td>
+      <td style="padding:6px 10px;font-size:12px;color:var(--gray-500)">${escHtml(r.desc)}</td>
+      <td style="padding:6px 10px;text-align:center;font-size:13px">${r.deadline ? '⚑' : ''}</td>
+      <td style="padding:6px 10px;text-align:center" class="paste-valid-icon" title="${hint}">${icon}</td>
+    </tr>`;
+  }).join('');
+
+  wrap.style.display = '';
+}
+
+// ══════════════════════════════════════════════
+//  저장
+// ══════════════════════════════════════════════
+async function savePasteData() {
+  const valid = _parsedRows.filter(r => r.valid);
+  if (!valid.length) { showToast('저장할 유효한 데이터가 없습니다.', 'error'); return; }
+
+  const saveBtn = document.getElementById('pasteSaveBtn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = '저장 중...';
+
+  const append = document.getElementById('pasteAppendCheck').checked;
+  if (!append) {
+    const old = [...execEvents];
+    for (const o of old) await execDelete(o.id);
+  }
+  for (const r of valid) {
+    await execInsert({ date: r.date, title: r.title, desc: r.desc, deadline: r.deadline });
+  }
+
+  refreshExecViews();
+  showToast(`임원 일정 ${valid.length}건을 저장했습니다.`);
+  closePasteModal();
+  saveBtn.textContent = '저장';
 }
 
 // ── 법정/임원 일정 페이지: 임원 탭 인라인 행/폼 ──
