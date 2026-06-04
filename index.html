@@ -416,6 +416,7 @@
   /* 법정/임원 일정 토글 버튼 */
   .legal-cal-toggle.on { background:#1d4ed8;color:#fff;border-color:#1d4ed8; }
   .exec-cal-toggle.on  { background:#92720a;color:#fff;border-color:#c9a227; }
+  .reg-mode-toggle.on  { background:#16a34a;color:#fff;border-color:#16a34a; }
   /* 대시보드 Master 캘린더 버튼 — PC: cal-header 안, 모바일: page-header 안 */
   .dash-master-btn { display:none; }
   .cal-master-btn-wrap { display:flex; }
@@ -970,6 +971,9 @@
       <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <div class="page-title">월별 대시보드</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn btn-sm reg-mode-toggle dash-master-btn" id="regModeToggleBtn" onclick="toggleRegMode()" title="등록 모드 on/off (날짜 클릭 동작 전환)">
+            ✍ 등록 <span id="regModeToggleStatus" style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--gray-200);color:var(--gray-500);margin-left:2px">OFF</span>
+          </button>
           <button class="btn btn-sm legal-cal-toggle dash-master-btn" id="legalCalToggleBtn" onclick="toggleLegalCal()" title="법정 일정 on/off">
             ⚖ 법정 <span id="legalCalToggleStatus" style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--gray-200);color:var(--gray-500);margin-left:2px">OFF</span>
           </button>
@@ -1015,6 +1019,9 @@
       <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <div class="page-title">임원 대시보드<span id="execCountLabel"></span></div>
         <div class="exec-toolbar" style="margin-bottom:0">
+          <button class="btn btn-sm reg-mode-toggle dash-master-btn" id="regModeToggleBtnExec" onclick="toggleRegMode()" title="등록 모드 on/off (날짜 클릭 동작 전환)">
+            ✍ 등록 <span id="regModeToggleStatusExec" style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--gray-200);color:var(--gray-500);margin-left:2px">OFF</span>
+          </button>
           <button class="btn btn-green btn-sm" onclick="openExecForm()">+ 임원 일정 추가</button>
           <button class="btn btn-sm" onclick="exportExecEvents()">&#8595; 엑셀 내보내기</button>
           <label class="btn btn-sm btn-primary" style="cursor:pointer;margin:0">&#8679; 엑셀 올리기<input type="file" id="execExcelInput" accept=".xlsx,.xls" style="display:none" onchange="importExecEvents(this)"></label>
@@ -1618,6 +1625,7 @@ function renderAll() {
   renderSidebar();
   initDashDates();
   initMasterCalToggle();
+  initRegModeToggle();
   populateMonthFilter();   // 첫 진입 시 월 필터를 현재 월로 설정 (renderTable 이전)
   switchTab('tasks');
 }
@@ -2564,6 +2572,20 @@ function initMasterCalToggle() {
   _applyToggleBtn(['legalCalToggleBtn','legalCalToggleBtnPC'],['legalCalToggleStatus','legalCalToggleStatusPC'],legalCalOn,'#dbeafe','#1d4ed8');
   _applyToggleBtn(['execCalToggleBtn','execCalToggleBtnPC'],['execCalToggleStatus','execCalToggleStatusPC'],execCalOn,'#fdf6e3','#92720a');
 }
+
+// ── 등록 모드 토글 (모바일 전용: 날짜 클릭 = 등록 / 목록보기 전환) ──
+let regModeOn = localStorage.getItem('hr_reg_mode') !== '0'; // 기본 ON
+function isMobileView() { return window.innerWidth <= 900; }
+function _applyRegModeBtn() {
+  _applyToggleBtn(['regModeToggleBtn','regModeToggleBtnExec'],['regModeToggleStatus','regModeToggleStatusExec'],regModeOn,'#dcfce7','#16a34a');
+}
+function initRegModeToggle() { _applyRegModeBtn(); }
+function toggleRegMode() {
+  regModeOn = !regModeOn;
+  localStorage.setItem('hr_reg_mode', regModeOn ? '1' : '0');
+  _applyRegModeBtn();
+  showToast(regModeOn ? '등록 모드 ON — 날짜를 누르면 등록' : '등록 모드 OFF — 날짜를 누르면 목록 보기');
+}
 function getMasterEventsForDate(dateStr) {
   const out = [];
   const d = new Date(dateStr+'T00:00:00');
@@ -2973,6 +2995,8 @@ function toggleDashCard(id) {
 function calCellClick(dateStr, event) {
   // 칩 클릭은 수정 모달이 열리므로 셀 배경 클릭만 처리
   if (event.target.closest('.cal-chip') || event.target.closest('.cal-more')) return;
+  // 모바일에서 등록 OFF면 그 날의 업무 목록 팝업 (더보기와 동일)
+  if (isMobileView() && !regModeOn) { openCalMore(dateStr); return; }
   openAddModal(dateStr);
 }
 
@@ -3576,12 +3600,19 @@ function renderExecCalendar(year, month) {
     const chips = shown.map(e=>`<div class="cal-chip exec-chip" onclick="event.stopPropagation();openExecForm(null,${e.id})" title="${escHtml(e.title)}"><span class="cal-chip-title">${e.deadline?'⚑ ':''}${escHtml(e.title)}</span></div>`).join('');
     const moreBtn = hiddenCnt > 0 ? `<div class="cal-more" onclick="event.stopPropagation();openExecMore('${dateStr}')">+${hiddenCnt}개 더보기</div>` : '';
     html += `<div class="cal-cell${isOtherMonth?' cal-other-month':''}${isToday?' cal-today':''}${isSun?' cal-sunday':''}${isSat?' cal-saturday':''}"
-      data-date="${dateStr}" onclick="openExecForm('${dateStr}')">
+      data-date="${dateStr}" onclick="execCellClick('${dateStr}', event)">
       <div class="cal-day-num">${cellDate.getDate()}</div>
       ${chips}${moreBtn}
     </div>`;
   }
   document.getElementById('execCalGrid').innerHTML = html;
+}
+
+function execCellClick(dateStr, event) {
+  if (event && (event.target.closest('.cal-chip') || event.target.closest('.cal-more'))) return;
+  // 모바일에서 등록 OFF면 그 날의 임원 일정 목록 팝업
+  if (isMobileView() && !regModeOn) { openExecMore(dateStr); return; }
+  openExecForm(dateStr);
 }
 
 function openExecMore(dateStr) {
