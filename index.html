@@ -709,6 +709,31 @@
   @media(max-width:900px){
     .main-content{padding-bottom:80px;}
   }
+
+  /* ── 할 일 목록 진입 애니메이션 (보여지는 것만 부드럽게) ── */
+  @keyframes taskRowIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .task-table tbody.tasks-enter tr { animation: taskRowIn 0.38s cubic-bezier(.22,.61,.36,1) both; }
+  .task-table tbody.tasks-enter tr:nth-child(1){animation-delay:.00s}
+  .task-table tbody.tasks-enter tr:nth-child(2){animation-delay:.03s}
+  .task-table tbody.tasks-enter tr:nth-child(3){animation-delay:.06s}
+  .task-table tbody.tasks-enter tr:nth-child(4){animation-delay:.09s}
+  .task-table tbody.tasks-enter tr:nth-child(5){animation-delay:.12s}
+  .task-table tbody.tasks-enter tr:nth-child(6){animation-delay:.15s}
+  .task-table tbody.tasks-enter tr:nth-child(7){animation-delay:.18s}
+  .task-table tbody.tasks-enter tr:nth-child(8){animation-delay:.21s}
+  .task-table tbody.tasks-enter tr:nth-child(9){animation-delay:.24s}
+  .task-table tbody.tasks-enter tr:nth-child(n+10){animation-delay:.27s}
+  /* 스크롤 시 sticky 헤더+탭바 아래에 오늘 행이 놓이도록 여백 */
+  .task-table tbody tr[data-date]{scroll-margin-top:160px;}
+  .task-table tr.row-today td{box-shadow:inset 3px 0 0 var(--accent);}
+
+  /* ── 임원 대시보드 캘린더 칩 ── */
+  .cal-chip.exec-chip{background:#fdf6e3;color:#92720a;border-left:3px solid #c9a227;cursor:pointer;font-weight:600;}
+  .exec-empty-hint{font-size:12px;color:var(--gray-400);margin-top:2px;}
+  .exec-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+
+  /* ── 임원 일정 등록/수정 모달 ── */
+  .exec-deadline-label{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--gray-700);cursor:pointer;}
 </style>
 </head>
 <body>
@@ -831,6 +856,7 @@
       <button class="tab-btn active" id="tab-tasks" onclick="switchTab('tasks')">&#9998; 할 일 관리</button>
       <button class="tab-btn" id="tab-dashboard" onclick="switchTab('dashboard')">&#9636; 월별 대시보드</button>
       <button class="tab-btn" id="tab-weekly" onclick="switchTab('weekly')">&#9633; 주간 보기</button>
+      <button class="tab-btn" id="tab-exec" onclick="switchTab('exec')">&#128188; 임원 대시보드</button>
     </div>
 
     <!-- TASKS TAB -->
@@ -983,6 +1009,39 @@
       <div class="workload-board" id="workloadBoard"></div>
       <div class="dash-grid" id="dashCharts"></div>
     </div>
+
+    <!-- EXEC DASHBOARD TAB (임원 대시보드) -->
+    <div id="view-exec" style="display:none">
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+        <div class="page-title">임원 대시보드<span id="execCountLabel"></span></div>
+        <div class="exec-toolbar" style="margin-bottom:0">
+          <button class="btn btn-green btn-sm" onclick="openExecForm()">+ 임원 일정 추가</button>
+          <button class="btn btn-sm" onclick="exportExecEvents()">&#8595; 엑셀 내보내기</button>
+          <label class="btn btn-sm btn-primary" style="cursor:pointer;margin:0">&#8679; 엑셀 올리기<input type="file" id="execExcelInput" accept=".xlsx,.xls" style="display:none" onchange="importExecEvents(this)"></label>
+        </div>
+      </div>
+      <div class="cal-section">
+        <div class="cal-header">
+          <button class="btn btn-sm" onclick="shiftExecMonth(-1)">&#8592; 이전 달</button>
+          <span class="cal-month-label" id="execCalMonthLabel"></span>
+          <button class="btn btn-sm" onclick="shiftExecMonth(1)">다음 달 &#8594;</button>
+          <button class="btn btn-sm" onclick="goExecToday()">이번 달</button>
+          <span style="margin-left:auto;font-size:12px;color:var(--gray-400)">날짜 칸을 클릭해 임원 일정을 추가할 수 있습니다.</span>
+        </div>
+        <div class="cal-legend" id="execCalLegend">
+          <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#c9a227"></div>임원 일정</div>
+          <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#fee2e2"></div>마감 표시</div>
+        </div>
+        <div class="cal-grid-wrap">
+          <div class="cal-dow-row">
+            <div class="cal-dow">일</div><div class="cal-dow">월</div><div class="cal-dow">화</div>
+            <div class="cal-dow">수</div><div class="cal-dow">목</div><div class="cal-dow">금</div>
+            <div class="cal-dow cal-dow-sat">토</div>
+          </div>
+          <div class="cal-grid" id="execCalGrid"></div>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -1066,6 +1125,36 @@
       <button class="btn btn-danger" id="modalDeleteBtn" onclick="deleteFromModal()" style="display:none;margin-right:auto">&#10005; 삭제</button>
       <button class="btn" onclick="closeModal()">취소</button>
       <button class="btn btn-primary" onclick="saveTask()">&#10003; 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- EXEC EVENT MODAL (임원 일정 추가/수정) -->
+<div class="modal-overlay" id="execEventModal">
+  <div class="modal" style="width:460px">
+    <div class="modal-header">
+      <div class="modal-title" id="execModalTitle">임원 일정 추가</div>
+      <button class="modal-close" onclick="closeExecForm()">&#10005;</button>
+    </div>
+    <div class="form-row">
+      <label class="form-label">일정 제목 *</label>
+      <input type="text" class="form-input" id="ef-title" placeholder="예: 임원 주간회의, 이사회, 임원 출장">
+    </div>
+    <div class="form-row">
+      <label class="form-label">날짜 *</label>
+      <input type="date" class="form-input" id="ef-date">
+    </div>
+    <div class="form-row">
+      <label class="form-label">설명 <span style="font-size:10px;color:var(--gray-400)">(선택)</span></label>
+      <input type="text" class="form-input" id="ef-desc" placeholder="간단한 설명">
+    </div>
+    <div class="form-row" style="margin-bottom:0">
+      <label class="exec-deadline-label"><input type="checkbox" id="ef-deadline"> 마감 일정으로 표시</label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="execDeleteBtn" onclick="deleteExecFromModal()" style="display:none;margin-right:auto">&#10005; 삭제</button>
+      <button class="btn" onclick="closeExecForm()">취소</button>
+      <button class="btn btn-primary" onclick="saveExecForm()">&#10003; 저장</button>
     </div>
   </div>
 </div>
@@ -1191,7 +1280,20 @@ grant all on table hr_tasks to anon;
 grant usage, select on sequence hr_tasks_id_seq to anon;
 
 -- 기존 테이블에 time 컬럼 추가 (이미 테이블이 있는 경우)
-alter table hr_tasks add column if not exists time text default '';</pre>
+alter table hr_tasks add column if not exists time text default '';
+
+-- 임원 일정 테이블 (임원 대시보드 / 법정·임원 일정 공용)
+create table if not exists hr_exec_events (
+  id          bigserial primary key,
+  date        date        not null,
+  title       text        not null,
+  description text        default '',
+  deadline    boolean     default false,
+  created_at  timestamptz default now()
+);
+alter table hr_exec_events disable row level security;
+grant all on table hr_exec_events to anon;
+grant usage, select on sequence hr_exec_events_id_seq to anon;</pre>
       <button onclick="copyTableSQL()" style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#a8c4e8;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer" id="copySqlBtn">복사</button>
     </div>
     <div class="modal-footer">
@@ -1215,6 +1317,9 @@ alter table hr_tasks add column if not exists time text default '';</pre>
     </button>
     <button class="mobile-nav-btn" id="mnav-dashboard" onclick="switchTab('dashboard')">
       <span class="nav-icon">&#9636;</span>대시보드
+    </button>
+    <button class="mobile-nav-btn" id="mnav-exec" onclick="switchTab('exec')">
+      <span class="nav-icon">&#128188;</span>임원
     </button>
     <button class="mobile-nav-btn" onclick="openMemberSettingModal()">
       <span class="nav-icon">&#9881;</span>설정
@@ -1471,8 +1576,13 @@ async function startApp() {
           setDbStatus(true, 'Supabase 연결됨');
           await dbSeedIfEmpty();
           tasks = await dbLoad();
+          masterEvents = await loadMasterEvents();
+          masterTitles = await loadMasterTitles();
+          execEvents = await loadExecEvents();
+          await migrateLegacyExecEvents();
           showLoading(false);
           renderAll();
+          subscribeRealtime();
           return;
         }
         // 재시도도 실패 → 안내 팝업
@@ -1496,15 +1606,19 @@ async function startApp() {
   // Master 캘린더 초기 로드 (달력 오버레이용)
   masterEvents = await loadMasterEvents();
   masterTitles = await loadMasterTitles();
+  execEvents = await loadExecEvents();
+  await migrateLegacyExecEvents();
   if (useLocal || !sbClient) setDbStatus(false, '로컬 저장소');
   showLoading(false);
   renderAll();
+  subscribeRealtime();
 }
 
 function renderAll() {
   renderSidebar();
   initDashDates();
   initMasterCalToggle();
+  populateMonthFilter();   // 첫 진입 시 월 필터를 현재 월로 설정 (renderTable 이전)
   switchTab('tasks');
 }
 
@@ -1567,18 +1681,36 @@ function switchTab(tab) {
   document.getElementById('view-tasks').style.display     = tab==='tasks'     ? '' : 'none';
   document.getElementById('view-weekly').style.display    = tab==='weekly'    ? '' : 'none';
   document.getElementById('view-dashboard').style.display = tab==='dashboard' ? '' : 'none';
-  ['tasks','weekly','dashboard'].forEach(t=>{
-    document.getElementById(`tab-${t}`).className='tab-btn'+(tab===t?' active':'');
+  document.getElementById('view-exec').style.display      = tab==='exec'      ? '' : 'none';
+  ['tasks','weekly','dashboard','exec'].forEach(t=>{
+    const b=document.getElementById(`tab-${t}`); if(b) b.className='tab-btn'+(tab===t?' active':'');
   });
-  ['tasks','weekly','dashboard'].forEach(t=>{
+  ['tasks','weekly','dashboard','exec'].forEach(t=>{
     const el = document.getElementById(`mnav-${t}`);
     if (el) el.className = 'mobile-nav-btn' + (tab===t ? ' active' : '');
   });
   if (tab==='dashboard') renderDash();
   if (tab==='weekly') renderWeekly();
-  if (tab==='tasks') renderTable();
+  if (tab==='exec') renderExecDash();
+  if (tab==='tasks') {
+    renderTable(true);              // 진입 시 부드러운 등장 애니메이션
+    setTimeout(scrollTasksToToday, 70);  // 오늘 일정으로 스르륵 이동
+    return;                          // 상단 강제 스크롤 생략 (오늘 위치로 이동시키기 위함)
+  }
   // 탭 전환 시 페이지 최상단으로 스크롤
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── 오늘 일정으로 부드럽게 스크롤 (순서는 그대로, 보여지는 위치만 조정) ──
+function scrollTasksToToday() {
+  const tbody = document.getElementById('taskTbody');
+  if (!tbody) return;
+  const n = new Date();
+  const todayStr = `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
+  const rows = [...tbody.querySelectorAll('tr[data-date]')];
+  if (!rows.length) return;
+  const target = rows.find(r => (r.dataset.date||'') >= todayStr) || rows[rows.length-1];
+  if (target) target.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
 // ══════════════════════════════════════════════
@@ -1603,10 +1735,19 @@ function filterStatus(el) {
   closeMobileDrawer();
   switchTab('tasks');
 }
+let monthFilterInitialized = false;
 function populateMonthFilter() {
-  const months=[...new Set(tasks.map(t=>toYM(t.date)).filter(Boolean))].sort();
+  const now = new Date();
+  const curYM = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  // 업무가 있는 월 + 현재 월을 항상 포함
+  const months=[...new Set([...tasks.map(t=>toYM(t.date)).filter(Boolean), curYM])].sort();
   const sel=document.getElementById('filterMonth'); const cur=sel.value;
   sel.innerHTML='<option value="">전체 월</option>'+months.map(m=>`<option value="${m}" ${m===cur?'selected':''}>${monthLabel(m)}</option>`).join('');
+  // 첫 진입 시 현재 월을 기본 선택 (이후 사용자 선택은 그대로 유지)
+  if (!monthFilterInitialized) {
+    sel.value = curYM;
+    monthFilterInitialized = true;
+  }
 }
 function getFiltered() {
   const q=document.getElementById('searchInput').value.toLowerCase();
@@ -1661,21 +1802,26 @@ function catSelect(id, current) {
 // ══════════════════════════════════════════════
 //  RENDER TABLE
 // ══════════════════════════════════════════════
-function renderTable() {
+function renderTable(animate=false) {
   const filtered = getFiltered();
   const tbody = document.getElementById('taskTbody');
   document.getElementById('taskCountLabel').textContent = `총 ${filtered.length}건`;
 
   if (filtered.length===0) {
+    tbody.classList.remove('tasks-enter');
     tbody.innerHTML=`<tr><td colspan="7"><div class="empty-state"><span class="empty-icon">&#128203;</span><p>등록된 할 일이 없습니다.</p></div></td></tr>`;
     updateCounts(); return;
   }
+
+  const n = new Date();
+  const todayStr = `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;
 
   tbody.innerHTML = filtered.map(t=>{
     const isDone = t.status==='완료';
     const urgency = getRowUrgencyClass(t);
     const checked = selectedIds.has(t.id);
-    return `<tr class="${isDone?'done':''} ${urgency}${checked?' row-selected':''}">
+    const isToday = t.date === todayStr;
+    return `<tr class="${isDone?'done':''} ${urgency}${checked?' row-selected':''}${isToday?' row-today':''}" data-date="${t.date||''}">
       <td><input type="checkbox" class="task-check" data-id="${t.id}" ${checked?'checked':''} onchange="onRowCheck(${t.id},this.checked)"></td>
       <td data-label="일정" style="font-family:var(--font-mono);font-size:12px;color:var(--gray-500);white-space:nowrap;">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap;">
@@ -1699,6 +1845,15 @@ function renderTable() {
   document.querySelectorAll('.cat-select').forEach(sel=>{
     sel.setAttribute('data-cat', sel.value);
   });
+
+  // 진입 애니메이션 (탭 진입 시에만 — 필터/실시간 갱신 시엔 미적용)
+  if (animate) {
+    tbody.classList.remove('tasks-enter');
+    void tbody.offsetWidth; // reflow로 애니메이션 재시작
+    tbody.classList.add('tasks-enter');
+  } else {
+    tbody.classList.remove('tasks-enter');
+  }
 
   updateCounts();
 }
@@ -2410,14 +2565,23 @@ function initMasterCalToggle() {
   _applyToggleBtn(['execCalToggleBtn','execCalToggleBtnPC'],['execCalToggleStatus','execCalToggleStatusPC'],execCalOn,'#fdf6e3','#92720a');
 }
 function getMasterEventsForDate(dateStr) {
-  if(!legalCalOn && !execCalOn) return [];
-  const d=new Date(dateStr+'T00:00:00');
-  const m=d.getMonth()+1, day=d.getDate();
-  return masterEvents.filter(e=>{
-    if(e.month!==m||e.day!==day) return false;
-    if(e.cat==='임원 일정') return execCalOn;
-    return legalCalOn;
-  });
+  const out = [];
+  const d = new Date(dateStr+'T00:00:00');
+  const m = d.getMonth()+1, day = d.getDate();
+  // 법정 일정 (월·일 반복) — 임원 일정 카테고리는 제외
+  if (legalCalOn) {
+    masterEvents.forEach(e=>{
+      if (e.cat==='임원 일정') return;
+      if (e.month===m && e.day===day) out.push(e);
+    });
+  }
+  // 임원 일정 (연·월·일 특정 날짜) — execEvents에서 조회
+  if (execCalOn) {
+    execEvents.forEach(e=>{
+      if (e.date===dateStr) out.push({ cat:'임원 일정', title:e.title, deadline:!!e.deadline });
+    });
+  }
+  return out;
 }
 
 // ── 팝업 탭 전환 ──
@@ -2439,12 +2603,14 @@ async function openMasterCalPage() {
     document.getElementById('masterCalModal').style.display='flex';
     closeMobileDrawer();
     setTimeout(()=>{ const el=document.getElementById('master-month-'+(new Date().getMonth()+1)); if(el)el.scrollIntoView({behavior:'smooth',block:'start'}); },80);
-    loadMasterEvents().then(d=>{ masterEvents=d; });
+    loadMasterEvents().then(d=>{ masterEvents=d; if(masterActiveTab!=='exec') renderMasterCalPage(); });
     loadMasterTitles().then(d=>{ masterTitles=d; });
+    loadExecEvents().then(d=>{ execEvents=d; if(masterActiveTab==='exec') renderMasterCalPage(); });
     return;
   }
   masterEvents = await loadMasterEvents();
   masterTitles = await loadMasterTitles();
+  execEvents = await loadExecEvents();
   renderMasterCalPage();
   document.getElementById('masterCalModal').style.display='flex';
   closeMobileDrawer();
@@ -2471,13 +2637,35 @@ function renderMasterCalPage() {
     const v=MCAT[k]; return `<div class="legend-chip"><div class="legend-dot" style="background:${v.dot}"></div>${k}</div>`;
   }).join('');
 
-  // 탭별 이벤트 필터
-  const tabEvents = isExecTab
-    ? masterEvents.filter(e=>e.cat==='임원 일정')
-    : masterEvents.filter(e=>e.cat!=='임원 일정');
-
   const content=document.getElementById('masterCalContent');
   content.className='master-edit-mode';
+
+  // ── 임원 일정 탭: execEvents에서 masterCalYear 기준 월별 그룹 ──
+  if (isExecTab) {
+    const yearEvents = execEvents.filter(e=>(e.date||'').startsWith(masterCalYear+'-'));
+    content.innerHTML=Array.from({length:12},(_,i)=>{
+      const m=i+1;
+      const evts=yearEvents.filter(e=>parseInt((e.date||'').split('-')[1],10)===m)
+        .sort((a,b)=>(a.date||'')>(b.date||'')?1:-1);
+      const isCurrentMonth=m===curMonth;
+      return `<div class="master-month-card" id="master-month-${m}">
+        <div class="master-month-header" id="mmh-${m}">
+          <span class="master-month-title" onclick="toggleMasterMonth(${m})" style="cursor:pointer;flex:1;font-size:15px;">${m}월</span>
+          <span class="master-month-count" onclick="toggleMasterMonth(${m})" style="cursor:pointer">${evts.length}건</span>
+          <button class="btn btn-sm master-btn-add-evt" onclick="showExecInlineForm(${m})" style="font-size:11px;padding:2px 8px">+ 일정 추가</button>
+          <span style="font-size:11px;color:var(--gray-400);flex-shrink:0;cursor:pointer" id="mchev-${m}" onclick="toggleMasterMonth(${m})">${isCurrentMonth?'▼':'▶'}</span>
+        </div>
+        <div class="master-month-body" id="mmb-${m}" style="${isCurrentMonth?'':'display:none'}">
+          ${evts.map(e=>renderExecEventRow(e,m)).join('')}
+          <div class="master-inline-form" id="mf-${m}"></div>
+        </div>
+      </div>`;
+    }).join('');
+    return;
+  }
+
+  // ── 법정 일정 탭 (기존 로직) ──
+  const tabEvents = masterEvents.filter(e=>e.cat!=='임원 일정');
 
   content.innerHTML=Array.from({length:12},(_,i)=>{
     const m=i+1;
@@ -3087,8 +3275,8 @@ function renderCalendar(year, month) {
     const masterChips = masterEvts.map(e => {
       const c = MCAT[e.cat] || MCAT['급여·세금'];
       return `<div class="cal-chip" style="background:${c.bg};color:${c.tx};cursor:default;border-left:3px solid ${c.dot};"
-        title="[법정일정] ${e.title}">
-        <span class="cal-chip-title" style="font-weight:600">${e.deadline?'⚑ ':''}${e.title}</span>
+        title="[${e.cat==='임원 일정'?'임원 일정':'법정일정'}] ${escHtml(e.title)}">
+        <span class="cal-chip-title" style="font-weight:600">${e.deadline?'⚑ ':''}${escHtml(e.title)}</span>
       </div>`;
     }).join('');
 
@@ -3262,6 +3450,379 @@ document.addEventListener('keydown',e=>{
   if (e.key==='Escape') closeModal();
   if ((e.ctrlKey||e.metaKey)&&e.key==='n') { e.preventDefault(); openAddModal(); }
 });
+
+// ══════════════════════════════════════════════
+//  EXEC EVENTS (임원 일정 — 연·월·일 특정 날짜, 별도 저장소)
+// ══════════════════════════════════════════════
+const EXEC_KEY = 'hr_exec_events_v1';
+let execEvents = [];
+let execMonthOffset = 0;   // 0 = 이번 달 (임원 대시보드)
+let execEditId = null;
+
+function execLocalSave() { localStorage.setItem(EXEC_KEY, JSON.stringify(execEvents)); }
+
+async function loadExecEvents() {
+  if (!useLocal && sbClient) {
+    const { data, error } = await sbClient.from('hr_exec_events').select('*').order('date', { ascending: true });
+    if (!error && Array.isArray(data)) {
+      return data.map(r => ({ id:r.id, date:r.date, title:r.title, desc:r.description||'', deadline:!!r.deadline }));
+    }
+    // 테이블 없음/오류 → localStorage 폴백 (콘솔에만 경고)
+    if (error) console.warn('[execEvents] Supabase 로드 실패, 로컬 폴백:', error.message||error);
+  }
+  try { const d = JSON.parse(localStorage.getItem(EXEC_KEY)); return Array.isArray(d) ? d : []; }
+  catch { return []; }
+}
+
+async function execInsert(evt) {
+  const row = { date:evt.date, title:evt.title, desc:evt.desc||'', deadline:!!evt.deadline };
+  if (!useLocal && sbClient) {
+    const { data, error } = await sbClient.from('hr_exec_events')
+      .insert({ date:row.date, title:row.title, description:row.desc, deadline:row.deadline }).select();
+    if (error) { showToast('임원 일정 저장 오류: '+(error.message||''), 'error'); return null; }
+    const r = (data && data[0]);
+    const nr = r ? { id:r.id, date:r.date, title:r.title, desc:r.description||'', deadline:!!r.deadline } : null;
+    if (nr) execEvents.push(nr);
+    return nr;
+  }
+  const newId = execEvents.length ? Math.max(...execEvents.map(e=>e.id||0)) + 1 : 1;
+  const nr = { id:newId, ...row }; execEvents.push(nr); execLocalSave(); return nr;
+}
+
+async function execUpdate(id, fields) {
+  if (!useLocal && sbClient) {
+    const payload = {};
+    if ('date' in fields)     payload.date = fields.date;
+    if ('title' in fields)    payload.title = fields.title;
+    if ('desc' in fields)     payload.description = fields.desc;
+    if ('deadline' in fields) payload.deadline = !!fields.deadline;
+    const { error } = await sbClient.from('hr_exec_events').update(payload).eq('id', id);
+    if (error) { showToast('임원 일정 수정 오류: '+(error.message||''), 'error'); return false; }
+  }
+  const e = execEvents.find(x=>x.id===id); if (e) Object.assign(e, fields);
+  if (useLocal || !sbClient) execLocalSave();
+  return true;
+}
+
+async function execDelete(id) {
+  if (!useLocal && sbClient) {
+    const { error } = await sbClient.from('hr_exec_events').delete().eq('id', id);
+    if (error) { showToast('임원 일정 삭제 오류: '+(error.message||''), 'error'); return false; }
+  }
+  execEvents = execEvents.filter(x=>x.id!==id);
+  if (useLocal || !sbClient) execLocalSave();
+  return true;
+}
+
+// 구버전: masterEvents에 들어있던 '임원 일정'을 execEvents로 1회 이전
+async function migrateLegacyExecEvents() {
+  const legacy = masterEvents.filter(e=>e.cat==='임원 일정');
+  if (!legacy.length) return;
+  const yr = new Date().getFullYear();
+  for (const e of legacy) {
+    const date = `${yr}-${String(e.month).padStart(2,'0')}-${String(e.day).padStart(2,'0')}`;
+    if (!execEvents.some(x=>x.date===date && x.title===e.title)) {
+      await execInsert({ date, title:e.title, desc:e.desc||'', deadline:!!e.deadline });
+    }
+  }
+  masterEvents = masterEvents.filter(e=>e.cat!=='임원 일정');
+  await saveMasterEvents(masterEvents);
+}
+
+// 임원 일정 변경 후 관련 화면 모두 갱신 (양방향 동기화 반영)
+function refreshExecViews() {
+  if (document.getElementById('view-exec').style.display !== 'none') renderExecDash();
+  if (document.getElementById('view-dashboard').style.display !== 'none') renderDash();
+  const mc = document.getElementById('masterCalModal');
+  if (mc && mc.style.display !== 'none' && masterActiveTab==='exec') renderMasterCalPage();
+}
+
+// ── 임원 대시보드 캘린더 ──
+function getExecYM() {
+  const now = new Date();
+  const d = new Date(now.getFullYear(), now.getMonth() + execMonthOffset, 1);
+  return { year:d.getFullYear(), month:d.getMonth() };
+}
+function shiftExecMonth(dir) { execMonthOffset += dir; renderExecDash(); }
+function goExecToday() { execMonthOffset = 0; renderExecDash(); }
+
+function renderExecDash() {
+  const { year, month } = getExecYM();
+  const prefix = `${year}-${String(month+1).padStart(2,'0')}`;
+  const cnt = execEvents.filter(e=>(e.date||'').startsWith(prefix)).length;
+  const lbl = document.getElementById('execCountLabel');
+  if (lbl) lbl.textContent = ` · ${year}년 ${month+1}월 ${cnt}건`;
+  renderExecCalendar(year, month);
+}
+
+function renderExecCalendar(year, month) {
+  document.getElementById('execCalMonthLabel').textContent = `${year}년 ${month+1}월`;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const firstDay = new Date(year, month, 1);
+  const lastDay  = new Date(year, month+1, 0);
+  const startDow = firstDay.getDay();
+  const totalCells = Math.ceil((startDow + lastDay.getDate()) / 7) * 7;
+  const MAX_SHOW = 5;
+  let html = '';
+  for (let i = 0; i < totalCells; i++) {
+    const cellDate = new Date(year, month, 1 + (i - startDow));
+    const isOtherMonth = cellDate.getMonth() !== month;
+    const isToday = cellDate.getTime() === today.getTime();
+    const dow = cellDate.getDay(), isSun = dow===0, isSat = dow===6;
+    const dateStr = `${cellDate.getFullYear()}-${String(cellDate.getMonth()+1).padStart(2,'0')}-${String(cellDate.getDate()).padStart(2,'0')}`;
+    const dayEvts = execEvents.filter(e=>e.date===dateStr).sort((a,b)=>(a.title||'')>(b.title||'')?1:-1);
+    const shown = dayEvts.slice(0, MAX_SHOW);
+    const hiddenCnt = dayEvts.length - MAX_SHOW;
+    const chips = shown.map(e=>`<div class="cal-chip exec-chip" onclick="event.stopPropagation();openExecForm(null,${e.id})" title="${escHtml(e.title)}"><span class="cal-chip-title">${e.deadline?'⚑ ':''}${escHtml(e.title)}</span></div>`).join('');
+    const moreBtn = hiddenCnt > 0 ? `<div class="cal-more" onclick="event.stopPropagation();openExecMore('${dateStr}')">+${hiddenCnt}개 더보기</div>` : '';
+    html += `<div class="cal-cell${isOtherMonth?' cal-other-month':''}${isToday?' cal-today':''}${isSun?' cal-sunday':''}${isSat?' cal-saturday':''}"
+      data-date="${dateStr}" onclick="openExecForm('${dateStr}')">
+      <div class="cal-day-num">${cellDate.getDate()}</div>
+      ${chips}${moreBtn}
+    </div>`;
+  }
+  document.getElementById('execCalGrid').innerHTML = html;
+}
+
+function openExecMore(dateStr) {
+  const dayEvts = execEvents.filter(e=>e.date===dateStr);
+  const d = new Date(dateStr+'T00:00:00');
+  document.getElementById('calMoreTitle').textContent = `${d.getMonth()+1}월 ${d.getDate()}일 임원 일정 (${dayEvts.length}건)`;
+  document.getElementById('calMoreList').innerHTML = dayEvts.length
+    ? dayEvts.map(e=>`<div class="cal-more-item" onclick="closeCalMore();openExecForm(null,${e.id})">
+        <span class="cal-more-item-dot" style="background:#c9a227"></span>
+        <span class="cal-more-item-title">${e.deadline?'⚑ ':''}${escHtml(e.title)}</span>
+        <span class="cal-more-item-meta">${escHtml(e.desc||'')}</span>
+      </div>`).join('')
+    : '<div style="padding:20px;text-align:center;color:var(--gray-400)">임원 일정 없음</div>';
+  document.getElementById('calMoreModal').style.display = 'flex';
+}
+
+// ── 임원 일정 추가/수정 모달 ──
+function openExecForm(prefillDate, editId) {
+  execEditId = editId || null;
+  const isEdit = !!editId;
+  document.getElementById('execModalTitle').textContent = isEdit ? '임원 일정 수정' : '임원 일정 추가';
+  if (isEdit) {
+    const e = execEvents.find(x=>x.id===editId);
+    if (!e) { showToast('일정을 찾을 수 없습니다.', 'error'); return; }
+    document.getElementById('ef-title').value = e.title || '';
+    document.getElementById('ef-date').value = e.date || '';
+    document.getElementById('ef-desc').value = e.desc || '';
+    document.getElementById('ef-deadline').checked = !!e.deadline;
+    document.getElementById('execDeleteBtn').style.display = '';
+  } else {
+    document.getElementById('ef-title').value = '';
+    document.getElementById('ef-date').value = prefillDate || new Date().toISOString().split('T')[0];
+    document.getElementById('ef-desc').value = '';
+    document.getElementById('ef-deadline').checked = false;
+    document.getElementById('execDeleteBtn').style.display = 'none';
+  }
+  document.getElementById('execEventModal').classList.add('open');
+  setTimeout(()=>document.getElementById('ef-title').focus(), 50);
+}
+function closeExecForm() { document.getElementById('execEventModal').classList.remove('open'); execEditId = null; }
+
+async function saveExecForm() {
+  const title = document.getElementById('ef-title').value.trim();
+  const date  = document.getElementById('ef-date').value;
+  const desc  = document.getElementById('ef-desc').value.trim();
+  const deadline = document.getElementById('ef-deadline').checked;
+  if (!title) { alert('일정 제목을 입력하세요.'); return; }
+  if (!date)  { alert('날짜를 선택하세요.'); return; }
+  if (execEditId) {
+    const ok = await execUpdate(execEditId, { date, title, desc, deadline });
+    if (ok) { closeExecForm(); refreshExecViews(); showToast('임원 일정을 수정했습니다.'); }
+  } else {
+    const nr = await execInsert({ date, title, desc, deadline });
+    if (nr) { closeExecForm(); refreshExecViews(); showToast('임원 일정을 추가했습니다.'); }
+  }
+}
+async function deleteExecFromModal() {
+  if (!execEditId) return;
+  if (!confirm('이 임원 일정을 삭제하시겠습니까?')) return;
+  const ok = await execDelete(execEditId);
+  if (ok) { closeExecForm(); refreshExecViews(); showToast('임원 일정을 삭제했습니다.'); }
+}
+
+// ── 임원 일정 엑셀 (전용 — 할 일/법정 일정과 분리) ──
+function exportExecEvents() {
+  if (typeof XLSX==='undefined') { showToast('엑셀 라이브러리 로딩 중입니다.', 'error'); return; }
+  const header = ['연','월','일','제목','설명','마감(Y/N)'];
+  const rows = [...execEvents].sort((a,b)=>(a.date||'')>(b.date||'')?1:-1).map(e=>{
+    const [y,m,d] = (e.date||'').split('-');
+    return [y||'', parseInt(m||'0',10)||'', parseInt(d||'0',10)||'', e.title||'', e.desc||'', e.deadline?'Y':'N'];
+  });
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+  ws['!cols'] = [{wch:6},{wch:4},{wch:4},{wch:36},{wch:46},{wch:10}];
+  XLSX.utils.book_append_sheet(wb, ws, '임원일정');
+  XLSX.writeFile(wb, `임원일정_${getExecYM().year}.xlsx`);
+}
+
+function importExecEvents(input) {
+  const file = input.files[0]; if (!file) return;
+  if (typeof XLSX==='undefined') { showToast('엑셀 라이브러리 로딩 중입니다.', 'error'); input.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = async ev => {
+    try {
+      const wb = XLSX.read(ev.target.result, { type:'array' });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, raw:false });
+      if (rows.length < 2) { showToast('데이터가 없습니다.', 'error'); input.value=''; return; }
+      const parsed = [];
+      for (let i = 1; i < rows.length; i++) {
+        const [y,m,d,title,desc,dl] = rows[i].map(c=>String(c==null?'':c).trim());
+        const yy=parseInt(y,10), mm=parseInt(m,10), dd=parseInt(d,10);
+        if (!yy || !mm || mm<1 || mm>12 || !dd || dd<1 || dd>31 || !title) continue;
+        parsed.push({ date:`${yy}-${String(mm).padStart(2,'0')}-${String(dd).padStart(2,'0')}`, title, desc:desc||'', deadline:dl==='Y'||dl==='y' });
+      }
+      if (!parsed.length) { showToast('유효한 데이터가 없습니다. (연/월/일/제목 확인)', 'error'); input.value=''; return; }
+      const append = confirm(`임원 일정 ${parsed.length}건을 가져옵니다.\n[확인] 기존에 추가(append)\n[취소] 임원 일정 전체 교체 (법정 일정은 영향 없음)`);
+      if (append) {
+        for (const p of parsed) await execInsert(p);
+      } else {
+        const old = [...execEvents];
+        for (const o of old) await execDelete(o.id);
+        for (const p of parsed) await execInsert(p);
+      }
+      refreshExecViews();
+      showToast(`임원 일정 ${parsed.length}건을 가져왔습니다.`);
+    } catch (err) { showToast('파일 오류: '+err.message, 'error'); }
+    input.value = '';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── 법정/임원 일정 페이지: 임원 탭 인라인 행/폼 ──
+function renderExecEventRow(e, m) {
+  const c = MCAT['임원 일정'];
+  const day = parseInt((e.date||'').split('-')[2],10) || '';
+  const safeTitle = (e.title||'').replace(/'/g,"\\'");
+  return `<div class="master-event-row">
+    <div class="master-event-date">${m}/${day}${e.deadline?'<br><span style="font-size:9px;background:#fee2e2;color:var(--danger);padding:1px 4px;border-radius:3px;font-weight:700">마감</span>':''}</div>
+    <div class="master-event-cat" style="background:${c.bg};color:${c.tx}">임원 일정</div>
+    <div class="master-event-body">
+      <div class="master-event-title">${escHtml(e.title)}</div>
+      <div class="master-event-desc">${escHtml(e.desc||'')}</div>
+    </div>
+    <div class="master-event-actions">
+      <button class="btn btn-sm master-btn-add-task" onclick="openMemberPicker(event,'${safeTitle}','${e.date}')" title="담당자 지정 후 할 일 추가" style="font-size:11px;white-space:nowrap">→ 할 일</button>
+      <button class="btn btn-sm master-btn-edit" onclick="showExecInlineFormEdit(${e.id})" title="수정">✏</button>
+      <button class="btn btn-sm btn-danger master-btn-del" onclick="deleteExecInlineEvent(${e.id})" title="삭제">✕</button>
+    </div>
+  </div>`;
+}
+function showExecInlineForm(m) {
+  const body = document.getElementById('mmb-'+m);
+  if (body && body.style.display==='none') toggleMasterMonth(m);
+  const form = document.getElementById('mf-'+m);
+  form.className = 'master-inline-form open';
+  form.innerHTML = buildExecInlineForm(m, null);
+}
+function showExecInlineFormEdit(id) {
+  const e = execEvents.find(x=>x.id===id); if (!e) return;
+  const m = parseInt((e.date||'').split('-')[1],10);
+  const body = document.getElementById('mmb-'+m);
+  if (body && body.style.display==='none') toggleMasterMonth(m);
+  const form = document.getElementById('mf-'+m);
+  form.className = 'master-inline-form open';
+  form.innerHTML = buildExecInlineForm(m, e);
+}
+function buildExecInlineForm(m, e) {
+  const defDate = e ? e.date : `${masterCalYear}-${String(m).padStart(2,'0')}-01`;
+  return `<div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:10px">${e?'임원 일정 수정':'새 임원 일정 추가'}</div>
+    <div style="display:grid;grid-template-columns:160px 1fr;gap:8px;margin-bottom:8px;align-items:end;">
+      <div><div class="mf-label">날짜</div><input class="mf-input" type="date" id="efi-date" value="${defDate}" style="width:100%"></div>
+      <div><div class="mf-label">제목 *</div><input class="mf-input" type="text" id="efi-title" value="${e?escHtml(e.title):''}" placeholder="임원 일정 제목"></div>
+    </div>
+    <div style="margin-bottom:8px;"><div class="mf-label">설명 <span style="font-weight:400;color:var(--gray-400)">(선택)</span></div><input class="mf-input" type="text" id="efi-desc" value="${e?escHtml(e.desc||''):''}" placeholder="간단한 설명" style="width:100%"></div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;white-space:nowrap;"><input type="checkbox" id="efi-deadline" ${e&&e.deadline?'checked':''}>마감일</label>
+      <button class="btn btn-primary btn-sm" onclick="saveExecInlineForm(${e?e.id:'null'},${m})">저장</button>
+      <button class="btn btn-sm" onclick="closeInlineForm(${m})">취소</button>
+    </div>`;
+}
+async function saveExecInlineForm(id, origMonth) {
+  const date = document.getElementById('efi-date').value;
+  const title = document.getElementById('efi-title').value.trim();
+  const desc = document.getElementById('efi-desc').value.trim();
+  const deadline = document.getElementById('efi-deadline').checked;
+  if (!title) { showToast('제목을 입력하세요.', 'error'); return; }
+  if (!date)  { showToast('날짜를 선택하세요.', 'error'); return; }
+  if (id) await execUpdate(id, { date, title, desc, deadline });
+  else    await execInsert({ date, title, desc, deadline });
+  closeInlineForm(origMonth);
+  renderMasterCalPage();
+  refreshExecViews();
+  showToast(id ? '임원 일정을 수정했습니다.' : '임원 일정을 추가했습니다.');
+  const newM = parseInt(date.split('-')[1],10);
+  const body = document.getElementById('mmb-'+newM);
+  if (body && body.style.display==='none') toggleMasterMonth(newM);
+}
+async function deleteExecInlineEvent(id) {
+  if (!confirm('이 임원 일정을 삭제하시겠습니까?')) return;
+  await execDelete(id);
+  renderMasterCalPage();
+  refreshExecViews();
+  showToast('임원 일정을 삭제했습니다.');
+}
+
+// ══════════════════════════════════════════════
+//  REALTIME 동기화 (모바일 ↔ PC 자동 반영)
+// ══════════════════════════════════════════════
+let realtimeChannel = null;
+let _remoteRefreshTimer = null;
+
+function isEditingOpen() {
+  const tm = document.getElementById('taskModal');
+  const em = document.getElementById('execEventModal');
+  return (tm && tm.classList.contains('open'))
+      || (em && em.classList.contains('open'))
+      || document.querySelector('.master-inline-form.open') !== null;
+}
+
+function subscribeRealtime() {
+  if (useLocal || !sbClient) return;
+  try {
+    if (realtimeChannel) { sbClient.removeChannel(realtimeChannel); realtimeChannel = null; }
+    realtimeChannel = sbClient.channel('hr-sync')
+      .on('postgres_changes', { event:'*', schema:'public', table:'hr_tasks' },        scheduleRemoteRefresh)
+      .on('postgres_changes', { event:'*', schema:'public', table:'hr_exec_events' },   scheduleRemoteRefresh)
+      .on('postgres_changes', { event:'*', schema:'public', table:'hr_master_events' }, scheduleRemoteRefresh)
+      .subscribe();
+  } catch (err) { console.warn('[realtime] 구독 실패:', err); }
+}
+
+function scheduleRemoteRefresh() {
+  clearTimeout(_remoteRefreshTimer);
+  _remoteRefreshTimer = setTimeout(remoteRefresh, 400); // 연속 변경 디바운스
+}
+
+async function remoteRefresh() {
+  if (useLocal || !sbClient) return;
+  try {
+    const [t, ex, me] = await Promise.all([dbLoad(), loadExecEvents(), loadMasterEvents()]);
+    tasks = t; execEvents = ex; masterEvents = me;
+    rerenderCurrentView();
+  } catch (err) { console.warn('[realtime] 갱신 실패:', err); }
+}
+
+function rerenderCurrentView() {
+  // 편집 중이면 화면 흔들림 방지 (데이터는 이미 갱신됨, 렌더만 보류)
+  if (isEditingOpen()) return;
+  const visible = id => { const el = document.getElementById(id); return el && el.style.display !== 'none'; };
+  if (visible('view-tasks')) renderTable();
+  if (visible('view-dashboard')) renderDash();
+  if (visible('view-weekly')) renderWeekly();
+  if (visible('view-exec')) renderExecDash();
+  const mc = document.getElementById('masterCalModal');
+  if (mc && mc.style.display !== 'none') renderMasterCalPage();
+  updateCounts();
+}
+
+// 탭 복귀/포커스 시 최신 데이터 가져오기 (Realtime 미사용 환경 폴백)
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') remoteRefresh(); });
+window.addEventListener('focus', remoteRefresh);
 
 // ══════════════════════════════════════════════
 //  INIT
