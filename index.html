@@ -360,8 +360,49 @@
     max-width: 160px;
     padding-right: 16px;
   }
+  /* 할 일 추가 FAB — 인원현황 버튼 바로 위 */
+  .fab-add {
+    position: fixed;
+    bottom: 88px;
+    right: 28px;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: #16a34a;
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    box-shadow: 0 4px 16px rgba(22,163,74,0.35);
+    cursor: pointer;
+    overflow: hidden;
+    width: 48px;
+    height: 48px;
+    transition: width 0.32s cubic-bezier(.4,0,.2,1), box-shadow 0.2s, background 0.15s;
+    white-space: nowrap;
+    font-family: var(--font);
+  }
+  .fab-add:hover {
+    width: 148px;
+    background: #15803d;
+    box-shadow: 0 6px 24px rgba(22,163,74,0.45);
+  }
+  .fab-add .fab-icon {
+    font-size: 22px;
+    font-weight: 300;
+  }
+  .fab-add .fab-text {
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .fab-add:hover .fab-text {
+    opacity: 1;
+    max-width: 120px;
+    padding-right: 16px;
+  }
   @media(max-width:900px) {
     .fab { bottom: 76px; right: 16px; }
+    .fab-add { bottom: 132px; right: 16px; }
   }
 
   /* MASTER CALENDAR 모바일 최적화 */
@@ -1078,7 +1119,7 @@
             ✍ 등록 <span id="regModeToggleStatusExec" style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--gray-200);color:var(--gray-500);margin-left:2px">OFF</span>
           </button>
           <button class="btn btn-green btn-sm" onclick="openExecForm()">+ 임원 일정 추가</button>
-          <button class="btn btn-sm btn-primary" onclick="openPasteModal()">📋 붙여넣기 입력</button>
+          <button class="btn btn-sm btn-primary" onclick="openPasteModal()" style="line-height:1">📋 붙여넣기 입력</button>
           <button class="btn btn-sm" onclick="exportExecEvents()">&#8595; 엑셀 내보내기</button>
           <label class="btn btn-sm" style="cursor:pointer;margin:0">&#8679; 엑셀 올리기<input type="file" id="execExcelInput" accept=".xlsx,.xls" style="display:none" onchange="importExecEvents(this)"></label>
         </div>
@@ -1241,6 +1282,12 @@
 <!-- DRAG GHOST -->
 <div id="calDragGhost" style="position:fixed;pointer-events:none;z-index:9999;display:none;padding:4px 8px;background:var(--accent);color:#fff;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap;opacity:0.9;transform:translate(-50%,-50%)"></div>
 
+<!-- FLOATING BUTTON: 할 일 추가 -->
+<button class="fab-add" onclick="openAddModal()" title="할 일 추가">
+  <span class="fab-icon">＋</span>
+  <span class="fab-text">할 일 추가</span>
+</button>
+
 <!-- FLOATING BUTTON -->
 <a href="https://nomusakoo.github.io/Personnelstatus/" target="_blank" class="fab" title="인원현황 바로가기">
   <span class="fab-icon">👥</span>
@@ -1370,21 +1417,33 @@
           미리보기
           <span id="pastePreviewCount" style="color:var(--accent);font-weight:700;margin-left:6px"></span>
           <span id="pastePreviewErrCount" style="color:var(--danger);font-size:11px;margin-left:8px"></span>
+          <span id="pasteSelectedCount" style="color:var(--gray-500);font-size:11px;margin-left:8px"></span>
         </div>
         <label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--gray-600)">
           <input type="checkbox" id="pasteAppendCheck" checked>
           기존 일정에 추가 <span style="color:var(--gray-400)">(체크 해제 시 전체 교체)</span>
         </label>
       </div>
-      <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius)">
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <div style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius)">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed">
+          <colgroup>
+            <col style="width:32px">
+            <col style="width:108px">
+            <col style="width:36%">
+            <col>
+            <col style="width:52px">
+            <col style="width:52px">
+          </colgroup>
           <thead>
-            <tr style="background:var(--gray-50);position:sticky;top:0">
-              <th style="padding:7px 10px;text-align:left;color:var(--gray-500);border-bottom:1px solid var(--border);white-space:nowrap">날짜</th>
-              <th style="padding:7px 10px;text-align:left;color:var(--gray-500);border-bottom:1px solid var(--border)">제목</th>
-              <th style="padding:7px 10px;text-align:left;color:var(--gray-500);border-bottom:1px solid var(--border)">설명</th>
-              <th style="padding:7px 10px;text-align:center;color:var(--gray-500);border-bottom:1px solid var(--border);white-space:nowrap">마감</th>
-              <th style="padding:7px 10px;text-align:center;color:var(--gray-500);border-bottom:1px solid var(--border)">검증</th>
+            <tr style="background:var(--gray-50);position:sticky;top:0;z-index:1">
+              <th style="padding:7px 0 7px 10px;border-bottom:1px solid var(--border);text-align:center">
+                <input type="checkbox" id="pasteSelectAll" onchange="togglePasteAll(this.checked)" title="전체 선택/해제">
+              </th>
+              <th style="padding:7px 8px;text-align:left;color:var(--gray-500);border-bottom:1px solid var(--border);white-space:nowrap">날짜</th>
+              <th style="padding:7px 8px;text-align:left;color:var(--gray-500);border-bottom:1px solid var(--border)">제목</th>
+              <th style="padding:7px 8px;text-align:left;color:var(--gray-500);border-bottom:1px solid var(--border)">설명</th>
+              <th style="padding:7px 8px;text-align:center;color:var(--gray-500);border-bottom:1px solid var(--border)">마감</th>
+              <th style="padding:7px 8px;text-align:center;color:var(--gray-500);border-bottom:1px solid var(--border)">검증</th>
             </tr>
           </thead>
           <tbody id="pastePreviewBody"></tbody>
@@ -4231,12 +4290,13 @@ function refreshGridPreview() {
 //  공통 미리보기 렌더링
 // ══════════════════════════════════════════════
 function renderPastePreview() {
-  const wrap = document.getElementById('pastePreviewWrap');
-  const tbody = document.getElementById('pastePreviewBody');
-  const countEl = document.getElementById('pastePreviewCount');
-  const errEl   = document.getElementById('pastePreviewErrCount');
-  const saveBtn = document.getElementById('pasteSaveBtn');
-  const errMsg  = document.getElementById('pasteErrorMsg');
+  const wrap      = document.getElementById('pastePreviewWrap');
+  const tbody     = document.getElementById('pastePreviewBody');
+  const countEl   = document.getElementById('pastePreviewCount');
+  const errEl     = document.getElementById('pastePreviewErrCount');
+  const selEl     = document.getElementById('pasteSelectedCount');
+  const saveBtn   = document.getElementById('pasteSaveBtn');
+  const errMsg    = document.getElementById('pasteErrorMsg');
 
   if (!_parsedRows.length) {
     wrap.style.display = 'none';
@@ -4244,40 +4304,87 @@ function renderPastePreview() {
     return;
   }
 
+  // 기존 체크 상태 보존 (재렌더 시 유지)
+  const prevChecked = new Set(
+    [...document.querySelectorAll('.paste-row-chk:checked')].map(el => el.dataset.idx)
+  );
+
   const valid   = _parsedRows.filter(r => r.valid);
   const invalid = _parsedRows.filter(r => !r.valid);
 
   countEl.textContent = `유효 ${valid.length}건`;
-  errEl.textContent   = invalid.length ? `오류 ${invalid.length}건 (저장 제외)` : '';
+  errEl.textContent   = invalid.length ? `오류 ${invalid.length}건` : '';
   errMsg.textContent  = '';
-  saveBtn.disabled    = valid.length === 0;
 
-  tbody.innerHTML = _parsedRows.map(r => {
-    const rowCls = r.valid ? 'paste-row-ok' : 'paste-row-err';
-    const icon   = r.valid ? '✅' : '❌';
+  tbody.innerHTML = _parsedRows.map((r, i) => {
+    // 유효 행: 이전 체크 상태 유지 (처음엔 기본 ON), 오류 행: disabled
+    const isFirstRender = prevChecked.size === 0;
+    const chkd = r.valid ? (isFirstRender ? true : prevChecked.has(String(i))) : false;
+    const rowCls = r.valid ? (chkd ? 'paste-row-ok' : '') : 'paste-row-err';
     const hint = !r.valid
       ? (!isValidDate(r.date)
           ? `날짜 인식 실패: "${escHtml(r.dateRaw)}" → "${escHtml(r.date||'?')}"`
           : '제목 없음')
       : '유효';
-    return `<tr class="${rowCls}">
-      <td style="padding:6px 10px;font-family:var(--font-mono);font-size:12px;white-space:nowrap">${escHtml(r.date||r.dateRaw)}</td>
-      <td style="padding:6px 10px;font-size:12px">${escHtml(r.title)}</td>
-      <td style="padding:6px 10px;font-size:12px;color:var(--gray-500)">${escHtml(r.desc)}</td>
-      <td style="padding:6px 10px;text-align:center;font-size:13px">${r.deadline ? '⚑' : ''}</td>
-      <td style="padding:6px 10px;text-align:center" class="paste-valid-icon" title="${hint}">${icon}</td>
+    return `<tr class="${rowCls}" id="paste-tr-${i}">
+      <td style="padding:6px 0 6px 10px;text-align:center">
+        <input type="checkbox" class="paste-row-chk" data-idx="${i}"
+          ${chkd ? 'checked' : ''} ${!r.valid ? 'disabled' : ''}
+          onchange="onPasteRowCheck(${i},this.checked)" style="cursor:${r.valid?'pointer':'not-allowed'}">
+      </td>
+      <td style="padding:6px 8px;font-family:var(--font-mono);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(r.date||r.dateRaw)}</td>
+      <td style="padding:6px 8px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(r.title)}</td>
+      <td style="padding:6px 8px;font-size:12px;color:var(--gray-500);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(r.desc)}</td>
+      <td style="padding:6px 8px;text-align:center;font-size:13px">${r.deadline ? '⚑' : ''}</td>
+      <td style="padding:6px 8px;text-align:center" class="paste-valid-icon" title="${hint}">${r.valid ? '✅' : '❌'}</td>
     </tr>`;
   }).join('');
 
+  updatePasteSelectUI();
   wrap.style.display = '';
+}
+
+function onPasteRowCheck(idx, checked) {
+  const tr = document.getElementById(`paste-tr-${idx}`);
+  if (tr) tr.className = checked ? 'paste-row-ok' : '';
+  updatePasteSelectUI();
+}
+
+function togglePasteAll(checked) {
+  document.querySelectorAll('.paste-row-chk:not(:disabled)').forEach(el => {
+    el.checked = checked;
+    const idx = parseInt(el.dataset.idx);
+    const tr = document.getElementById(`paste-tr-${idx}`);
+    if (tr) tr.className = checked ? 'paste-row-ok' : '';
+  });
+  updatePasteSelectUI();
+}
+
+function updatePasteSelectUI() {
+  const all  = [...document.querySelectorAll('.paste-row-chk:not(:disabled)')];
+  const chkd = all.filter(el => el.checked);
+  const selEl   = document.getElementById('pasteSelectedCount');
+  const saveBtn = document.getElementById('pasteSaveBtn');
+  const allChk  = document.getElementById('pasteSelectAll');
+
+  if (selEl) selEl.textContent = chkd.length ? `· ${chkd.length}건 선택됨` : '';
+  if (saveBtn) saveBtn.disabled = chkd.length === 0;
+  if (allChk) {
+    allChk.checked       = all.length > 0 && chkd.length === all.length;
+    allChk.indeterminate = chkd.length > 0 && chkd.length < all.length;
+  }
 }
 
 // ══════════════════════════════════════════════
 //  저장
 // ══════════════════════════════════════════════
 async function savePasteData() {
-  const valid = _parsedRows.filter(r => r.valid);
-  if (!valid.length) { showToast('저장할 유효한 데이터가 없습니다.', 'error'); return; }
+  // 체크된 인덱스 수집
+  const checkedIdxs = new Set(
+    [...document.querySelectorAll('.paste-row-chk:checked')].map(el => parseInt(el.dataset.idx))
+  );
+  const toSave = _parsedRows.filter((r, i) => r.valid && checkedIdxs.has(i));
+  if (!toSave.length) { showToast('저장할 항목이 없습니다.', 'error'); return; }
 
   const saveBtn = document.getElementById('pasteSaveBtn');
   saveBtn.disabled = true;
@@ -4288,12 +4395,12 @@ async function savePasteData() {
     const old = [...execEvents];
     for (const o of old) await execDelete(o.id);
   }
-  for (const r of valid) {
+  for (const r of toSave) {
     await execInsert({ date: r.date, title: r.title, desc: r.desc, deadline: r.deadline });
   }
 
   refreshExecViews();
-  showToast(`임원 일정 ${valid.length}건을 저장했습니다.`);
+  showToast(`임원 일정 ${toSave.length}건을 저장했습니다.`);
   closePasteModal();
   saveBtn.textContent = '저장';
 }
