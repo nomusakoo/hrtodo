@@ -530,25 +530,42 @@
   .db-error-notice{background:#fff1f2;border:1px solid #fda4af;border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;font-size:13px;color:#be123c;display:none;align-items:center;gap:10px;}
   .db-error-notice.show{display:flex;}
 
-  /* PIN LOCK */
-  .pin-overlay{position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(12px) brightness(0.6);-webkit-backdrop-filter:blur(12px) brightness(0.6);}
-  .pin-overlay.hidden{display:none;}
-  .pin-box{background:#fff;border-radius:20px;padding:36px 32px 30px;width:320px;max-width:90vw;box-shadow:0 24px 64px rgba(0,0,0,0.3);text-align:center;}
-  .pin-logo{font-size:28px;margin-bottom:8px;}
-  .pin-title{font-size:16px;font-weight:600;color:var(--primary);margin-bottom:4px;}
-  .pin-sub{font-size:12px;color:var(--gray-400);margin-bottom:24px;}
-  .pin-dots{display:flex;justify-content:center;gap:14px;margin-bottom:28px;}
-  .pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--gray-300);background:transparent;transition:all 0.15s;}
-  .pin-dot.filled{background:var(--accent);border-color:var(--accent);}
-  .pin-dot.error{background:var(--danger);border-color:var(--danger);animation:shake 0.3s ease;}
-  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
-  .pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
-  .pin-key{background:var(--gray-50);border:1px solid var(--gray-200);border-radius:12px;padding:14px 0;font-size:20px;font-weight:600;font-family:var(--font-mono);color:var(--primary);cursor:pointer;transition:all 0.1s;user-select:none;}
-  .pin-key:hover{background:var(--accent-bg);border-color:var(--accent-light);color:var(--accent);}
-  .pin-key:active{transform:scale(0.94);}
-  .pin-key.del{font-size:16px;color:var(--gray-500);}
-  .pin-key.zero{grid-column:2;}
-  .pin-error-msg{font-size:12px;color:var(--danger);margin-top:14px;min-height:18px;}
+  /* LOGIN */
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+  .login-overlay{position:fixed;inset:0;z-index:700;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,var(--primary) 0%,#16213e 60%,#0f3460 100%);}
+  .login-overlay.hidden{display:none;}
+  .login-box{background:#fff;border-radius:20px;padding:40px 36px 32px;width:360px;max-width:92vw;
+    box-shadow:0 32px 80px rgba(0,0,0,0.35);animation:fadeInUp 0.4s cubic-bezier(.22,.61,.36,1) both;}
+  .login-logo{font-size:32px;text-align:center;margin-bottom:10px;}
+  .login-title{font-size:17px;font-weight:700;color:var(--primary);text-align:center;margin-bottom:4px;letter-spacing:-0.4px;}
+  .login-sub{font-size:12px;color:var(--gray-400);text-align:center;margin-bottom:28px;}
+  .login-field{margin-bottom:14px;}
+  .login-label{display:block;font-size:11px;font-weight:600;color:var(--gray-600);margin-bottom:5px;letter-spacing:0.3px;text-transform:uppercase;}
+  .login-input{width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;
+    font-family:var(--font);color:var(--gray-800);outline:none;transition:border-color 0.15s,box-shadow 0.15s;background:#fff;}
+  .login-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(74,111,165,0.12);}
+  .login-input.shake{animation:shake 0.35s ease;}
+  .login-btn{width:100%;padding:12px;background:var(--accent);border:none;border-radius:10px;color:#fff;
+    font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;margin-top:6px;
+    transition:background 0.15s,transform 0.1s;letter-spacing:0.2px;}
+  .login-btn:hover{background:#3a5f95;}
+  .login-btn:active{transform:scale(0.98);}
+  .login-btn:disabled{background:var(--gray-300);cursor:not-allowed;}
+  .login-btn-local{width:100%;padding:9px;background:transparent;border:1.5px solid var(--border);border-radius:10px;
+    color:var(--gray-500);font-size:13px;font-family:var(--font);cursor:pointer;margin-top:8px;transition:all 0.15s;}
+  .login-btn-local:hover{border-color:var(--gray-400);color:var(--gray-700);background:var(--gray-50);}
+  .login-error{font-size:12px;color:var(--danger);min-height:18px;margin-top:10px;text-align:center;font-weight:500;}
+  .login-divider{display:flex;align-items:center;gap:10px;margin:16px 0 10px;color:var(--gray-300);font-size:11px;}
+  .login-divider::before,.login-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+  /* 헤더 유저 정보 */
+  .header-user{display:flex;align-items:center;gap:10px;}
+  .header-user-name{font-size:13px;color:rgba(255,255,255,0.85);font-weight:500;display:flex;align-items:center;gap:5px;}
+  .header-user-name .avatar{width:22px;height:22px;font-size:10px;margin-right:0;}
+  .logout-btn{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.7);
+    padding:4px 10px;border-radius:6px;font-size:11px;font-family:var(--font);cursor:pointer;transition:all 0.15s;}
+  .logout-btn:hover{background:rgba(255,255,255,0.22);color:#fff;}
 
   /* MOBILE DRAWER */
   .mobile-menu-btn{display:none;background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px 6px;line-height:1;}
@@ -586,8 +603,7 @@
     .toolbar-right{margin-left:0;width:100%;justify-content:flex-end;flex-wrap:wrap;gap:6px;}
     .page-title{font-size:16px;}
     .page-header{flex-wrap:wrap;gap:8px;}
-    .pin-box{padding:28px 20px 24px;}
-    .pin-key{padding:12px 0;font-size:18px;}
+    .login-box{padding:28px 20px 24px;}
     .db-status span:not(.db-dot){display:none;}
     .mobile-nav{display:flex;}
 
@@ -769,30 +785,26 @@
   </div>
 </div>
 
-<!-- PIN LOCK -->
-<div class="pin-overlay hidden" id="pinOverlay">
-  <div class="pin-box">
-    <div class="pin-logo">&#9881;</div>
-    <div class="pin-title">인사노무팀 업무 관리</div>
-    <div class="pin-sub">4자리 비밀번호를 입력하세요</div>
-    <div class="pin-dots">
-      <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
-      <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+<!-- LOGIN OVERLAY -->
+<div class="login-overlay hidden" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">🏢</div>
+    <div class="login-title">인사노무팀 업무 관리</div>
+    <div class="login-sub">계정으로 로그인하세요</div>
+    <div class="login-field">
+      <label class="login-label">이메일</label>
+      <input type="email" class="login-input" id="loginEmail" placeholder="email@company.com"
+        onkeydown="if(event.key==='Enter')document.getElementById('loginPassword').focus()">
     </div>
-    <div class="pin-pad">
-      <button class="pin-key" onclick="pinInput('1')">1</button>
-      <button class="pin-key" onclick="pinInput('2')">2</button>
-      <button class="pin-key" onclick="pinInput('3')">3</button>
-      <button class="pin-key" onclick="pinInput('4')">4</button>
-      <button class="pin-key" onclick="pinInput('5')">5</button>
-      <button class="pin-key" onclick="pinInput('6')">6</button>
-      <button class="pin-key" onclick="pinInput('7')">7</button>
-      <button class="pin-key" onclick="pinInput('8')">8</button>
-      <button class="pin-key" onclick="pinInput('9')">9</button>
-      <button class="pin-key zero" onclick="pinInput('0')">0</button>
-      <button class="pin-key del" onclick="pinDelete()">⌫</button>
+    <div class="login-field">
+      <label class="login-label">비밀번호</label>
+      <input type="password" class="login-input" id="loginPassword" placeholder="비밀번호 입력"
+        onkeydown="if(event.key==='Enter')doLogin()">
     </div>
-    <div class="pin-error-msg" id="pinErrorMsg"></div>
+    <div class="login-error" id="loginError"></div>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">로그인</button>
+    <div class="login-divider">또는</div>
+    <button class="login-btn-local" onclick="doLocalLogin()">🗂 로컬 저장소로 계속 (DB 없이 사용)</button>
   </div>
 </div>
 
@@ -814,6 +826,10 @@
       <span id="dbLabel">연결 안됨</span>
     </div>
     <span class="today-badge" id="todayBadge"></span>
+    <div class="header-user" id="headerUser" style="display:none">
+      <span class="header-user-name" id="headerUserName"></span>
+      <button class="logout-btn" onclick="doLogout()">로그아웃</button>
+    </div>
   </div>
 </header>
 
@@ -1328,11 +1344,10 @@
 
 <script>
 // ══════════════════════════════════════════════
-//  PIN LOCK 상수 (saveConfig 등에서 참조하므로 최상단 선언)
+//  AUTH STATE
 // ══════════════════════════════════════════════
-const APP_PIN = '1234';
-let pinBuffer = '';
-const PIN_SESSION_KEY = 'hr_pin_unlocked';
+let currentUser = null;      // Supabase Auth user 객체
+let currentUserName = '';    // hr_users.name (팀원 이름)
 
 // ══════════════════════════════════════════════
 //  CONFIG & DATA LAYER
@@ -1367,8 +1382,7 @@ function saveConfig() {
   useLocal = false;
   if (initSupabase(url, key)) {
     document.getElementById('configPanel').classList.add('hidden');
-    if (sessionStorage.getItem(PIN_SESSION_KEY) === '1') { startApp(); }
-    else { showPinOverlay(); startApp(); }
+    showLoginOverlay();
   } else { alert('Supabase 초기화에 실패했습니다. URL과 키를 확인하세요.'); }
 }
 
@@ -1376,8 +1390,7 @@ function useLocalStorage() {
   useLocal = true; sbClient = null;
   document.getElementById('configPanel').classList.add('hidden');
   setDbStatus(false, '로컬 저장소');
-  if (sessionStorage.getItem(PIN_SESSION_KEY) === '1') { startApp(); }
-  else { showPinOverlay(); startApp(); }
+  doLocalLogin();
 }
 
 function setDbStatus(connected, label) {
@@ -1536,6 +1549,107 @@ function closeMobileDrawer() {
   setTimeout(()=>{ if(!overlay.classList.contains('open')) overlay.style.display='none'; }, 380);
 }
 
+// ── AUTH: 로그인 오버레이 ──
+function showLoginOverlay() {
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginPassword').value = '';
+  document.getElementById('loginError').textContent = '';
+  document.getElementById('loginBtn').disabled = false;
+  setTimeout(() => document.getElementById('loginEmail').focus(), 100);
+}
+function hideLoginOverlay() {
+  document.getElementById('loginOverlay').classList.add('hidden');
+}
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pw    = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  const btn   = document.getElementById('loginBtn');
+
+  if (!email || !pw) { setLoginError('이메일과 비밀번호를 입력하세요.'); return; }
+  btn.disabled = true; btn.textContent = '로그인 중...';
+  errEl.textContent = '';
+
+  const { data, error } = await sbClient.auth.signInWithPassword({ email, password: pw });
+  if (error) {
+    btn.disabled = false; btn.textContent = '로그인';
+    const msg = error.message.includes('Invalid login') ? '이메일 또는 비밀번호가 올바르지 않습니다.' : error.message;
+    setLoginError(msg);
+    ['loginEmail','loginPassword'].forEach(id => {
+      const el = document.getElementById(id);
+      el.classList.add('shake');
+      setTimeout(() => el.classList.remove('shake'), 400);
+    });
+    return;
+  }
+
+  currentUser = data.user;
+  // hr_users 테이블에서 팀원 이름 조회
+  const { data: profile } = await sbClient.from('hr_users').select('name, role').eq('id', currentUser.id).single();
+  if (profile) {
+    currentUserName = profile.name;
+  } else {
+    // hr_users 미등록 계정 — 이메일 앞부분으로 대체 표시, 기능은 정상 동작
+    currentUserName = email.split('@')[0];
+    console.warn('[auth] hr_users에 등록되지 않은 계정:', email);
+  }
+
+  hideLoginOverlay();
+  updateHeaderUser();
+  // 로그인한 팀원 이름으로 myMember 자동 세팅
+  if (currentUserName && MEMBERS.includes(currentUserName)) {
+    myMember = currentUserName;
+    myTaskOnly = true;
+    localStorage.setItem('hr_my_member', myMember);
+    localStorage.setItem('hr_my_task_only', '1');
+  }
+  btn.textContent = '로그인';
+  btn.disabled = false;
+  startApp();
+}
+
+function setLoginError(msg) {
+  document.getElementById('loginError').textContent = msg;
+}
+
+async function doLocalLogin() {
+  useLocal = true; sbClient = null;
+  currentUser = null; currentUserName = '';
+  setDbStatus(false, '로컬 저장소');
+  document.getElementById('loginOverlay').classList.add('hidden');
+  updateHeaderUser();
+  startApp();
+}
+
+async function doLogout() {
+  if (!useLocal && sbClient) {
+    await sbClient.auth.signOut();
+  }
+  currentUser = null; currentUserName = '';
+  tasks = []; execEvents = []; masterEvents = [];
+  myMember = ''; myTaskOnly = false;
+  updateHeaderUser();
+  showLoginOverlay();
+}
+
+function updateHeaderUser() {
+  const wrap = document.getElementById('headerUser');
+  const nameEl = document.getElementById('headerUserName');
+  if (currentUserName) {
+    // 팀원 아바타 색상 재활용
+    const avatarCls = `avatar avatar-${currentUserName}`;
+    nameEl.innerHTML = `<span class="${avatarCls}">${currentUserName.charAt(0)}</span>${currentUserName}`;
+    wrap.style.display = 'flex';
+  } else if (useLocal) {
+    nameEl.innerHTML = `<span style="font-size:13px">🗂</span> 로컬 모드`;
+    wrap.style.display = 'flex';
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+
 // ── APP START ──
 async function startApp() {
   showLoading(true);
@@ -1554,7 +1668,6 @@ async function startApp() {
         || (msg.includes('relation') && msg.includes('does not exist'));
 
       if (isSchemaCacheErr || isTableMissing) {
-        // schema cache 오류 → 자동으로 한 번 더 시도 (3초 후)
         showToast('Supabase 연결 재시도 중...', 'error');
         await new Promise(r => setTimeout(r, 3000));
         const retry = await testConnection();
@@ -1571,13 +1684,11 @@ async function startApp() {
           subscribeRealtime();
           return;
         }
-        // 재시도도 실패 → 안내 팝업
         showLoading(false);
         document.getElementById('tableErrModal').classList.add('open');
         return;
       }
 
-      // 그 외 오류 → 설정 패널 표시
       showLoading(false);
       document.getElementById('dbErrorText').textContent = `연결 실패(${code}): ${msg}`;
       document.getElementById('dbErrorNotice').classList.add('show');
@@ -1589,7 +1700,6 @@ async function startApp() {
 
   await dbSeedIfEmpty();
   tasks = await dbLoad();
-  // Master 캘린더 초기 로드 (달력 오버레이용)
   masterEvents = await loadMasterEvents();
   masterTitles = await loadMasterTitles();
   execEvents = await loadExecEvents();
@@ -3478,29 +3588,9 @@ function calcRepeatDates(baseDate, unit, count) {
 document.getElementById('taskModal').addEventListener('click',function(e){if(e.target===this)closeModal();});
 document.getElementById('excelModal').addEventListener('click',function(e){if(e.target===this)closeExcelModal();});
 
-// ══════════════════════════════════════════════
-//  PIN LOCK 함수
-// ══════════════════════════════════════════════
-function showPinOverlay() { pinBuffer=''; updatePinDots(); document.getElementById('pinErrorMsg').textContent=''; document.getElementById('pinOverlay').classList.remove('hidden'); }
-function hidePinOverlay() { document.getElementById('pinOverlay').classList.add('hidden'); sessionStorage.setItem(PIN_SESSION_KEY,'1'); }
-function pinInput(digit) { if(pinBuffer.length>=4)return; pinBuffer+=digit; updatePinDots(); if(pinBuffer.length===4)setTimeout(checkPin,120); }
-function pinDelete() { if(!pinBuffer.length)return; pinBuffer=pinBuffer.slice(0,-1); updatePinDots(); document.getElementById('pinErrorMsg').textContent=''; }
-function updatePinDots() { for(let i=0;i<4;i++) document.getElementById(`pd${i}`).className='pin-dot'+(i<pinBuffer.length?' filled':''); }
-function checkPin() {
-  if (pinBuffer===APP_PIN) { hidePinOverlay(); }
-  else {
-    for(let i=0;i<4;i++) document.getElementById(`pd${i}`).className='pin-dot error';
-    document.getElementById('pinErrorMsg').textContent='비밀번호가 올바르지 않습니다.';
-    setTimeout(()=>{ pinBuffer=''; updatePinDots(); document.getElementById('pinErrorMsg').textContent=''; },800);
-  }
-}
 
+// ── 키보드 단축키 ──
 document.addEventListener('keydown',e=>{
-  if (!document.getElementById('pinOverlay').classList.contains('hidden')) {
-    if (e.key>='0'&&e.key<='9') pinInput(e.key);
-    if (e.key==='Backspace') pinDelete();
-    return;
-  }
   if (e.key==='Escape') closeModal();
   if ((e.ctrlKey||e.metaKey)&&e.key==='n') { e.preventDefault(); openAddModal(); }
 });
@@ -3888,23 +3978,57 @@ window.addEventListener('focus', remoteRefresh);
 // ══════════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════════
-(function init(){
-  // 사이드바 팀원 목록 초기화 (저장된 설정 반영)
+(async function init(){
   renderSidebar();
   initQuickAddRow();
-  // 초기 탭: 전체보기일 때 대시보드 (이미 HTML에 tab-dashboard active)
-  const saved=getSavedConfig();
-  if (saved&&saved.url&&saved.key) {
+
+  const saved = getSavedConfig();
+  if (saved && saved.url && saved.key) {
     if (initSupabase(saved.url, saved.key)) {
       document.getElementById('configPanel').classList.add('hidden');
-      if (sessionStorage.getItem(PIN_SESSION_KEY)==='1') { startApp(); }
-      else { showPinOverlay(); startApp(); }
+
+      // ── Supabase Auth 세션 복원 시도 ──
+      const { data: { session } } = await sbClient.auth.getSession();
+      if (session) {
+        // 기존 세션 유효 → 팀원 이름 조회 후 바로 앱 진입
+        currentUser = session.user;
+        const { data: profile } = await sbClient.from('hr_users')
+          .select('name, role').eq('id', currentUser.id).single();
+        if (profile) {
+          currentUserName = profile.name;
+          if (MEMBERS.includes(currentUserName)) {
+            myMember = currentUserName;
+            myTaskOnly = true;
+            localStorage.setItem('hr_my_member', myMember);
+            localStorage.setItem('hr_my_task_only', '1');
+          }
+        } else {
+          currentUserName = session.user.email.split('@')[0];
+        }
+        updateHeaderUser();
+        startApp();
+      } else {
+        // 세션 없음 → 로그인 화면
+        showLoginOverlay();
+      }
+
+      // Auth 상태 변화 감지 (다른 탭 로그아웃 등)
+      sbClient.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_OUT' && !useLocal) {
+          currentUser = null; currentUserName = '';
+          tasks = []; execEvents = []; masterEvents = [];
+          updateHeaderUser();
+          showLoginOverlay();
+        }
+      });
+
     } else {
-      document.getElementById('dbErrorText').textContent='저장된 Supabase 설정으로 초기화에 실패했습니다.';
+      document.getElementById('dbErrorText').textContent = '저장된 Supabase 설정으로 초기화에 실패했습니다.';
       document.getElementById('dbErrorNotice').classList.add('show');
       openConfigPanel();
     }
   } else {
+    // 설정 없음 → Config Panel 표시
     document.getElementById('configPanel').classList.remove('hidden');
   }
 })();
