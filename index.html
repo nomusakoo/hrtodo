@@ -744,15 +744,6 @@
   <div class="config-box">
     <h2>⚙️ Supabase 연결 설정</h2>
     <p>처음 한 번만 입력하면 브라우저에 저장됩니다.<br>Supabase 대시보드 → Settings → API 에서 확인하세요.</p>
-    <div class="config-note">
-      <strong>테이블 생성 SQL (Supabase SQL Editor에서 실행):</strong><br>
-      <code style="font-size:11px;font-family:monospace">
-        create table hr_tasks (id bigserial primary key, title text not null, member text not null, cat text not null default '기타', date date not null, status text not null default 'todo', note text default '', created_at timestamptz default now());<br>
-        alter table hr_tasks disable row level security;<br>
-        grant all on table hr_tasks to anon;<br>
-        grant usage, select on sequence hr_tasks_id_seq to anon;
-      </code>
-    </div>
     <div class="db-error-notice" id="dbErrorNotice">
       <span>⚠</span>
       <span id="dbErrorText">Supabase 연결에 실패했습니다.</span>
@@ -1265,43 +1256,9 @@
       <div class="modal-title" style="color:var(--warning)">&#9888; Supabase 연결 오류</div>
       <button class="modal-close" onclick="closeTableErrModal()">&#10005;</button>
     </div>
-    <div style="background:#fef3c7;border-left:3px solid #d97706;border-radius:6px;padding:12px 14px;margin-bottom:16px">
-      <div style="font-size:12px;font-weight:600;color:#92400e;margin-bottom:6px">✅ SQL 실행 후에도 이 팝업이 뜬다면 — Schema Cache 재로드</div>
-      <div style="font-size:12px;color:#92400e;line-height:1.7">Supabase 대시보드 → Project Settings → API 탭 → <strong>"Reload schema cache"</strong> 버튼 클릭</div>
-    </div>
-    <div style="font-size:12px;color:var(--gray-600);margin-bottom:10px;line-height:1.6">아래 SQL을 Supabase <strong>SQL Editor</strong>에서 실행하세요.</div>
-    <div style="background:#1e1e2e;border-radius:8px;padding:16px;margin-bottom:6px;position:relative">
-      <pre id="sqlText" style="color:#a8c4e8;font-size:11px;font-family:monospace;line-height:1.8;white-space:pre-wrap;margin:0">create table if not exists hr_tasks (
-  id          bigserial primary key,
-  title       text        not null,
-  member      text        not null,
-  cat         text        not null default '기타',
-  date        date        not null,
-  time        text        default '',
-  status      text        not null default 'todo',
-  note        text        default '',
-  created_at  timestamptz default now()
-);
-alter table hr_tasks disable row level security;
-grant all on table hr_tasks to anon;
-grant usage, select on sequence hr_tasks_id_seq to anon;
-
--- 기존 테이블에 time 컬럼 추가 (이미 테이블이 있는 경우)
-alter table hr_tasks add column if not exists time text default '';
-
--- 임원 일정 테이블 (임원 대시보드 / 법정·임원 일정 공용)
-create table if not exists hr_exec_events (
-  id          bigserial primary key,
-  date        date        not null,
-  title       text        not null,
-  description text        default '',
-  deadline    boolean     default false,
-  created_at  timestamptz default now()
-);
-alter table hr_exec_events disable row level security;
-grant all on table hr_exec_events to anon;
-grant usage, select on sequence hr_exec_events_id_seq to anon;</pre>
-      <button onclick="copyTableSQL()" style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#a8c4e8;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer" id="copySqlBtn">복사</button>
+    <div style="font-size:13px;color:var(--gray-600);margin-bottom:16px;line-height:1.7">
+      Supabase 테이블이 연결되지 않았습니다.<br>
+      DB 설정을 확인하거나, 일단 <strong>로컬로 계속</strong>을 누르세요.
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeTableErrModal();openConfigPanel()">DB 설정 변경</button>
