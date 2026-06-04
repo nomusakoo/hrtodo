@@ -417,6 +417,12 @@
   .legal-cal-toggle.on { background:#1d4ed8;color:#fff;border-color:#1d4ed8; }
   .exec-cal-toggle.on  { background:#92720a;color:#fff;border-color:#c9a227; }
   .reg-mode-toggle.on  { background:#16a34a;color:#fff;border-color:#16a34a; }
+  /* 내 업무만 보기 버튼 (사이드바 최상단) */
+  .my-task-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12.5px;padding:8px 11px;border-radius:var(--radius);border:1.5px solid var(--border);background:#fff;cursor:pointer;transition:all 0.15s;font-family:var(--font);}
+  .my-task-btn:hover{background:var(--gray-50);}
+  .my-task-btn.on{background:#f0fdf4;border-color:#16a34a;color:#15803d;font-weight:600;}
+  .my-task-btn .my-task-badge{font-size:10px;padding:1px 7px;border-radius:99px;background:var(--gray-200);color:var(--gray-500);flex-shrink:0;}
+  .my-task-btn.on .my-task-badge{background:#bbf7d0;color:#15803d;}
   /* 대시보드 Master 캘린더 버튼 — PC: cal-header 안, 모바일: page-header 안 */
   .dash-master-btn { display:none; }
   .cal-master-btn-wrap { display:flex; }
@@ -816,6 +822,14 @@
 
 <div class="app-layout">
   <nav class="sidebar">
+    <!-- 내 업무만 보기 -->
+    <div style="padding:10px 12px 8px;border-bottom:1px solid var(--border);">
+      <button id="myTaskBtn" class="my-task-btn" onclick="toggleMyTaskOnly()">
+        <span>👤 내 업무만 보기</span>
+        <span class="my-task-badge" id="myTaskStatus">OFF</span>
+      </button>
+      <div id="myMemberLabel" style="font-size:11px;color:var(--gray-400);text-align:center;margin-top:5px;min-height:14px"></div>
+    </div>
     <div class="sidebar-section">
       <div class="sidebar-label">팀원</div>
       <div id="sidebarMembers">
@@ -1298,7 +1312,7 @@
       <div class="modal-title">&#9711; 팀원 설정</div>
       <button class="modal-close" onclick="closeMemberSettingModal()">&#10005;</button>
     </div>
-    <p style="font-size:12px;color:var(--gray-500);margin-bottom:12px">이름을 수정하거나 ↑↓ 버튼으로 순서를 변경하세요.</p>
+    <p style="font-size:12px;color:var(--gray-500);margin-bottom:12px">이름을 수정하거나 ↑↓ 버튼으로 순서를 변경하세요. <strong style="color:var(--accent)">나</strong> 를 선택하면 '내 업무만 보기' 기능을 쓸 수 있습니다.</p>
     <div id="memberSettingList"></div>
     <div style="display:flex;gap:8px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
       <input type="text" id="newMemberInput" class="form-input" placeholder="새 팀원 이름" style="flex:1"
@@ -1477,6 +1491,14 @@ const SEED_DATA = [
 let tasks = [];
 let editId = null;
 let filterMemberVal = 'all';
+let myMember   = localStorage.getItem('hr_my_member') || '';
+let myTaskOnly = localStorage.getItem('hr_my_task_only') === '1';
+let tempMyMember = '';
+
+// 내 업무만 보기 ON이면 myMember만, 아니면 전체 tasks 반환
+function activeTasks() {
+  return (myTaskOnly && myMember) ? tasks.filter(t => t.member === myMember) : tasks;
+}
 let filterStatusVal = '';
 let currentWeekOffset = 0;
 
@@ -1583,6 +1605,7 @@ function renderAll() {
   initDashDates();
   initMasterCalToggle();
   initRegModeToggle();
+  initMyTaskBtn();
   populateMonthFilter();   // 첫 진입 시 월 필터를 현재 월로 설정 (renderTable 이전)
   switchTab('tasks');
 }
@@ -1718,7 +1741,7 @@ function getFiltered() {
   const q=document.getElementById('searchInput').value.toLowerCase();
   const mth=document.getElementById('filterMonth').value;
   const cat=document.getElementById('filterCat').value;
-  return tasks.filter(t=>{
+  return activeTasks().filter(t=>{
     if (filterMemberVal!=='all'&&t.member!==filterMemberVal) return false;
     if (filterStatusVal&&t.status!==filterStatusVal) return false;
     if (mth&&toYM(t.date)!==mth) return false;
@@ -2250,8 +2273,9 @@ let tempMembers = [];
 let tempLeader  = '';
 
 function openMemberSettingModal() {
-  tempMembers = [...MEMBERS];
-  tempLeader  = LEADER;
+  tempMembers  = [...MEMBERS];
+  tempLeader   = LEADER;
+  tempMyMember = myMember;
   renderMemberSettingList();
   document.getElementById('memberSettingModal').classList.add('open');
 }
@@ -2261,11 +2285,18 @@ function closeMemberSettingModal() {
 function renderMemberSettingList() {
   document.getElementById('memberSettingList').innerHTML = tempMembers.map((m, i) => {
     const isLeader = m === tempLeader;
+    const isMe     = m === tempMyMember;
     return `
     <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--gray-100)">
       <span style="width:20px;text-align:center;font-size:12px;color:var(--gray-400)">${i+1}</span>
-      <input type="text" value="${escHtml(m)}" oninput="tempMembers[${i}]=this.value;if(tempLeader===tempMembers[${i}])tempLeader=this.value"
+      <input type="text" value="${escHtml(m)}" oninput="tempMembers[${i}]=this.value;if(tempLeader===tempMembers[${i}])tempLeader=this.value;if(tempMyMember===tempMembers[${i}])tempMyMember=this.value"
         style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:var(--font);outline:none">
+      <label title="나 (내 업무만 보기용)" style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;white-space:nowrap;color:${isMe?'#15803d':'var(--gray-400)'}">
+        <input type="radio" name="tempMyMemberRadio" value="${escHtml(m)}" ${isMe?'checked':''}
+          onchange="tempMyMember=tempMembers[${i}]"
+          style="accent-color:#16a34a;cursor:pointer">
+        나
+      </label>
       <label title="팀장" style="display:flex;align-items:center;gap:4px;cursor:pointer;font-size:12px;white-space:nowrap;color:${isLeader?'#1a1a1a':'var(--gray-400)'}">
         <input type="radio" name="tempLeaderRadio" value="${escHtml(m)}" ${isLeader?'checked':''}
           onchange="tempLeader=tempMembers[${i}];renderMemberSettingList()"
@@ -2305,10 +2336,15 @@ function saveMemberSettings() {
   if (!cleaned.length) { alert('팀원이 최소 1명 필요합니다.'); return; }
   MEMBERS = cleaned;
   LEADER  = cleaned.includes(tempLeader) ? tempLeader : '';
+  // 내 업무만 보기용 본인 저장 (삭제된 경우 초기화)
+  myMember = cleaned.includes(tempMyMember) ? tempMyMember : '';
+  localStorage.setItem('hr_my_member', myMember);
+  if (!myMember && myTaskOnly) { myTaskOnly = false; localStorage.setItem('hr_my_task_only','0'); }
   saveMembers(MEMBERS);
   saveLeader(LEADER);
   closeMemberSettingModal();
   renderSidebar();
+  updateMyTaskBtn();
   renderTable();
   renderDash();
   renderWeekly();
@@ -2530,7 +2566,44 @@ function initMasterCalToggle() {
   _applyToggleBtn(['execCalToggleBtn','execCalToggleBtnPC'],['execCalToggleStatus','execCalToggleStatusPC'],execCalOn,'#fdf6e3','#92720a');
 }
 
-// ── 등록 모드 토글 (모바일 전용: 날짜 클릭 = 등록 / 목록보기 전환) ──
+// ── 내 업무만 보기 ──
+function updateMyTaskBtn() {
+  const btn    = document.getElementById('myTaskBtn');
+  const badge  = document.getElementById('myTaskStatus');
+  const lbl    = document.getElementById('myMemberLabel');
+  if (!btn) return;
+  if (myTaskOnly && myMember) {
+    btn.classList.add('on');
+    badge.textContent = 'ON';
+    lbl.textContent   = myMember + '님 업무만 표시 중';
+  } else {
+    btn.classList.remove('on');
+    badge.textContent = 'OFF';
+    lbl.textContent   = myMember ? myMember + '님으로 설정됨' : '팀원 설정에서 \'나\' 를 먼저 선택하세요';
+    lbl.style.color   = myMember ? 'var(--gray-400)' : '#f59e0b';
+  }
+}
+function initMyTaskBtn() { updateMyTaskBtn(); }
+function toggleMyTaskOnly() {
+  if (!myMember) {
+    showToast('팀원 설정에서 \'나\'를 먼저 선택하세요.', 'error');
+    openMemberSettingModal();
+    return;
+  }
+  myTaskOnly = !myTaskOnly;
+  localStorage.setItem('hr_my_task_only', myTaskOnly ? '1' : '0');
+  updateMyTaskBtn();
+  // 현재 탭 즉시 재렌더
+  const rerenderActive = () => {
+    const vis = id => document.getElementById(id)?.style.display !== 'none';
+    if (vis('view-tasks'))     { renderTable(true); setTimeout(scrollTasksToToday, 70); }
+    if (vis('view-dashboard')) renderDash();
+    if (vis('view-weekly'))    renderWeekly();
+  };
+  rerenderActive();
+  showToast(myTaskOnly ? `${myMember}님 업무만 표시합니다.` : '전체 업무를 표시합니다.');
+}
+
 let regModeOn = localStorage.getItem('hr_reg_mode') !== '0'; // 기본 ON
 function isMobileView() { return window.innerWidth <= 900; }
 function _applyRegModeBtn() {
@@ -2983,7 +3056,7 @@ function renderWeekly() {
     const isToday=d.getTime()===today.getTime();
     const isSun=i===0, isSat=i===6;
     const isWeekend=isSun||isSat;
-    const dayTasks=tasks.filter(t=>t.date===dateStr);
+    const dayTasks=activeTasks().filter(t=>t.date===dateStr);
     const headerCls=isToday?'is-today':isWeekend?'is-weekend':'';
     const dateColor=isSun?'color:#dc2626':isSat?'color:#2563eb':'';
     const chips=dayTasks.length===0
@@ -3131,7 +3204,7 @@ function renderDash() {
     const d = new Date(rangeStart.getFullYear(), rangeStart.getMonth() + i, 1);
     range.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
   }
-  const inRange = tasks.filter(t => range.includes(toYM(t.date)));
+  const inRange = activeTasks().filter(t => range.includes(toYM(t.date)));
   const total=inRange.length, done=inRange.filter(t=>t.status==='완료').length,
         progress=inRange.filter(t=>t.status==='진행중').length, todo=inRange.filter(t=>t.status==='todo').length;
   const rate=total?Math.round(done/total*100):0;
@@ -3142,7 +3215,7 @@ function renderDash() {
     <div class="stat-card warning stat-clickable" onclick="goToTasksWithFilter('진행중')" title="진행 중 업무 보기"><div class="stat-label">진행 중</div><div class="stat-value">${progress}<span>건</span></div><div class="stat-sub">전체의 ${total?Math.round(progress/total*100):0}%</div></div>
     <div class="stat-card stat-clickable" onclick="goToTasksWithFilter('todo')" title="예정 업무 보기"><div class="stat-label">예정</div><div class="stat-value">${todo}<span>건</span></div><div class="stat-sub">전체의 ${total?Math.round(todo/total*100):0}%</div></div>`;
 
-  const members = MEMBERS;
+  const members = (myTaskOnly && myMember) ? [myMember] : MEMBERS;
   const maxLoad = Math.max(...members.map(m=>inRange.filter(t=>t.member===m).length), 1);
 
   document.getElementById('workloadBoard').innerHTML = members.map(m=>{
@@ -3231,7 +3304,7 @@ function renderCalendar(year, month) {
     const isSun = dow===0, isSat = dow===6;
     const dateStr    = `${cellDate.getFullYear()}-${String(cellDate.getMonth()+1).padStart(2,'0')}-${String(cellDate.getDate()).padStart(2,'0')}`;
 
-    const dayTasks = tasks.filter(t => t.date === dateStr);
+    const dayTasks = activeTasks().filter(t => t.date === dateStr);
     const shown    = dayTasks.slice(0, MAX_SHOW);
     const hiddenCnt = dayTasks.length - MAX_SHOW;
 
@@ -3344,7 +3417,7 @@ function bindCalDrag() {
 
 // ── 더보기 팝업 ──
 function openCalMore(dateStr) {
-  const dayTasks = tasks.filter(t => t.date === dateStr).sort((a,b) => (a.status==='완료'?1:0)-(b.status==='완료'?1:0));
+  const dayTasks = activeTasks().filter(t => t.date === dateStr).sort((a,b) => (a.status==='완료'?1:0)-(b.status==='완료'?1:0));
   const d = new Date(dateStr + 'T00:00:00');
   document.getElementById('calMoreTitle').textContent =
     `${d.getMonth()+1}월 ${d.getDate()}일 업무 (${dayTasks.length}건)`;
