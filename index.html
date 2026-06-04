@@ -748,7 +748,7 @@
   .task-table tbody.tasks-enter tr:nth-child(n+10){animation-delay:.27s}
   /* 스크롤 시 sticky 헤더+탭바 아래에 오늘 행이 놓이도록 여백 */
   .task-table tbody tr[data-date]{scroll-margin-top:160px;}
-  .task-table tr.row-today td{box-shadow:inset 3px 0 0 var(--accent);}
+
 
   /* ── 임원 대시보드 캘린더 칩 ── */
   .cal-chip.exec-chip{background:#fdf6e3;color:#92720a;border-left:3px solid #c9a227;cursor:pointer;font-weight:600;}
@@ -2039,8 +2039,7 @@ function renderTable(animate=false) {
     const isDone = t.status==='완료';
     const urgency = getRowUrgencyClass(t);
     const checked = selectedIds.has(t.id);
-    const isToday = t.date === todayStr;
-    return `<tr class="${isDone?'done':''} ${urgency}${checked?' row-selected':''}${isToday?' row-today':''}" data-date="${t.date||''}">
+    return `<tr class="${isDone?'done':''} ${urgency}${checked?' row-selected':''}" data-date="${t.date||''}">
       <td><input type="checkbox" class="task-check" data-id="${t.id}" ${checked?'checked':''} onchange="onRowCheck(${t.id},this.checked)"></td>
       <td data-label="일정" style="font-family:var(--font-mono);font-size:12px;color:var(--gray-500);white-space:nowrap;">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap;">
@@ -3382,30 +3381,39 @@ function initQuickAddRow() {
   // 날짜 기본값: 오늘
   const qaDate = document.getElementById('qa-date');
   if (qaDate && !qaDate.value) qaDate.value = new Date().toISOString().split('T')[0];
-  // Enter 키로 추가
+  // Enter 키로 추가 — preventDefault로 버튼 버블링 차단
   const qaTitle = document.getElementById('qa-title');
   if (qaTitle) {
-    qaTitle.addEventListener('keydown', e => { if (e.key === 'Enter') quickAddTask(); });
+    qaTitle.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); quickAddTask(); }
+    });
   }
 }
+let _qaRunning = false;
 async function quickAddTask() {
-  const title  = document.getElementById('qa-title').value.trim();
-  const member = document.getElementById('qa-member').value;
-  const cat    = document.getElementById('qa-cat').value;
-  const date   = document.getElementById('qa-date').value;
-  const time   = document.getElementById('qa-time').value || '';
-  const status = document.getElementById('qa-status').value;
-  if (!title)  { document.getElementById('qa-title').focus();  showToast('업무명을 입력하세요.','error'); return; }
-  if (!member) { document.getElementById('qa-member').focus(); showToast('담당자를 선택하세요.','error'); return; }
-  if (!date)   { document.getElementById('qa-date').focus();   showToast('날짜를 선택하세요.','error'); return; }
-  const newTask = await dbInsert({title, member, cat, date, time, status, note:''});
-  if (newTask) {
-    tasks.push(newTask);
-    document.getElementById('qa-title').value = '';
-    document.getElementById('qa-time').value  = '';
-    document.getElementById('qa-title').focus();
-    renderTable();
-    showToast('추가했습니다.');
+  if (_qaRunning) return;   // 중복 실행 방지
+  _qaRunning = true;
+  try {
+    const title  = document.getElementById('qa-title').value.trim();
+    const member = document.getElementById('qa-member').value;
+    const cat    = document.getElementById('qa-cat').value;
+    const date   = document.getElementById('qa-date').value;
+    const time   = document.getElementById('qa-time').value || '';
+    const status = document.getElementById('qa-status').value;
+    if (!title)  { document.getElementById('qa-title').focus();  showToast('업무명을 입력하세요.','error'); return; }
+    if (!member) { document.getElementById('qa-member').focus(); showToast('담당자를 선택하세요.','error'); return; }
+    if (!date)   { document.getElementById('qa-date').focus();   showToast('날짜를 선택하세요.','error'); return; }
+    const newTask = await dbInsert({title, member, cat, date, time, status, note:''});
+    if (newTask) {
+      tasks.push(newTask);
+      document.getElementById('qa-title').value = '';
+      document.getElementById('qa-time').value  = '';
+      document.getElementById('qa-title').focus();
+      renderTable();
+      showToast('추가했습니다.');
+    }
+  } finally {
+    _qaRunning = false;
   }
 }
 
@@ -4025,7 +4033,9 @@ function switchPasteTab(tab) {
 // ══════════════════════════════════════════════
 function normalizeDate(raw) {
   if (!raw) return '';
-  const s = String(raw).trim();
+  // 탭, 줄바꿈, 비가시 제어문자, 유니코드 공백 모두 제거
+  const s = String(raw).replace(/[\u0000-\u001F\u007F-\u009F\u00A0\uFEFF]/g, '').trim();
+  if (!s) return '';
 
   // 엑셀 시리얼 숫자 (예: 46012)
   if (/^\d{5}$/.test(s)) {
@@ -4244,9 +4254,11 @@ function renderPastePreview() {
   tbody.innerHTML = _parsedRows.map(r => {
     const rowCls = r.valid ? 'paste-row-ok' : 'paste-row-err';
     const icon   = r.valid ? '✅' : '❌';
-    const hint   = !r.valid
-      ? (!isValidDate(r.date) ? `날짜 오류(${escHtml(r.dateRaw)})` : '제목 없음')
-      : '';
+    const hint = !r.valid
+      ? (!isValidDate(r.date)
+          ? `날짜 인식 실패: "${escHtml(r.dateRaw)}" → "${escHtml(r.date||'?')}"`
+          : '제목 없음')
+      : '유효';
     return `<tr class="${rowCls}">
       <td style="padding:6px 10px;font-family:var(--font-mono);font-size:12px;white-space:nowrap">${escHtml(r.date||r.dateRaw)}</td>
       <td style="padding:6px 10px;font-size:12px">${escHtml(r.title)}</td>
