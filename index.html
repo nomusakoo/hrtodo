@@ -3502,20 +3502,16 @@ function getCalYM() {
 function renderDash() {
   const { year, month } = getCalYM();
   const ym = `${year}-${String(month+1).padStart(2,'0')}`;
-  // 현재 월 + 전체 stats용 범위 (현재 월 기준 3개월)
-  const rangeStart = new Date(year, month - 2, 1);
-  const range = [];
-  for (let i = 0; i < 3; i++) {
-    const d = new Date(rangeStart.getFullYear(), rangeStart.getMonth() + i, 1);
-    range.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`);
-  }
-  const inRange = activeTasks().filter(t => range.includes(toYM(t.date)));
+
+  // 해당 월 업무만 필터
+  const inRange = activeTasks().filter(t => toYM(t.date) === ym);
   const total=inRange.length, done=inRange.filter(t=>t.status==='완료').length,
         progress=inRange.filter(t=>t.status==='진행중').length, todo=inRange.filter(t=>t.status==='todo').length;
   const rate=total?Math.round(done/total*100):0;
+  const monthLbl = `${year}년 ${month+1}월`;
 
   document.getElementById('dashStats').innerHTML=`
-    <div class="stat-card accent stat-clickable" onclick="goToTasksWithFilter('')" title="전체 업무 보기"><div class="stat-label">전체 업무</div><div class="stat-value">${total}<span>건</span></div><div class="stat-sub">${range[0]} ~ ${range[range.length-1]}</div></div>
+    <div class="stat-card accent stat-clickable" onclick="goToTasksWithFilter('')" title="전체 업무 보기"><div class="stat-label">전체 업무</div><div class="stat-value">${total}<span>건</span></div><div class="stat-sub">${monthLbl} 기준</div></div>
     <div class="stat-card success stat-clickable" onclick="goToTasksWithFilter('완료')" title="완료 업무 보기"><div class="stat-label">완료</div><div class="stat-value">${done}<span>건</span></div><div class="stat-sub">완료율 ${rate}%</div></div>
     <div class="stat-card warning stat-clickable" onclick="goToTasksWithFilter('진행중')" title="진행 중 업무 보기"><div class="stat-label">진행 중</div><div class="stat-value">${progress}<span>건</span></div><div class="stat-sub">전체의 ${total?Math.round(progress/total*100):0}%</div></div>
     <div class="stat-card stat-clickable" onclick="goToTasksWithFilter('todo')" title="예정 업무 보기"><div class="stat-label">예정</div><div class="stat-value">${todo}<span>건</span></div><div class="stat-sub">전체의 ${total?Math.round(todo/total*100):0}%</div></div>`;
