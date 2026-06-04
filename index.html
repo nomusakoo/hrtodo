@@ -365,15 +365,15 @@
     position: fixed;
     bottom: 88px;
     right: 28px;
-    z-index: 200;
+    z-index: 210;
     display: flex;
     align-items: center;
     gap: 0;
-    background: #16a34a;
+    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
     color: #fff;
     border: none;
     border-radius: 999px;
-    box-shadow: 0 4px 16px rgba(22,163,74,0.35);
+    box-shadow: 0 4px 18px rgba(74,222,128,0.40), inset 0 1px 0 rgba(255,255,255,0.25);
     cursor: pointer;
     overflow: hidden;
     width: 48px;
@@ -384,8 +384,8 @@
   }
   .fab-add:hover {
     width: 148px;
-    background: #15803d;
-    box-shadow: 0 6px 24px rgba(22,163,74,0.45);
+    background: linear-gradient(135deg, #86efac 0%, #4ade80 100%);
+    box-shadow: 0 6px 24px rgba(74,222,128,0.50), inset 0 1px 0 rgba(255,255,255,0.30);
   }
   .fab-add .fab-icon {
     font-size: 22px;
@@ -402,7 +402,7 @@
   }
   @media(max-width:900px) {
     .fab { bottom: 76px; right: 16px; }
-    .fab-add { bottom: 132px; right: 16px; }
+    .fab-add { bottom: 136px; right: 16px; z-index: 210; }
   }
 
   /* MASTER CALENDAR 모바일 최적화 */
@@ -1119,7 +1119,7 @@
             ✍ 등록 <span id="regModeToggleStatusExec" style="font-size:10px;padding:1px 6px;border-radius:99px;background:var(--gray-200);color:var(--gray-500);margin-left:2px">OFF</span>
           </button>
           <button class="btn btn-green btn-sm" onclick="openExecForm()">+ 임원 일정 추가</button>
-          <button class="btn btn-sm btn-primary" onclick="openPasteModal()" style="line-height:1">📋 붙여넣기 입력</button>
+          <button class="btn btn-sm btn-primary" onclick="openPasteModal()"><span style="font-size:11px">📋</span> 붙여넣기 입력</button>
           <button class="btn btn-sm" onclick="exportExecEvents()">&#8595; 엑셀 내보내기</button>
           <label class="btn btn-sm" style="cursor:pointer;margin:0">&#8679; 엑셀 올리기<input type="file" id="execExcelInput" accept=".xlsx,.xls" style="display:none" onchange="importExecEvents(this)"></label>
         </div>
