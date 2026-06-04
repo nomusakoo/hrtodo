@@ -369,11 +369,11 @@
     display: flex;
     align-items: center;
     gap: 0;
-    background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+    background: #2d8a5e;
     color: #fff;
     border: none;
     border-radius: 999px;
-    box-shadow: 0 4px 18px rgba(74,222,128,0.40), inset 0 1px 0 rgba(255,255,255,0.25);
+    box-shadow: 0 4px 16px rgba(45,138,94,0.30);
     cursor: pointer;
     overflow: hidden;
     width: 48px;
@@ -384,8 +384,8 @@
   }
   .fab-add:hover {
     width: 148px;
-    background: linear-gradient(135deg, #86efac 0%, #4ade80 100%);
-    box-shadow: 0 6px 24px rgba(74,222,128,0.50), inset 0 1px 0 rgba(255,255,255,0.30);
+    background: #236e4a;
+    box-shadow: 0 6px 22px rgba(45,138,94,0.38);
   }
   .fab-add .fab-icon {
     font-size: 22px;
@@ -402,7 +402,11 @@
   }
   @media(max-width:900px) {
     .fab { bottom: 76px; right: 16px; }
+    .fab:hover { width: 48px; }
+    .fab:hover .fab-text { opacity: 0; max-width: 0; padding-right: 0; }
     .fab-add { bottom: 136px; right: 16px; z-index: 210; }
+    .fab-add:hover { width: 48px; background: #2d8a5e; box-shadow: 0 4px 16px rgba(45,138,94,0.30); }
+    .fab-add:hover .fab-text { opacity: 0; max-width: 0; padding-right: 0; }
   }
 
   /* MASTER CALENDAR 모바일 최적화 */
@@ -799,7 +803,9 @@
   /* ── 임원 일정 등록/수정 모달 ── */
   .exec-deadline-label{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--gray-700);cursor:pointer;}
 
-  /* ── 붙여넣기 입력 모달 ── */
+  /* 모달 열려있을 때 FAB 버튼 뒤로 */
+  body:has(.modal-overlay.open) .fab,
+  body:has(.modal-overlay.open) .fab-add { z-index: 1 !important; }
   .paste-tab-bar{display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:14px;}
   .paste-tab{padding:7px 18px;background:none;border:none;cursor:pointer;font-size:13px;font-weight:500;
     color:var(--gray-500);position:relative;bottom:-2px;border-bottom:2px solid transparent;
