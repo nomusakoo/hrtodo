@@ -5279,9 +5279,9 @@ function selectPolicyCat(cat) {
 function contentToHtml(text) {
   if (!text) return { html: '', isTable: false };
 
-  // TSV 판별: 탭 문자가 있으면 TSV로 처리 (따옴표 파서로 정확하게)
+  // TSV 판별: 탭 문자가 있으면 TSV로 처리
   if (text.includes('\t')) {
-    return { html: buildHtmlTable(text.split(/\r?\n/), 'tsv'), isTable: true };
+    return { html: buildHtmlTable(text, 'tsv'), isTable: true };
   }
 
   const lines = text.split(/\r?\n/);
@@ -5296,61 +5296,60 @@ function contentToHtml(text) {
   return { html: escHtml(text), isTable: false };
 }
 
+// ── 셀 내용 이스케이프: HTML 특수문자 + 셀 내 줄바꿈 → <br> ──
+function escCell(s) {
+  return escHtml(String(s || '')).replace(/\r?\n/g, '<br>');
+}
+
 function buildHtmlTable(lines, type) {
-  // ── TSV: 따옴표로 감싼 셀(셀 내 줄바꿈 포함) 먼저 재조립 ──
+  let rows = []; // rows: string[][]
+
   if (type === 'tsv') {
-    const rawText = lines.join('\n');
-    lines = parseTsvWithQuotes(rawText);
-  }
-
-  const rows = [];
-  for (const line of lines) {
-    const trimmed = typeof line === 'string' ? line.trim() : '';
-    if (!trimmed) continue;
-    // 마크다운 구분선 (|---|---) 스킵
-    if (type === 'md' && /^[\s|:\-]+$/.test(trimmed)) continue;
-
-    let cols;
-    if (type === 'tsv') {
-      // parseTsvWithQuotes가 이미 배열로 반환한 경우
-      cols = Array.isArray(line) ? line : line.split('\t').map(c => c.trim());
-    } else {
-      cols = trimmed.replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+    // parseTsvWithQuotes가 string[][] 반환 — 그대로 사용
+    rows = parseTsvWithQuotes(
+      Array.isArray(lines) ? lines.join('\n') : lines
+    );
+  } else {
+    // 마크다운: 문자열 배열을 직접 파싱
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+      if (/^[\s|:\-]+$/.test(trimmed)) continue; // 구분선 스킵
+      const cols = trimmed.replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+      if (cols.every(c => !c)) continue;
+      rows.push(cols);
     }
-
-    if (cols.every(c => !c)) continue;
-    rows.push(cols);
   }
 
-  if (!rows.length) return escHtml((Array.isArray(lines[0]) ? lines.map(r=>r.join('\t')) : lines).join('\n'));
+  if (!rows.length) return escHtml((Array.isArray(lines) ? lines : [lines]).join('\n'));
 
-  // ── 실제 유효 컬럼 수 계산 (오른쪽 빈 열 트리밍) ──
+  // 오른쪽 빈 열 트리밍 — 모든 행에서 실제 마지막 유효 열 인덱스 계산
   const maxCols = rows.reduce((max, cols) => {
     let last = cols.length - 1;
-    while (last >= 0 && !cols[last]) last--;
+    while (last >= 0 && cols[last] === '') last--;
     return Math.max(max, last + 1);
   }, 1);
 
-  // ── 헤더 판별 ──
+  // 헤더 판별
   let hasHeader = false;
   if (type === 'md') {
-    const rawLines = (typeof lines[0] === 'string' ? lines : lines.map(r => r.join('\t'))).filter(l => typeof l === 'string' && l.trim());
+    const rawLines = (Array.isArray(lines) ? lines : [lines]).filter(l => l.trim());
     hasHeader = rawLines.length >= 2 && /^[\s|:\-]+$/.test(rawLines[1].trim());
   } else {
-    hasHeader = rows.length >= 2 && rows[0].some(c => c && isNaN(Number(c.replace(/[,\s]/g, ''))));
+    // TSV: 첫 행이 모두 비숫자 텍스트면 헤더
+    hasHeader = rows.length >= 2 &&
+      rows[0].slice(0, maxCols).some(c => c && isNaN(Number(c.replace(/[,\s]/g, ''))));
   }
 
   let html = '<table>';
   rows.forEach((cols, i) => {
-    // 각 행을 maxCols에 맞게 패딩/트림
     const padded = cols.slice(0, maxCols);
     while (padded.length < maxCols) padded.push('');
 
     if (i === 0 && hasHeader) {
-      html += '<thead><tr>' + padded.map(c => `<th>${escHtml(c)}</th>`).join('') + '</tr></thead><tbody>';
+      html += '<thead><tr>' + padded.map(c => `<th>${escCell(c)}</th>`).join('') + '</tr></thead><tbody>';
     } else {
-      if (i === 1 && hasHeader) { /* tbody already opened */ }
-      html += '<tr>' + padded.map(c => `<td>${escHtml(c)}</td>`).join('') + '</tr>';
+      html += '<tr>' + padded.map(c => `<td>${escCell(c)}</td>`).join('') + '</tr>';
     }
   });
   if (hasHeader) html += '</tbody>';
