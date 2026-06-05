@@ -877,6 +877,15 @@
   .memo-card-btn:hover{background:rgba(0,0,0,0.22);color:rgba(0,0,0,0.8);}
   /* 댓글 뱃지 */
   .memo-comment-badge{position:absolute;top:-8px;right:-8px;background:#3b5998;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:20px;display:flex;align-items:center;gap:2px;box-shadow:0 2px 6px rgba(0,0,0,0.18);pointer-events:none;white-space:nowrap;line-height:1.4;}
+  /* 메모 컬럼 헤더 — 이름 클릭 가능 */
+  .memo-col-name-btn{background:none;border:none;cursor:pointer;font-size:14px;font-weight:600;padding:0;font-family:var(--font);transition:opacity 0.15s;}
+  .memo-col-name-btn:hover{opacity:0.75;}
+  /* 접기/펼치기 버튼 */
+  .memo-expand-btn{background:none;border:1px solid;border-radius:20px;cursor:pointer;font-size:11px;font-weight:500;padding:2px 10px;font-family:var(--font);transition:all 0.15s;margin-top:6px;display:block;width:100%;}
+  .memo-expand-btn:hover{opacity:0.75;}
+  /* 멤버별 전체 보기 모달 */
+  .memo-full-modal{background:#fff;border-radius:var(--radius-lg);padding:24px 24px 20px;width:680px;max-width:96vw;max-height:85vh;overflow-y:auto;box-shadow:0 20px 50px rgba(0,0,0,0.15);}
+  .memo-full-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:16px;}
   .memo-add-btn{border:1.5px dashed;border-radius:6px;padding:14px;min-height:80px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;background:transparent;transition:all 0.15s;font-family:var(--font);}
   .memo-add-btn:hover{background:rgba(0,0,0,0.04);}
   /* 메모 편집 모달 */
@@ -1197,8 +1206,8 @@
     <div class="sidebar-section">
       <div class="sidebar-label">빠른 이동</div>
       <div class="sidebar-item" onclick="switchTab('tasks')">&#9998; 할 일 목록</div>
-      <div class="sidebar-item" onclick="switchTab('weekly')">&#9633; 주간 보기</div>
-      <div class="sidebar-item" onclick="switchTab('dashboard')">&#9636; 월별 대시보드</div>
+      <div class="sidebar-item" onclick="switchTab('weekly')">🗓 주간 보기</div>
+      <div class="sidebar-item" onclick="switchTab('dashboard')">📅 월별 대시보드</div>
       <div class="sidebar-item" onclick="openMasterCalPage()">&#128197; 법정/임원 일정</div>
       <div class="sidebar-item" onclick="openMemberSettingModal()">&#9881; 팀원/환경 설정</div>
       <div class="sidebar-item" onclick="openConfigPanel()">&#9881; DB 설정 변경</div>
@@ -1207,12 +1216,12 @@
 
   <main class="main-content">
     <div class="tab-bar">
-      <button class="tab-btn active" id="tab-tasks" onclick="switchTab('tasks')">&#9998; 할 일 관리</button>
-      <button class="tab-btn" id="tab-dashboard" onclick="switchTab('dashboard')">&#9636; 월별 대시보드</button>
-      <button class="tab-btn" id="tab-weekly" onclick="switchTab('weekly')">&#9633; 주간 보기</button>
-      <button class="tab-btn" id="tab-exec" onclick="switchTab('exec')">&#128188; 임원 대시보드</button>
-      <button class="tab-btn" id="tab-memo" onclick="switchTab('memo')">&#128203; 메모</button>
-      <button class="tab-btn" id="tab-policy" onclick="switchTab('policy')">&#128218; 제도</button>
+      <button class="tab-btn active" id="tab-tasks" onclick="switchTab('tasks')">📋 할 일 관리</button>
+      <button class="tab-btn" id="tab-dashboard" onclick="switchTab('dashboard')">📅 월별 대시보드</button>
+      <button class="tab-btn" id="tab-weekly" onclick="switchTab('weekly')">🗓 주간 보기</button>
+      <button class="tab-btn" id="tab-exec" onclick="switchTab('exec')">💼 임원 대시보드</button>
+      <button class="tab-btn" id="tab-memo" onclick="switchTab('memo')">🗒 메모</button>
+      <button class="tab-btn" id="tab-policy" onclick="switchTab('policy')">📚 제도</button>
     </div>
 
     <!-- TASKS TAB -->
@@ -2422,10 +2431,17 @@ function renderTabBar() {
   const bar = document.querySelector('.tab-bar');
   if (!bar) return;
   const visible = tabConfig.filter(t => t.visible);
+  const labels = {
+    tasks:     '📋 할 일 관리',
+    dashboard: '📅 월별 대시보드',
+    weekly:    '🗓 주간 보기',
+    exec:      '💼 임원 대시보드',
+    memo:      '🗒 메모',
+    policy:    '📚 제도'
+  };
   bar.innerHTML = visible.map(t => {
     const m = TAB_META.find(x => x.id === t.id);
     if (!m) return '';
-    const labels = {tasks:'✎ 할 일 관리',dashboard:'▤ 월별 대시보드',weekly:'□ 주간 보기',exec:'💼 임원 대시보드',memo:'📋 메모',policy:'📚 제도'};
     return `<button class="tab-btn" id="tab-${t.id}" onclick="switchTab('${t.id}')">${labels[t.id]||m.label}</button>`;
   }).join('');
 }
@@ -2435,7 +2451,7 @@ function renderMobileNav() {
   const nav = document.getElementById('mobileNavBtns');
   if (!nav) return;
   const visible = tabConfig.filter(t => t.visible);
-  const icons = {tasks:'✎',dashboard:'▤',weekly:'□',exec:'💼',memo:'📋',policy:'📚'};
+  const icons  = {tasks:'📋',dashboard:'📅',weekly:'🗓',exec:'💼',memo:'🗒',policy:'📚'};
   const labels = {tasks:'할 일',dashboard:'대시보드',weekly:'주간',exec:'임원',memo:'메모',policy:'제도'};
   nav.innerHTML = visible.map(t =>
     `<button class="mobile-nav-btn" id="mnav-${t.id}" onclick="switchTab('${t.id}')">
@@ -2648,7 +2664,11 @@ function renderSidebar() {
   const memberSection = document.getElementById('sidebarMembers');
   memberSection.innerHTML = `
     <div class="sidebar-item active" data-member="all" onclick="filterMember(this)">&#9776; 전체 보기<span class="count" id="cnt-all">0</span></div>
-    ${MEMBERS.map(m=>`<div class="sidebar-item" data-member="${m}" onclick="filterMember(this)">&#9675; ${m}${m===LEADER?' <span style="font-size:10px;background:#1a1a1a;color:#fff;padding:1px 5px;border-radius:3px;font-weight:600;vertical-align:middle">팀장</span>':''}<span class="count" id="cnt-${m}">0</span></div>`).join('')}
+    ${MEMBERS.map(m=>`<div class="sidebar-item" data-member="${m}" onclick="filterMember(this)">
+      <span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:${memberColor(m)};color:${memberTx(m) === '#1a1a1a' ? '#fff' : memberTx(m)};font-size:9px;font-weight:700;flex-shrink:0;line-height:1;">${m[0]}</span>
+      ${m}${m===LEADER?' <span style="font-size:10px;background:#1a1a1a;color:#fff;padding:1px 5px;border-radius:3px;font-weight:600;vertical-align:middle">팀장</span>':''}
+      <span class="count" id="cnt-${m}">0</span>
+    </div>`).join('')}
   `;
   // 엑셀 업로드 안내 텍스트 업데이트
   const uploadNote = document.getElementById('uploadMembersNote');
@@ -4485,6 +4505,7 @@ document.getElementById('excelModal').addEventListener('click',function(e){if(e.
 document.getElementById('repeatDelModal').addEventListener('click',function(e){if(e.target===this)closeRepeatDelModal();});
 document.getElementById('memoEditModal').addEventListener('click',function(e){if(e.target===this)closeMemoEditModal();});
 document.getElementById('policyEditModal').addEventListener('click',function(e){if(e.target===this)closePolicyEditModal();});
+document.getElementById('memoFullModal').addEventListener('click',function(e){if(e.target===this)closeMemoFullModal();});
 
 
 // ── 키보드 단축키 ──
@@ -4494,6 +4515,7 @@ document.addEventListener('keydown', e => {
     if (document.getElementById('repeatDelModal').classList.contains('open')) closeRepeatDelModal();
     if (document.getElementById('memoEditModal').classList.contains('open')) closeMemoEditModal();
     if (document.getElementById('policyEditModal').classList.contains('open')) closePolicyEditModal();
+    if (document.getElementById('memoFullModal') && document.getElementById('memoFullModal').classList.contains('open')) closeMemoFullModal();
   }
   if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); openAddModal(); }
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -5287,6 +5309,9 @@ function getActiveNotes() {
   return (myTaskOnly && myMember) ? notes.filter(n => n.member === myMember) : notes;
 }
 
+// 컬럼별 펼침 상태 저장
+const memoExpandState = {}; // { member: 'collapsed'|'expanded' }
+
 function renderMemoTab() {
   const board = document.getElementById('memoBoard');
   if (!board) return;
@@ -5294,13 +5319,13 @@ function renderMemoTab() {
   const label = document.getElementById('memoCountLabel');
   if (label) label.textContent = `총 ${active.length}건`;
 
-  // 표시할 멤버 목록
-  const visibleMembers = (myTaskOnly && myMember) ? [myMember] : MEMBERS;
-  const cols = visibleMembers.length;
-  board.style.gridTemplateColumns = `repeat(${Math.min(cols, 3)}, 1fr)`;
+  const isMyOnly = myTaskOnly && myMember;
+  const visibleMembers = isMyOnly ? [myMember] : MEMBERS;
+
+  board.style.gridTemplateColumns = `repeat(${Math.min(visibleMembers.length, 3)}, 1fr)`;
   board.className = 'memo-columns';
 
-  if (!active.length && visibleMembers.length === 0) {
+  if (!active.length && !visibleMembers.length) {
     board.innerHTML = `<div class="memo-empty">등록된 메모가 없습니다.</div>`;
     return;
   }
@@ -5310,20 +5335,99 @@ function renderMemoTab() {
     const bg  = memberBg(m);
     const tx  = memberTx(m);
     const col = memberColor(m);
+    const safeName = m.replace(/\s/g, '_');
+
+    // 내 업무만 보기 ON → 모두 표시
+    if (isMyOnly) {
+      return `<div>
+        <div class="memo-col-header" style="border-color:${col};">
+          <span class="avatar" style="background:${bg};color:${tx};width:26px;height:26px;font-size:12px;">${m[0]}</span>
+          <span class="memo-col-title" style="color:${col};">${m}</span>
+          <span class="memo-col-count" style="background:${bg};color:${tx};">${mNotes.length}건</span>
+        </div>
+        <div class="memo-grid" id="memo-grid-${safeName}">
+          ${mNotes.map(n => renderMemoCard(n, bg, col)).join('')}
+          <button class="memo-add-btn" style="border-color:${col};color:${col};" onclick="openMemoEditModal(null,'${escHtml(m)}')">
+            <span style="font-size:18px;line-height:1">+</span> 메모 추가
+          </button>
+        </div>
+      </div>`;
+    }
+
+    // 전체 보기 — 접기/펼치기
+    const state = memoExpandState[m] || 'collapsed';
+    const COLLAPSED_MAX = 4;
+    const EXPANDED_MAX  = 8;
+    const shown = state === 'collapsed'
+      ? mNotes.slice(0, COLLAPSED_MAX)
+      : mNotes.slice(0, EXPANDED_MAX);
+    const hasMore    = mNotes.length > COLLAPSED_MAX;
+    const isExpanded = state === 'expanded';
+    const hiddenCount = isExpanded
+      ? Math.max(0, mNotes.length - EXPANDED_MAX)
+      : Math.max(0, mNotes.length - COLLAPSED_MAX);
+
+    let expandBtn = '';
+    if (hasMore) {
+      if (!isExpanded) {
+        expandBtn = `<button class="memo-expand-btn" style="border-color:${col};color:${col};"
+          onclick="toggleMemoExpand('${escHtml(m)}')">
+          ▾ 더보기 (${mNotes.length - COLLAPSED_MAX}개)
+        </button>`;
+      } else {
+        expandBtn = `<button class="memo-expand-btn" style="border-color:${col};color:${col};"
+          onclick="toggleMemoExpand('${escHtml(m)}')">
+          ▴ 접기
+        </button>`;
+        if (hiddenCount > 0) {
+          expandBtn += `<div style="font-size:11px;color:var(--gray-400);text-align:center;margin-top:4px">
+            +${hiddenCount}건 더 있습니다 — <span style="cursor:pointer;text-decoration:underline;color:${col}" onclick="openMemoFullModal('${escHtml(m)}')">전체 보기</span>
+          </div>`;
+        }
+      }
+    }
+
     return `<div>
       <div class="memo-col-header" style="border-color:${col};">
         <span class="avatar" style="background:${bg};color:${tx};width:26px;height:26px;font-size:12px;">${m[0]}</span>
-        <span class="memo-col-title" style="color:${tx};">${m}</span>
+        <button class="memo-col-name-btn" style="color:${col};" onclick="openMemoFullModal('${escHtml(m)}')" title="${m}의 모든 메모 보기">${m}</button>
         <span class="memo-col-count" style="background:${bg};color:${tx};">${mNotes.length}건</span>
       </div>
-      <div class="memo-grid" id="memo-grid-${m.replace(/\s/g,'_')}">
-        ${mNotes.map(n => renderMemoCard(n, bg, col)).join('')}
+      <div class="memo-grid" id="memo-grid-${safeName}">
+        ${shown.map(n => renderMemoCard(n, bg, col)).join('')}
         <button class="memo-add-btn" style="border-color:${col};color:${col};" onclick="openMemoEditModal(null,'${escHtml(m)}')">
           <span style="font-size:18px;line-height:1">+</span> 메모 추가
         </button>
       </div>
+      ${expandBtn}
     </div>`;
   }).join('');
+}
+
+function toggleMemoExpand(member) {
+  memoExpandState[member] = (memoExpandState[member] === 'expanded') ? 'collapsed' : 'expanded';
+  renderMemoTab();
+}
+
+function openMemoFullModal(member) {
+  const mNotes = getActiveNotes().filter(n => n.member === member);
+  const bg  = memberBg(member);
+  const tx  = memberTx(member);
+  const col = memberColor(member);
+  document.getElementById('memoFullModalTitle').innerHTML =
+    `<span style="display:inline-flex;align-items:center;gap:8px;">
+      <span class="avatar" style="background:${bg};color:${tx};width:26px;height:26px;font-size:12px;">${member[0]}</span>
+      <span style="color:${col}">${escHtml(member)}</span>
+      <span style="font-size:13px;color:var(--gray-400);font-weight:400">${mNotes.length}건</span>
+    </span>`;
+  document.getElementById('memoFullGrid').innerHTML =
+    mNotes.map(n => renderMemoCard(n, bg, col)).join('') ||
+    `<div class="memo-empty" style="grid-column:1/-1">등록된 메모가 없습니다.</div>`;
+  document.getElementById('memoFullModal').classList.add('open');
+}
+
+function closeMemoFullModal() {
+  document.getElementById('memoFullModal').classList.remove('open');
 }
 
 function renderMemoCard(n, bg, col) {
@@ -5714,7 +5818,7 @@ async function submitComment(noteId) {
   const nr = await commentInsert({ note_id:noteId, member, content });
   if (nr) {
     input.value = '';
-    // 댓글 목록만 새로고침
+    // 댓글 목록 새로고침
     const listEl = document.getElementById('comment-list-' + noteId);
     if (listEl) {
       const comments = noteComments.filter(c => c.note_id === noteId);
@@ -5737,6 +5841,24 @@ async function submitComment(noteId) {
       }).join('') || `<div class="memo-empty-comment">아직 댓글이 없습니다.</div>`;
       listEl.scrollTop = listEl.scrollHeight;
     }
+    // 카드 뱃지 즉시 갱신
+    refreshMemoCardBadge(noteId);
+  }
+}
+
+// 카드 뱃지만 갱신 (전체 탭 재렌더 없이)
+function refreshMemoCardBadge(noteId) {
+  const card = document.getElementById('memo-card-' + noteId);
+  if (!card) return;
+  const count = noteComments.filter(c => c.note_id === noteId).length;
+  // 기존 뱃지 제거
+  const old = card.querySelector('.memo-comment-badge');
+  if (old) old.remove();
+  if (count > 0) {
+    const badge = document.createElement('div');
+    badge.className = 'memo-comment-badge';
+    badge.innerHTML = `💬 ${count}`;
+    card.appendChild(badge);
   }
 }
 
@@ -5744,10 +5866,8 @@ async function deleteComment(commentId, noteId) {
   if (!confirm('이 댓글을 삭제하시겠습니까?')) return;
   const ok = await commentDelete(commentId);
   if (ok) {
-    const listEl = document.getElementById('comment-list-' + noteId);
-    if (listEl) submitComment._refreshList && submitComment._refreshList(noteId);
-    // 간단히 모달 전체 새로고침
     openMemoEditModal(noteId);
+    refreshMemoCardBadge(noteId);
   }
 }
 
@@ -6485,6 +6605,17 @@ window.addEventListener('focus', remoteRefresh);
   }
 })();
 </script>
+<!-- 메모 멤버 전체보기 모달 -->
+<div class="modal-overlay" id="memoFullModal">
+  <div class="memo-full-modal">
+    <div class="modal-header" style="margin-bottom:4px;">
+      <div class="modal-title" id="memoFullModalTitle">메모 전체보기</div>
+      <button class="modal-close" onclick="closeMemoFullModal()">&#10005;</button>
+    </div>
+    <div class="memo-full-grid" id="memoFullGrid"></div>
+  </div>
+</div>
+
 <!-- 휴가 툴팁 팝업 -->
 <div class="leave-tooltip-popup" id="leaveTooltipPopup"></div>
 
