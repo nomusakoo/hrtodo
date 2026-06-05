@@ -886,6 +886,33 @@
   </div>
 </div>
 
+<!-- PASSWORD CHANGE MODAL -->
+<div class="modal-overlay" id="pwModal">
+  <div class="modal" style="width:360px;max-width:95vw">
+    <div class="modal-header">
+      <div class="modal-title">🔑 비밀번호 변경</div>
+      <button class="modal-close" onclick="closePwModal()">&#10005;</button>
+    </div>
+    <div style="padding:4px 0 8px">
+      <div class="form-group">
+        <label class="form-label">새 비밀번호</label>
+        <input type="password" class="form-input" id="pwNew" placeholder="6자 이상 입력"
+          onkeydown="if(event.key==='Enter')document.getElementById('pwConfirm').focus()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">새 비밀번호 확인</label>
+        <input type="password" class="form-input" id="pwConfirm" placeholder="비밀번호 재입력"
+          onkeydown="if(event.key==='Enter')savePw()">
+      </div>
+      <div id="pwError" style="font-size:12px;color:var(--danger);min-height:16px;margin-top:4px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closePwModal()">취소</button>
+      <button class="btn btn-primary" onclick="savePw()">변경하기</button>
+    </div>
+  </div>
+</div>
+
 <!-- LOADING -->
 <div class="loading-overlay hidden" id="loadingOverlay">
   <div class="spinner"></div>
@@ -905,7 +932,7 @@
     </div>
     <span class="today-badge" id="todayBadge"></span>
     <div class="header-user" id="headerUser" style="display:none">
-      <span class="header-user-name" id="headerUserName"></span>
+      <button class="header-user-name" id="headerUserName" onclick="openPwModal()" title="비밀번호 변경" style="background:none;border:none;cursor:pointer;padding:0;font-family:var(--font)"></button>
       <button class="logout-btn" onclick="doLogout()">로그아웃</button>
     </div>
   </div>
@@ -1729,6 +1756,33 @@ function closeMobileDrawer() {
   sidebar.classList.remove('drawer-open');
   overlay.classList.remove('open');
   setTimeout(()=>{ if(!overlay.classList.contains('open')) overlay.style.display='none'; }, 380);
+}
+
+// ── 비밀번호 변경 ──
+function openPwModal() {
+  document.getElementById('pwNew').value = '';
+  document.getElementById('pwConfirm').value = '';
+  document.getElementById('pwError').textContent = '';
+  document.getElementById('pwModal').classList.add('open');
+  setTimeout(() => document.getElementById('pwNew').focus(), 100);
+}
+function closePwModal() {
+  document.getElementById('pwModal').classList.remove('open');
+}
+async function savePw() {
+  const pw  = document.getElementById('pwNew').value;
+  const pw2 = document.getElementById('pwConfirm').value;
+  const err = document.getElementById('pwError');
+  if (pw.length < 6)    { err.textContent = '비밀번호는 6자 이상이어야 합니다.'; return; }
+  if (pw !== pw2)       { err.textContent = '비밀번호가 일치하지 않습니다.'; return; }
+  err.textContent = '';
+  const btn = document.querySelector('#pwModal .btn-primary');
+  btn.disabled = true; btn.textContent = '변경 중...';
+  const { error } = await sbClient.auth.updateUser({ password: pw });
+  btn.disabled = false; btn.textContent = '변경하기';
+  if (error) { err.textContent = '변경 실패: ' + error.message; return; }
+  closePwModal();
+  showToast('비밀번호가 변경되었습니다.');
 }
 
 // ── AUTH: 로그인 오버레이 ──
@@ -3792,6 +3846,7 @@ document.addEventListener('keydown', e => {
     const pasteModal = document.getElementById('pasteModal');
     if (taskModal.classList.contains('open'))  { saveTask(); return; }
     if (execModal.classList.contains('open'))  { saveExecForm(); return; }
+    if (document.getElementById('pwModal').classList.contains('open')) { savePw(); return; }
     if (pasteModal.classList.contains('open') && !document.getElementById('pasteSaveBtn').disabled) { savePasteData(); return; }
   }
 });
