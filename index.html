@@ -885,6 +885,46 @@
     .memo-grid{grid-template-columns:1fr 1fr;}
   }
   @media(max-width:500px){.memo-grid{grid-template-columns:1fr;}}
+
+  /* ── 제도 탭 ── */
+  .policy-layout{display:grid;grid-template-columns:200px 1fr;gap:0;min-height:500px;background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);}
+  .policy-sidebar{border-right:1px solid var(--border);background:var(--gray-50);padding:12px 0;}
+  .policy-cat-item{display:flex;align-items:center;gap:8px;padding:10px 16px;cursor:pointer;font-size:13.5px;color:var(--gray-600);transition:all 0.15s;border-left:3px solid transparent;user-select:none;}
+  .policy-cat-item:hover{background:#fff;color:var(--gray-800);}
+  .policy-cat-item.active{background:#fff;color:var(--accent);border-left-color:var(--accent);font-weight:500;}
+  .policy-cat-item .policy-cat-count{margin-left:auto;font-size:11px;color:var(--gray-400);font-family:var(--font-mono);}
+  .policy-cat-item.active .policy-cat-count{color:var(--accent);}
+  .policy-cat-add{display:flex;align-items:center;gap:6px;padding:8px 16px;cursor:pointer;font-size:12px;color:var(--gray-400);transition:color 0.15s;margin-top:4px;}
+  .policy-cat-add:hover{color:var(--accent);}
+  .policy-content{padding:24px 28px;overflow-y:auto;}
+  .policy-content-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+  .policy-content-title{font-size:17px;font-weight:600;color:var(--primary);}
+  .policy-item{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;transition:box-shadow 0.15s;}
+  .policy-item:hover{box-shadow:var(--shadow-sm);}
+  .policy-item-header{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;background:#fff;user-select:none;}
+  .policy-item-header:hover{background:var(--gray-50);}
+  .policy-item-title{font-size:13.5px;font-weight:500;color:var(--gray-800);flex:1;}
+  .policy-item-toggle{font-size:11px;color:var(--gray-400);transition:transform 0.2s;flex-shrink:0;}
+  .policy-item.open .policy-item-toggle{transform:rotate(180deg);}
+  .policy-item-body{display:none;padding:14px 16px 16px;background:var(--gray-50);border-top:1px solid var(--border);font-size:13.5px;color:var(--gray-700);line-height:1.8;white-space:pre-wrap;word-break:break-word;}
+  .policy-item.open .policy-item-body{display:block;}
+  .policy-item-actions{display:flex;gap:4px;opacity:0;transition:opacity 0.15s;}
+  .policy-item-header:hover .policy-item-actions{opacity:1;}
+  @media(hover:none){.policy-item-actions{opacity:1;}}
+  .policy-empty{text-align:center;padding:52px 20px;color:var(--gray-300);}
+  .policy-empty-icon{font-size:32px;margin-bottom:12px;display:block;}
+  /* 제도 편집 모달 */
+  .policy-edit-modal{background:#fff;border-radius:var(--radius-lg);padding:26px 28px 22px;width:520px;max-width:96vw;box-shadow:0 20px 50px rgba(0,0,0,0.15);}
+  .policy-edit-textarea{width:100%;min-height:160px;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:13.5px;font-family:var(--font);resize:vertical;outline:none;line-height:1.8;transition:border-color 0.15s;}
+  .policy-edit-textarea:focus{border-color:var(--accent);}
+  @media(max-width:900px){
+    .policy-layout{grid-template-columns:1fr;min-height:unset;}
+    .policy-sidebar{border-right:none;border-bottom:1px solid var(--border);padding:8px 0;display:flex;flex-wrap:nowrap;overflow-x:auto;gap:0;}
+    .policy-cat-item{border-left:none;border-bottom:3px solid transparent;white-space:nowrap;padding:8px 14px;}
+    .policy-cat-item.active{border-bottom-color:var(--accent);border-left-color:transparent;}
+    .policy-cat-add{padding:8px 12px;white-space:nowrap;}
+    .policy-content{padding:16px;}
+  }
 </style>
 </head>
 <body>
@@ -1032,6 +1072,7 @@
       <button class="tab-btn" id="tab-weekly" onclick="switchTab('weekly')">&#9633; 주간 보기</button>
       <button class="tab-btn" id="tab-exec" onclick="switchTab('exec')">&#128188; 임원 대시보드</button>
       <button class="tab-btn" id="tab-memo" onclick="switchTab('memo')">&#128203; 메모</button>
+      <button class="tab-btn" id="tab-policy" onclick="switchTab('policy')">&#128218; 제도</button>
     </div>
 
     <!-- TASKS TAB -->
@@ -1197,6 +1238,20 @@
       <div id="memoBoard"></div>
     </div>
 
+    <!-- POLICY TAB (제도) -->
+    <div id="view-policy" style="display:none">
+      <div class="page-header">
+        <div class="page-title">제도 안내<span id="policyCountLabel"></span></div>
+        <button class="btn btn-green" onclick="openPolicyEditModal(null)">+ 항목 추가</button>
+      </div>
+      <div class="policy-layout">
+        <!-- 좌측 카테고리 목차 -->
+        <div class="policy-sidebar" id="policySidebar"></div>
+        <!-- 우측 내용 패널 -->
+        <div class="policy-content" id="policyContent"></div>
+      </div>
+    </div>
+
     <!-- EXEC DASHBOARD TAB (임원 대시보드) -->
     <div id="view-exec" style="display:none">
       <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
@@ -1291,6 +1346,37 @@
       <button class="btn btn-danger" id="memoDeleteBtn" onclick="deleteMemoFromModal()" style="display:none;margin-right:auto">&#10005; 삭제</button>
       <button class="btn" onclick="closeMemoEditModal()">취소</button>
       <button class="btn btn-primary" onclick="saveMemoFromModal()">&#10003; 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- POLICY EDIT MODAL (제도 항목 추가/수정) -->
+<div class="modal-overlay" id="policyEditModal">
+  <div class="policy-edit-modal">
+    <div class="modal-header" style="margin-bottom:18px;">
+      <div class="modal-title" id="policyEditModalTitle">&#128218; 항목 추가</div>
+      <button class="modal-close" onclick="closePolicyEditModal()">&#10005;</button>
+    </div>
+    <div class="form-row">
+      <label class="form-label">카테고리 *</label>
+      <div style="display:flex;gap:8px;">
+        <select class="form-select" id="policy-cat" style="flex:1" onchange="onPolicyCatSelectChange()"></select>
+        <input type="text" class="form-input" id="policy-cat-new" placeholder="새 카테고리 직접 입력" style="flex:1;display:none;">
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">제목 *</label>
+      <input type="text" class="form-input" id="policy-title" placeholder="예: 연차 사용 방법, 복지포인트 신청 절차">
+    </div>
+    <div class="form-row">
+      <label class="form-label">내용 *</label>
+      <textarea class="policy-edit-textarea" id="policy-content" placeholder="제도 내용을 입력하세요. 줄바꿈, 목록 등 자유롭게 작성하세요."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="policyDeleteBtn" onclick="deletePolicyFromModal()" style="display:none;margin-right:auto">&#10005; 삭제</button>
+      <span style="font-size:11px;color:var(--gray-400);margin-right:auto">Ctrl+Enter 저장</span>
+      <button class="btn" onclick="closePolicyEditModal()">취소</button>
+      <button class="btn btn-primary" onclick="savePolicyFromModal()">&#10003; 저장</button>
     </div>
   </div>
 </div>
@@ -1650,6 +1736,9 @@
     </button>
     <button class="mobile-nav-btn" id="mnav-memo" onclick="switchTab('memo')">
       <span class="nav-icon">&#128203;</span>메모
+    </button>
+    <button class="mobile-nav-btn" id="mnav-policy" onclick="switchTab('policy')">
+      <span class="nav-icon">&#128218;</span>제도
     </button>
     <button class="mobile-nav-btn" onclick="openMemberSettingModal()">
       <span class="nav-icon">&#9881;</span>설정
@@ -2043,6 +2132,7 @@ async function startApp() {
           masterTitles = await loadMasterTitles();
           execEvents = await loadExecEvents();
           notes = await loadNotes();
+          policies = await loadPolicies();
           await migrateLegacyExecEvents();
           showLoading(false);
           renderAll();
@@ -2069,6 +2159,7 @@ async function startApp() {
   masterTitles = await loadMasterTitles();
   execEvents = await loadExecEvents();
   notes = await loadNotes();
+  policies = await loadPolicies();
   await migrateLegacyExecEvents();
   if (useLocal || !sbClient) setDbStatus(false, '로컬 저장소');
   showLoading(false);
@@ -2147,10 +2238,11 @@ function switchTab(tab) {
   document.getElementById('view-dashboard').style.display = tab==='dashboard' ? '' : 'none';
   document.getElementById('view-exec').style.display      = tab==='exec'      ? '' : 'none';
   document.getElementById('view-memo').style.display      = tab==='memo'      ? '' : 'none';
-  ['tasks','weekly','dashboard','exec','memo'].forEach(t=>{
+  document.getElementById('view-policy').style.display    = tab==='policy'    ? '' : 'none';
+  ['tasks','weekly','dashboard','exec','memo','policy'].forEach(t=>{
     const b=document.getElementById(`tab-${t}`); if(b) b.className='tab-btn'+(tab===t?' active':'');
   });
-  ['tasks','weekly','dashboard','exec','memo'].forEach(t=>{
+  ['tasks','weekly','dashboard','exec','memo','policy'].forEach(t=>{
     const el = document.getElementById(`mnav-${t}`);
     if (el) el.className = 'mobile-nav-btn' + (tab===t ? ' active' : '');
   });
@@ -2158,6 +2250,7 @@ function switchTab(tab) {
   if (tab==='weekly') renderWeekly();
   if (tab==='exec') renderExecDash();
   if (tab==='memo') renderMemoTab();
+  if (tab==='policy') renderPolicyTab();
   if (tab==='tasks') {
     renderTable(true);
     setTimeout(scrollTasksToToday, 70);
@@ -4086,30 +4179,29 @@ document.getElementById('taskModal').addEventListener('click',function(e){if(e.t
 document.getElementById('excelModal').addEventListener('click',function(e){if(e.target===this)closeExcelModal();});
 document.getElementById('repeatDelModal').addEventListener('click',function(e){if(e.target===this)closeRepeatDelModal();});
 document.getElementById('memoEditModal').addEventListener('click',function(e){if(e.target===this)closeMemoEditModal();});
+document.getElementById('policyEditModal').addEventListener('click',function(e){if(e.target===this)closePolicyEditModal();});
 
 
 // ── 키보드 단축키 ──
 document.addEventListener('keydown', e => {
-  // Escape: 열린 모달 닫기
   if (e.key === 'Escape') {
     closeModal();
     if (document.getElementById('repeatDelModal').classList.contains('open')) closeRepeatDelModal();
     if (document.getElementById('memoEditModal').classList.contains('open')) closeMemoEditModal();
+    if (document.getElementById('policyEditModal').classList.contains('open')) closePolicyEditModal();
   }
-
-  // Ctrl+N / Cmd+N: 할 일 추가
   if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); openAddModal(); }
-
-  // Ctrl+Enter / Cmd+Enter: 현재 열린 모달 저장
   if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
     e.preventDefault();
-    const taskModal = document.getElementById('taskModal');
-    const execModal = document.getElementById('execEventModal');
-    const pasteModal = document.getElementById('pasteModal');
-    const memoModal = document.getElementById('memoEditModal');
-    if (taskModal.classList.contains('open'))  { saveTask(); return; }
-    if (execModal.classList.contains('open'))  { saveExecForm(); return; }
-    if (memoModal.classList.contains('open'))  { saveMemoFromModal(); return; }
+    const taskModal   = document.getElementById('taskModal');
+    const execModal   = document.getElementById('execEventModal');
+    const pasteModal  = document.getElementById('pasteModal');
+    const memoModal   = document.getElementById('memoEditModal');
+    const policyModal = document.getElementById('policyEditModal');
+    if (taskModal.classList.contains('open'))   { saveTask(); return; }
+    if (execModal.classList.contains('open'))   { saveExecForm(); return; }
+    if (memoModal.classList.contains('open'))   { saveMemoFromModal(); return; }
+    if (policyModal.classList.contains('open')) { savePolicyFromModal(); return; }
     if (document.getElementById('pwModal').classList.contains('open')) { savePw(); return; }
     if (pasteModal.classList.contains('open') && !document.getElementById('pasteSaveBtn').disabled) { savePasteData(); return; }
   }
@@ -4802,6 +4894,9 @@ async function deleteExecInlineEvent(id) {
 const NOTES_KEY = 'hr_notes_v1';
 let notes = [];
 let memoEditId = null;
+let policies = [];
+let policyEditId = null;
+let activePolicyCat = null;
 
 // ── 로컬 저장 ──
 function notesLocalLoad() {
@@ -5011,6 +5106,239 @@ function memoLongPressCancel() {
 }
 
 // ══════════════════════════════════════════════
+//  POLICY (제도 안내)
+// ══════════════════════════════════════════════
+const POLICY_KEY = 'hr_policies_v1';
+
+// 기본 카테고리 (최초 진입 시 안내용)
+const DEFAULT_POLICY_CATS = ['인사제도','복리후생','근태·휴가','급여·세금','교육·자격'];
+
+// ── 로컬 저장 ──
+function policiesLocalLoad() {
+  try { const d = JSON.parse(localStorage.getItem(POLICY_KEY)); return Array.isArray(d) ? d : []; }
+  catch { return []; }
+}
+function policiesLocalSave() { localStorage.setItem(POLICY_KEY, JSON.stringify(policies)); }
+
+// ── Supabase CRUD ──
+async function loadPolicies() {
+  if (!useLocal && sbClient) {
+    const { data, error } = await sbClient.from('hr_policies')
+      .select('*').order('category').order('sort_order').order('id');
+    if (!error && Array.isArray(data)) return data;
+    if (error) console.warn('[policies] Supabase 로드 실패, 로컬 폴백:', error.message||error);
+  }
+  return policiesLocalLoad();
+}
+
+async function policyInsert(p) {
+  const row = { category:p.category, title:p.title, content:p.content, sort_order:p.sort_order||0 };
+  if (!useLocal && sbClient) {
+    const { data, error } = await sbClient.from('hr_policies').insert(row).select();
+    if (error) { showToast('제도 저장 오류: '+(error.message||''), 'error'); return null; }
+    const nr = data && data[0];
+    if (nr) policies.push(nr);
+    return nr;
+  }
+  const newId = policies.length ? Math.max(...policies.map(p=>p.id||0)) + 1 : 1;
+  const nr = { id:newId, ...row };
+  policies.push(nr); policiesLocalSave(); return nr;
+}
+
+async function policyUpdate(id, fields) {
+  if (!useLocal && sbClient) {
+    const { error } = await sbClient.from('hr_policies').update(fields).eq('id', id);
+    if (error) { showToast('제도 수정 오류: '+(error.message||''), 'error'); return false; }
+  }
+  const p = policies.find(p => p.id === id); if (p) Object.assign(p, fields);
+  if (useLocal || !sbClient) policiesLocalSave();
+  return true;
+}
+
+async function policyDelete(id) {
+  if (!useLocal && sbClient) {
+    const { error } = await sbClient.from('hr_policies').delete().eq('id', id);
+    if (error) { showToast('제도 삭제 오류: '+(error.message||''), 'error'); return false; }
+  }
+  policies = policies.filter(p => p.id !== id);
+  if (useLocal || !sbClient) policiesLocalSave();
+  return true;
+}
+
+// ── 카테고리 목록 추출 ──
+function getPolicyCats() {
+  const fromData = [...new Set(policies.map(p => p.category).filter(Boolean))];
+  // 데이터가 없으면 기본 카테고리 보여줌
+  return fromData.length ? fromData : DEFAULT_POLICY_CATS;
+}
+
+// ── 렌더 ──
+function renderPolicyTab() {
+  const cats = getPolicyCats();
+  if (!activePolicyCat || !cats.includes(activePolicyCat)) {
+    activePolicyCat = cats[0] || null;
+  }
+  const total = policies.length;
+  const lbl = document.getElementById('policyCountLabel');
+  if (lbl) lbl.textContent = total ? `총 ${total}건` : '';
+  renderPolicySidebar(cats);
+  renderPolicyContent();
+}
+
+function renderPolicySidebar(cats) {
+  const sb = document.getElementById('policySidebar');
+  if (!sb) return;
+  sb.innerHTML = cats.map(cat => {
+    const cnt = policies.filter(p => p.category === cat).length;
+    return `<div class="policy-cat-item${cat===activePolicyCat?' active':''}"
+        onclick="selectPolicyCat('${escHtml(cat)}')">
+      <span>${escHtml(cat)}</span>
+      <span class="policy-cat-count">${cnt || ''}</span>
+    </div>`;
+  }).join('') +
+  `<div class="policy-cat-add" onclick="openPolicyEditModal(null)">
+    <span style="font-size:16px;line-height:1">+</span> 항목 추가
+  </div>`;
+}
+
+function renderPolicyContent() {
+  const pc = document.getElementById('policyContent');
+  if (!pc) return;
+  if (!activePolicyCat) {
+    pc.innerHTML = `<div class="policy-empty"><span class="policy-empty-icon">&#128218;</span>카테고리를 선택하세요.</div>`;
+    return;
+  }
+  const items = policies.filter(p => p.category === activePolicyCat);
+  pc.innerHTML = `
+    <div class="policy-content-header">
+      <div class="policy-content-title">${escHtml(activePolicyCat)}</div>
+      <button class="btn btn-sm btn-green" onclick="openPolicyEditModal(null,'${escHtml(activePolicyCat)}')">+ 항목 추가</button>
+    </div>
+    ${items.length ? items.map(p => renderPolicyItem(p)).join('') :
+      `<div class="policy-empty"><span class="policy-empty-icon">&#128196;</span>아직 등록된 항목이 없습니다.<br><span style="font-size:12px">위 버튼으로 첫 항목을 추가해보세요.</span></div>`
+    }`;
+}
+
+function renderPolicyItem(p) {
+  return `<div class="policy-item" id="policy-item-${p.id}">
+    <div class="policy-item-header" onclick="togglePolicyItem(${p.id})">
+      <span class="policy-item-title">${escHtml(p.title)}</span>
+      <div class="policy-item-actions" onclick="event.stopPropagation()">
+        <button class="btn btn-sm" onclick="openPolicyEditModal(${p.id})" title="수정">&#9998;</button>
+        <button class="btn btn-sm btn-danger" onclick="deletePolicyItem(${p.id})" title="삭제">&#10005;</button>
+      </div>
+      <span class="policy-item-toggle">&#9660;</span>
+    </div>
+    <div class="policy-item-body">${escHtml(p.content)}</div>
+  </div>`;
+}
+
+function togglePolicyItem(id) {
+  const el = document.getElementById('policy-item-' + id);
+  if (el) el.classList.toggle('open');
+}
+
+function selectPolicyCat(cat) {
+  activePolicyCat = cat;
+  renderPolicySidebar(getPolicyCats());
+  renderPolicyContent();
+}
+
+// ── 모달 ──
+function openPolicyEditModal(id, prefillCat) {
+  policyEditId = id;
+  const isEdit = id !== null && id !== undefined;
+
+  document.getElementById('policyEditModalTitle').innerHTML = isEdit ? '📖 항목 수정' : '📖 항목 추가';
+
+  // 카테고리 셀렉트 채우기
+  const cats = getPolicyCats();
+  const catSelect = document.getElementById('policy-cat');
+  const defaultCat = prefillCat || activePolicyCat || cats[0] || '';
+  catSelect.innerHTML =
+    cats.map(c => `<option value="${escHtml(c)}" ${c===defaultCat?'selected':''}>${escHtml(c)}</option>`).join('') +
+    `<option value="__new__">+ 새 카테고리 추가...</option>`;
+  document.getElementById('policy-cat-new').style.display = 'none';
+  document.getElementById('policy-cat-new').value = '';
+
+  if (isEdit) {
+    const p = policies.find(p => p.id === id);
+    if (p) {
+      catSelect.value = p.category;
+      document.getElementById('policy-title').value = p.title || '';
+      document.getElementById('policy-content').value = p.content || '';
+    }
+    document.getElementById('policyDeleteBtn').style.display = '';
+  } else {
+    catSelect.value = defaultCat;
+    document.getElementById('policy-title').value = '';
+    document.getElementById('policy-content').value = '';
+    document.getElementById('policyDeleteBtn').style.display = 'none';
+  }
+  document.getElementById('policyEditModal').classList.add('open');
+  setTimeout(() => document.getElementById('policy-title').focus(), 50);
+}
+
+function onPolicyCatSelectChange() {
+  const val = document.getElementById('policy-cat').value;
+  const newInput = document.getElementById('policy-cat-new');
+  if (val === '__new__') {
+    newInput.style.display = 'block';
+    setTimeout(() => newInput.focus(), 30);
+  } else {
+    newInput.style.display = 'none';
+    newInput.value = '';
+  }
+}
+
+function closePolicyEditModal() {
+  document.getElementById('policyEditModal').classList.remove('open');
+  policyEditId = null;
+}
+
+async function savePolicyFromModal() {
+  let category = document.getElementById('policy-cat').value;
+  if (category === '__new__') {
+    category = document.getElementById('policy-cat-new').value.trim();
+    if (!category) { showToast('새 카테고리 이름을 입력하세요.', 'error'); return; }
+  }
+  const title   = document.getElementById('policy-title').value.trim();
+  const content = document.getElementById('policy-content').value.trim();
+  if (!category) { showToast('카테고리를 선택하세요.', 'error'); return; }
+  if (!title)    { showToast('제목을 입력하세요.', 'error'); return; }
+  if (!content)  { showToast('내용을 입력하세요.', 'error'); return; }
+
+  if (policyEditId !== null && policyEditId !== undefined) {
+    const ok = await policyUpdate(policyEditId, { category, title, content });
+    if (ok) {
+      activePolicyCat = category;
+      closePolicyEditModal(); renderPolicyTab();
+      showToast('항목을 수정했습니다.');
+    }
+  } else {
+    const nr = await policyInsert({ category, title, content, sort_order: policies.filter(p=>p.category===category).length });
+    if (nr) {
+      activePolicyCat = category;
+      closePolicyEditModal(); renderPolicyTab();
+      showToast('항목을 추가했습니다.');
+    }
+  }
+}
+
+async function deletePolicyFromModal() {
+  if (policyEditId === null || policyEditId === undefined) return;
+  if (!confirm('이 항목을 삭제하시겠습니까?')) return;
+  const ok = await policyDelete(policyEditId);
+  if (ok) { closePolicyEditModal(); renderPolicyTab(); showToast('항목을 삭제했습니다.'); }
+}
+
+async function deletePolicyItem(id) {
+  if (!confirm('이 항목을 삭제하시겠습니까?')) return;
+  const ok = await policyDelete(id);
+  if (ok) { renderPolicyTab(); showToast('항목을 삭제했습니다.'); }
+}
+
+// ══════════════════════════════════════════════
 //  REALTIME 동기화 (모바일 ↔ PC 자동 반영)
 // ══════════════════════════════════════════════
 let realtimeChannel = null;
@@ -5020,9 +5348,11 @@ function isEditingOpen() {
   const tm = document.getElementById('taskModal');
   const em = document.getElementById('execEventModal');
   const mm = document.getElementById('memoEditModal');
+  const pm = document.getElementById('policyEditModal');
   return (tm && tm.classList.contains('open'))
       || (em && em.classList.contains('open'))
       || (mm && mm.classList.contains('open'))
+      || (pm && pm.classList.contains('open'))
       || document.querySelector('.master-inline-form.open') !== null;
 }
 
@@ -5035,6 +5365,7 @@ function subscribeRealtime() {
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_exec_events' },   scheduleRemoteRefresh)
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_master_events' }, scheduleRemoteRefresh)
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_notes' },         scheduleRemoteRefresh)
+      .on('postgres_changes', { event:'*', schema:'public', table:'hr_policies' },      scheduleRemoteRefresh)
       .subscribe();
   } catch (err) { console.warn('[realtime] 구독 실패:', err); }
 }
@@ -5047,14 +5378,13 @@ function scheduleRemoteRefresh() {
 async function remoteRefresh() {
   if (useLocal || !sbClient) return;
   try {
-    const [t, ex, me, nt] = await Promise.all([dbLoad(), loadExecEvents(), loadMasterEvents(), loadNotes()]);
-    tasks = t; execEvents = ex; masterEvents = me; notes = nt;
+    const [t, ex, me, nt, pl] = await Promise.all([dbLoad(), loadExecEvents(), loadMasterEvents(), loadNotes(), loadPolicies()]);
+    tasks = t; execEvents = ex; masterEvents = me; notes = nt; policies = pl;
     rerenderCurrentView();
   } catch (err) { console.warn('[realtime] 갱신 실패:', err); }
 }
 
 function rerenderCurrentView() {
-  // 편집 중이면 화면 흔들림 방지 (데이터는 이미 갱신됨, 렌더만 보류)
   if (isEditingOpen()) return;
   const visible = id => { const el = document.getElementById(id); return el && el.style.display !== 'none'; };
   if (visible('view-tasks')) renderTable();
@@ -5062,6 +5392,7 @@ function rerenderCurrentView() {
   if (visible('view-weekly')) renderWeekly();
   if (visible('view-exec')) renderExecDash();
   if (visible('view-memo')) renderMemoTab();
+  if (visible('view-policy')) renderPolicyTab();
   const mc = document.getElementById('masterCalModal');
   if (mc && mc.style.display !== 'none') renderMasterCalPage();
   updateCounts();
