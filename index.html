@@ -2121,6 +2121,29 @@ let myMember   = localStorage.getItem('hr_my_member') || '';
 let myTaskOnly = localStorage.getItem('hr_my_task_only') === '1';
 let tempMyMember = '';
 
+// ── 탭 순서/표시 설정 ──
+const TAB_META = [
+  { id:'tasks',     label:'할 일 관리',   icon:'📋' },
+  { id:'dashboard', label:'월별 대시보드', icon:'📅' },
+  { id:'weekly',    label:'주간 보기',     icon:'🗓' },
+  { id:'exec',      label:'임원 대시보드', icon:'💼' },
+  { id:'memo',      label:'메모',          icon:'🗒' },
+  { id:'policy',    label:'제도',          icon:'📚' },
+];
+const TAB_ORDER_KEY = 'hr_tab_order_v1';
+function loadTabConfig() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(TAB_ORDER_KEY));
+    if (Array.isArray(saved) && saved.length === TAB_META.length) return saved;
+  } catch {}
+  return TAB_META.map(t => ({ id: t.id, visible: true }));
+}
+function saveTabConfig() { localStorage.setItem(TAB_ORDER_KEY, JSON.stringify(tabConfig)); }
+let tabConfig = loadTabConfig();
+
+// ── 메모 접기/펼치기 상태 ──
+const memoExpandState = {};
+
 // 내 업무만 보기 ON이면 myMember만, 아니면 전체 tasks 반환
 function activeTasks() {
   return (myTaskOnly && myMember) ? tasks.filter(t => t.member === myMember) : tasks;
@@ -5232,28 +5255,12 @@ let leaveEditId = null;
 // ── 메모 댓글 ──
 let noteComments = [];
 
-// ── 탭 순서 설정 ──
-const TAB_META = [
-  { id:'tasks',     label:'할 일 관리',   icon:'✎' },
-  { id:'dashboard', label:'월별 대시보드', icon:'▤' },
-  { id:'weekly',    label:'주간 보기',     icon:'□' },
-  { id:'exec',      label:'임원 대시보드', icon:'💼' },
-  { id:'memo',      label:'메모',          icon:'📋' },
-  { id:'policy',    label:'제도',          icon:'📚' },
-];
-const TAB_ORDER_KEY = 'hr_tab_order_v1';
-let tabConfig = loadTabConfig(); // [{id, visible}]
+// ── 휴가/출장 ──
+let leaves = [];
+let leaveEditId = null;
 
-function loadTabConfig() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(TAB_ORDER_KEY));
-    if (Array.isArray(saved) && saved.length === TAB_META.length) return saved;
-  } catch {}
-  return TAB_META.map(t => ({ id: t.id, visible: true }));
-}
-function saveTabConfig() { localStorage.setItem(TAB_ORDER_KEY, JSON.stringify(tabConfig)); }
-
-// ── 로컬 저장 ──
+// ── 메모 댓글 ──
+let noteComments = [];
 function notesLocalLoad() {
   try { const d = JSON.parse(localStorage.getItem(NOTES_KEY)); return Array.isArray(d) ? d : []; }
   catch { return []; }
@@ -5309,9 +5316,7 @@ function getActiveNotes() {
   return (myTaskOnly && myMember) ? notes.filter(n => n.member === myMember) : notes;
 }
 
-// 컬럼별 펼침 상태 저장
-const memoExpandState = {}; // { member: 'collapsed'|'expanded' }
-
+// 컬럼별 펼침 상태 — APP STATE에 선언됨
 function renderMemoTab() {
   const board = document.getElementById('memoBoard');
   if (!board) return;
