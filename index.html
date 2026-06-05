@@ -639,6 +639,12 @@
     .tab-view-slide{flex:0 0 100%;min-width:100%;box-sizing:border-box;padding:0;}
     /* 탭바 스크롤 부드럽게 */
     .tab-bar{scroll-behavior:smooth;}
+    /* 모바일 휴가/출장 태그 — 날짜 칸 안에 들어오도록 축소 */
+    .leave-chip{font-size:9px;padding:1px 5px 1px 4px;gap:2px;margin-bottom:1px;}
+    .leave-chip-icon{font-size:9px;}
+    .leave-chip-label{max-width:52px;}
+    .week-leave-chip{font-size:9px;padding:1px 5px 1px 4px;gap:2px;}
+    .week-leave-chips{padding:3px 6px 2px;gap:2px;}
     .stat-grid{grid-template-columns:1fr 1fr;gap:8px;}
     .stat-card{padding:12px 14px;}
     .stat-value{font-size:22px;}
@@ -3372,7 +3378,7 @@ function renderTabOrderList() {
   _renderTabOrderList();
 }
 function _renderTabOrderList() {
-  const icons = {tasks:'✎',dashboard:'▤',weekly:'□',exec:'💼',memo:'📋',policy:'📚'};
+  const icons = {tasks:'📋',dashboard:'📅',weekly:'🗓',exec:'💼',memo:'🗒',policy:'📚'};
   document.getElementById('tabOrderList').innerHTML = tempTabConfig.map((t,i) => {
     const m = TAB_META.find(x => x.id === t.id);
     if (!m) return '';
