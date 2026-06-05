@@ -887,18 +887,31 @@
   @media(max-width:500px){.memo-grid{grid-template-columns:1fr;}}
 
   /* ── 제도 탭 ── */
-  .policy-layout{display:grid;grid-template-columns:200px 1fr;gap:0;min-height:500px;background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);}
+  .policy-layout{display:grid;grid-template-columns:210px 1fr;gap:0;min-height:500px;background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);}
   .policy-sidebar{border-right:1px solid var(--border);background:var(--gray-50);padding:12px 0;}
-  .policy-cat-item{display:flex;align-items:center;gap:8px;padding:10px 16px;cursor:pointer;font-size:13.5px;color:var(--gray-600);transition:all 0.15s;border-left:3px solid transparent;user-select:none;}
+
+  /* 카테고리 항목 */
+  .policy-cat-item{display:flex;align-items:center;gap:6px;padding:9px 12px 9px 16px;cursor:pointer;font-size:13.5px;color:var(--gray-600);transition:all 0.15s;border-left:3px solid transparent;user-select:none;position:relative;}
   .policy-cat-item:hover{background:#fff;color:var(--gray-800);}
   .policy-cat-item.active{background:#fff;color:var(--accent);border-left-color:var(--accent);font-weight:500;}
-  .policy-cat-item .policy-cat-count{margin-left:auto;font-size:11px;color:var(--gray-400);font-family:var(--font-mono);}
+  .policy-cat-item .policy-cat-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .policy-cat-item .policy-cat-count{font-size:11px;color:var(--gray-400);font-family:var(--font-mono);flex-shrink:0;}
   .policy-cat-item.active .policy-cat-count{color:var(--accent);}
-  .policy-cat-add{display:flex;align-items:center;gap:6px;padding:8px 16px;cursor:pointer;font-size:12px;color:var(--gray-400);transition:color 0.15s;margin-top:4px;}
-  .policy-cat-add:hover{color:var(--accent);}
+
+  /* 카테고리 인라인 편집 버튼 */
+  .policy-cat-btns{display:flex;gap:2px;flex-shrink:0;opacity:0;transition:opacity 0.15s;}
+  .policy-cat-item:hover .policy-cat-btns{opacity:1;}
+  @media(hover:none){.policy-cat-btns{opacity:1;}}
+  .policy-cat-btn{background:none;border:none;cursor:pointer;width:20px;height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--gray-400);padding:0;transition:all 0.12s;flex-shrink:0;}
+  .policy-cat-btn:hover{background:var(--gray-200);color:var(--gray-700);}
+  .policy-cat-btn.del:hover{background:#fee2e2;color:var(--danger);}
+
+  /* 카테고리 인라인 input */
+  .policy-cat-input{flex:1;padding:2px 6px;border:1.5px solid var(--accent);border-radius:4px;font-size:13px;font-family:var(--font);outline:none;min-width:0;background:#fff;color:var(--gray-800);}
+
   .policy-content{padding:24px 28px;overflow-y:auto;}
-  .policy-content-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border);}
-  .policy-content-title{font-size:17px;font-weight:600;color:var(--primary);}
+  .policy-content-header{display:flex;align-items:center;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+  .policy-content-title{font-size:17px;font-weight:600;color:var(--primary);flex:1;}
   .policy-item{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;transition:box-shadow 0.15s;}
   .policy-item:hover{box-shadow:var(--shadow-sm);}
   .policy-item-header{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;background:#fff;user-select:none;}
@@ -906,23 +919,35 @@
   .policy-item-title{font-size:13.5px;font-weight:500;color:var(--gray-800);flex:1;}
   .policy-item-toggle{font-size:11px;color:var(--gray-400);transition:transform 0.2s;flex-shrink:0;}
   .policy-item.open .policy-item-toggle{transform:rotate(180deg);}
-  .policy-item-body{display:none;padding:14px 16px 16px;background:var(--gray-50);border-top:1px solid var(--border);font-size:13.5px;color:var(--gray-700);line-height:1.8;white-space:pre-wrap;word-break:break-word;}
+  .policy-item-body{display:none;padding:14px 16px 16px;background:var(--gray-50);border-top:1px solid var(--border);font-size:13.5px;color:var(--gray-700);line-height:1.8;word-break:break-word;}
+  .policy-item-body.is-text{white-space:pre-wrap;}
   .policy-item.open .policy-item-body{display:block;}
   .policy-item-actions{display:flex;gap:4px;opacity:0;transition:opacity 0.15s;}
   .policy-item-header:hover .policy-item-actions{opacity:1;}
   @media(hover:none){.policy-item-actions{opacity:1;}}
   .policy-empty{text-align:center;padding:52px 20px;color:var(--gray-300);}
   .policy-empty-icon{font-size:32px;margin-bottom:12px;display:block;}
+
+  /* 제도 본문 내 표 스타일 */
+  .policy-item-body table{width:100%;border-collapse:collapse;font-size:13px;margin:2px 0;}
+  .policy-item-body th,.policy-item-body td{border:1px solid var(--border);padding:7px 10px;text-align:left;vertical-align:top;}
+  .policy-item-body th{background:var(--gray-100);font-weight:600;color:var(--gray-700);font-size:12.5px;}
+  .policy-item-body tr:nth-child(even) td{background:#fafafa;}
+  .policy-item-body tr:hover td{background:var(--accent-bg);}
+
   /* 제도 편집 모달 */
-  .policy-edit-modal{background:#fff;border-radius:var(--radius-lg);padding:26px 28px 22px;width:520px;max-width:96vw;box-shadow:0 20px 50px rgba(0,0,0,0.15);}
-  .policy-edit-textarea{width:100%;min-height:160px;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:13.5px;font-family:var(--font);resize:vertical;outline:none;line-height:1.8;transition:border-color 0.15s;}
+  .policy-edit-modal{background:#fff;border-radius:var(--radius-lg);padding:26px 28px 22px;width:540px;max-width:96vw;box-shadow:0 20px 50px rgba(0,0,0,0.15);}
+  .policy-edit-textarea{width:100%;min-height:160px;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:13px;font-family:var(--font-mono);resize:vertical;outline:none;line-height:1.7;transition:border-color 0.15s;}
   .policy-edit-textarea:focus{border-color:var(--accent);}
+  .policy-paste-hint{font-size:11.5px;margin-top:5px;min-height:18px;transition:color 0.2s;}
+  .policy-paste-hint.detected{color:var(--success);font-weight:500;}
+  .policy-paste-hint.plain{color:var(--gray-400);}
+
   @media(max-width:900px){
     .policy-layout{grid-template-columns:1fr;min-height:unset;}
     .policy-sidebar{border-right:none;border-bottom:1px solid var(--border);padding:8px 0;display:flex;flex-wrap:nowrap;overflow-x:auto;gap:0;}
-    .policy-cat-item{border-left:none;border-bottom:3px solid transparent;white-space:nowrap;padding:8px 14px;}
+    .policy-cat-item{border-left:none;border-bottom:3px solid transparent;white-space:nowrap;padding:8px 12px;}
     .policy-cat-item.active{border-bottom-color:var(--accent);border-left-color:transparent;}
-    .policy-cat-add{padding:8px 12px;white-space:nowrap;}
     .policy-content{padding:16px;}
   }
 </style>
@@ -1370,7 +1395,10 @@
     </div>
     <div class="form-row">
       <label class="form-label">내용 *</label>
-      <textarea class="policy-edit-textarea" id="policy-content" placeholder="제도 내용을 입력하세요. 줄바꿈, 목록 등 자유롭게 작성하세요."></textarea>
+      <textarea class="policy-edit-textarea" id="policy-content"
+        placeholder="제도 내용을 자유롭게 입력하세요.&#10;엑셀·구글시트·Claude/Gemini에서 표를 복사해 붙여넣으면 표 형태 그대로 저장됩니다."
+        onpaste="setTimeout(()=>detectPolicyPaste(),30)" oninput="detectPolicyPaste()"></textarea>
+      <div class="policy-paste-hint plain" id="policyPasteHint">엑셀·구글시트·마크다운 표 붙여넣기 지원</div>
     </div>
     <div class="modal-footer">
       <button class="btn btn-danger" id="policyDeleteBtn" onclick="deletePolicyFromModal()" style="display:none;margin-right:auto">&#10005; 삭제</button>
@@ -5190,15 +5218,18 @@ function renderPolicySidebar(cats) {
   if (!sb) return;
   sb.innerHTML = cats.map(cat => {
     const cnt = policies.filter(p => p.category === cat).length;
+    const safeCat = escHtml(cat);
     return `<div class="policy-cat-item${cat===activePolicyCat?' active':''}"
-        onclick="selectPolicyCat('${escHtml(cat)}')">
-      <span>${escHtml(cat)}</span>
+        id="policy-cat-item-${safeCat}"
+        onclick="selectPolicyCat('${safeCat}')">
+      <span class="policy-cat-label">${safeCat}</span>
       <span class="policy-cat-count">${cnt || ''}</span>
+      <div class="policy-cat-btns" onclick="event.stopPropagation()">
+        <button class="policy-cat-btn" onclick="startPolicyCatEdit('${safeCat}')" title="이름 변경">&#9998;</button>
+        <button class="policy-cat-btn del" onclick="deletePolicyCat('${safeCat}')" title="카테고리 삭제">&#10005;</button>
+      </div>
     </div>`;
-  }).join('') +
-  `<div class="policy-cat-add" onclick="openPolicyEditModal(null)">
-    <span style="font-size:16px;line-height:1">+</span> 항목 추가
-  </div>`;
+  }).join('');
 }
 
 function renderPolicyContent() {
@@ -5212,14 +5243,14 @@ function renderPolicyContent() {
   pc.innerHTML = `
     <div class="policy-content-header">
       <div class="policy-content-title">${escHtml(activePolicyCat)}</div>
-      <button class="btn btn-sm btn-green" onclick="openPolicyEditModal(null,'${escHtml(activePolicyCat)}')">+ 항목 추가</button>
     </div>
     ${items.length ? items.map(p => renderPolicyItem(p)).join('') :
-      `<div class="policy-empty"><span class="policy-empty-icon">&#128196;</span>아직 등록된 항목이 없습니다.<br><span style="font-size:12px">위 버튼으로 첫 항목을 추가해보세요.</span></div>`
+      `<div class="policy-empty"><span class="policy-empty-icon">&#128196;</span>아직 등록된 항목이 없습니다.<br><span style="font-size:12px">우상단 '+ 항목 추가' 버튼으로 추가하세요.</span></div>`
     }`;
 }
 
 function renderPolicyItem(p) {
+  const { html, isTable } = contentToHtml(p.content || '');
   return `<div class="policy-item" id="policy-item-${p.id}">
     <div class="policy-item-header" onclick="togglePolicyItem(${p.id})">
       <span class="policy-item-title">${escHtml(p.title)}</span>
@@ -5229,7 +5260,7 @@ function renderPolicyItem(p) {
       </div>
       <span class="policy-item-toggle">&#9660;</span>
     </div>
-    <div class="policy-item-body">${escHtml(p.content)}</div>
+    <div class="policy-item-body${isTable ? '' : ' is-text'}">${html}</div>
   </div>`;
 }
 
@@ -5242,6 +5273,171 @@ function selectPolicyCat(cat) {
   activePolicyCat = cat;
   renderPolicySidebar(getPolicyCats());
   renderPolicyContent();
+}
+
+// ── contentToHtml: 원본 텍스트 → 표시용 HTML 변환 ──
+function contentToHtml(text) {
+  if (!text) return { html: '', isTable: false };
+  const lines = text.split(/\r?\n/);
+
+  // TSV 판별: 탭 문자 포함 라인이 전체의 절반 이상
+  const tabLines = lines.filter(l => l.includes('\t'));
+  if (tabLines.length > 0 && tabLines.length >= lines.filter(l=>l.trim()).length * 0.5) {
+    return { html: buildHtmlTable(lines, 'tsv'), isTable: true };
+  }
+
+  // 마크다운 표 판별: | 포함 라인이 2개 이상
+  const mdLines = lines.filter(l => l.includes('|') && l.trim());
+  if (mdLines.length >= 2) {
+    return { html: buildHtmlTable(lines, 'md'), isTable: true };
+  }
+
+  // 일반 텍스트
+  return { html: escHtml(text), isTable: false };
+}
+
+function buildHtmlTable(lines, type) {
+  const rows = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    // 마크다운 구분선 (|---|---) 스킵
+    if (type === 'md' && /^[\s|:\-]+$/.test(trimmed)) continue;
+
+    let cols;
+    if (type === 'tsv') {
+      cols = line.split('\t').map(c => c.trim());
+    } else {
+      // 마크다운: 앞뒤 | 제거 후 분리
+      cols = trimmed.replace(/^\|/, '').replace(/\|$/, '').split('|').map(c => c.trim());
+    }
+    if (cols.every(c => !c)) continue;
+    rows.push(cols);
+  }
+
+  if (!rows.length) return escHtml(lines.join('\n'));
+
+  // 첫 행을 헤더로 쓸지 판단
+  // 마크다운: 두 번째 원본 라인이 구분선이면 헤더
+  // TSV: 첫 행에 숫자가 없으면 헤더로 간주
+  let hasHeader = false;
+  if (type === 'md') {
+    const rawLines = lines.filter(l => l.trim());
+    hasHeader = rawLines.length >= 2 && /^[\s|:\-]+$/.test(rawLines[1].trim());
+  } else {
+    hasHeader = rows.length >= 2 && rows[0].some(c => c && isNaN(Number(c.replace(/,/g,''))));
+  }
+
+  let html = '<table><colgroup>' + (rows[0]||[]).map(()=>'<col>').join('') + '</colgroup>';
+  rows.forEach((cols, i) => {
+    if (i === 0 && hasHeader) {
+      html += '<thead><tr>' + cols.map(c => `<th>${escHtml(c)}</th>`).join('') + '</tr></thead><tbody>';
+    } else {
+      if (i === 1 && hasHeader) {} // tbody already opened
+      const maxCols = Math.max(...rows.map(r=>r.length));
+      // 빈 셀 패딩
+      while (cols.length < maxCols) cols.push('');
+      html += '<tr>' + cols.map(c => `<td>${escHtml(c)}</td>`).join('') + '</tr>';
+    }
+  });
+  if (hasHeader) html += '</tbody>';
+  html += '</table>';
+  return html;
+}
+
+// ── 붙여넣기 감지 힌트 ──
+function detectPolicyPaste() {
+  const text = document.getElementById('policy-content').value;
+  const hint = document.getElementById('policyPasteHint');
+  if (!hint) return;
+  if (!text.trim()) {
+    hint.textContent = '엑셀·구글시트·마크다운 표 붙여넣기 지원';
+    hint.className = 'policy-paste-hint plain';
+    return;
+  }
+  const lines = text.split(/\r?\n/).filter(l=>l.trim());
+  const tabLines = lines.filter(l => l.includes('\t'));
+  const mdLines  = lines.filter(l => l.includes('|'));
+  if (tabLines.length >= lines.length * 0.5) {
+    hint.textContent = '✓ 엑셀 / 구글시트 표가 감지됐습니다 — 저장 시 표로 표시됩니다';
+    hint.className = 'policy-paste-hint detected';
+  } else if (mdLines.length >= 2) {
+    hint.textContent = '✓ 마크다운 표(Claude / Gemini)가 감지됐습니다 — 저장 시 표로 표시됩니다';
+    hint.className = 'policy-paste-hint detected';
+  } else {
+    hint.textContent = '일반 텍스트로 저장됩니다';
+    hint.className = 'policy-paste-hint plain';
+  }
+}
+
+// ── 카테고리 인라인 편집 ──
+function startPolicyCatEdit(cat) {
+  // 사이드바에서 해당 항목을 input으로 교체
+  const item = document.getElementById('policy-cat-item-' + cat);
+  if (!item) return;
+  // 클릭으로 탭 전환 막기
+  item.onclick = null;
+  item.style.cursor = 'default';
+  item.innerHTML = `
+    <input class="policy-cat-input" id="policy-cat-edit-input"
+      value="${escHtml(cat)}"
+      onkeydown="onPolicyCatEditKey(event,'${escHtml(cat)}')"
+      onblur="savePolicyCatEdit('${escHtml(cat)}')"
+      onclick="event.stopPropagation()">
+    <button class="policy-cat-btn" onclick="event.stopPropagation();savePolicyCatEdit('${escHtml(cat)}')" title="저장" style="opacity:1;color:var(--success)">&#10003;</button>
+    <button class="policy-cat-btn" onclick="event.stopPropagation();cancelPolicyCatEdit('${escHtml(cat)}')" title="취소" style="opacity:1">&#10005;</button>`;
+  const input = document.getElementById('policy-cat-edit-input');
+  if (input) { input.focus(); input.select(); }
+}
+
+function onPolicyCatEditKey(e, oldCat) {
+  if (e.key === 'Enter')  { e.preventDefault(); savePolicyCatEdit(oldCat); }
+  if (e.key === 'Escape') { e.preventDefault(); cancelPolicyCatEdit(oldCat); }
+}
+
+async function savePolicyCatEdit(oldCat) {
+  const input = document.getElementById('policy-cat-edit-input');
+  if (!input) return;
+  const newCat = input.value.trim();
+
+  // 변경 없으면 취소
+  if (!newCat || newCat === oldCat) { cancelPolicyCatEdit(oldCat); return; }
+
+  // 중복 검사
+  if (getPolicyCats().includes(newCat)) {
+    showToast(`'${newCat}' 카테고리가 이미 있습니다.`, 'error');
+    input.focus(); input.select(); return;
+  }
+
+  // 해당 카테고리 항목 전체 업데이트
+  const targets = policies.filter(p => p.category === oldCat);
+  for (const p of targets) {
+    await policyUpdate(p.id, { category: newCat });
+  }
+  if (activePolicyCat === oldCat) activePolicyCat = newCat;
+  renderPolicyTab();
+  showToast(`카테고리 이름을 '${newCat}'으로 변경했습니다.`);
+}
+
+function cancelPolicyCatEdit(oldCat) {
+  renderPolicySidebar(getPolicyCats());
+}
+
+// ── 카테고리 삭제 ──
+async function deletePolicyCat(cat) {
+  const cnt = policies.filter(p => p.category === cat).length;
+  const msg = cnt > 0
+    ? `'${cat}' 카테고리와 하위 항목 ${cnt}건을 모두 삭제하시겠습니까?`
+    : `'${cat}' 카테고리를 삭제하시겠습니까?`;
+  if (!confirm(msg)) return;
+  const targets = policies.filter(p => p.category === cat);
+  for (const p of targets) await policyDelete(p.id);
+  if (activePolicyCat === cat) {
+    const remaining = getPolicyCats().filter(c => c !== cat);
+    activePolicyCat = remaining[0] || null;
+  }
+  renderPolicyTab();
+  showToast(`'${cat}' 카테고리를 삭제했습니다.`);
 }
 
 // ── 모달 ──
@@ -5275,6 +5471,8 @@ function openPolicyEditModal(id, prefillCat) {
     document.getElementById('policy-content').value = '';
     document.getElementById('policyDeleteBtn').style.display = 'none';
   }
+  // 힌트 초기화
+  detectPolicyPaste();
   document.getElementById('policyEditModal').classList.add('open');
   setTimeout(() => document.getElementById('policy-title').focus(), 50);
 }
