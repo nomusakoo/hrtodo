@@ -920,7 +920,7 @@
   .policy-item-title{font-size:13.5px;font-weight:500;color:var(--gray-800);flex:1;}
   .policy-item-toggle{font-size:11px;color:var(--gray-400);transition:transform 0.2s;flex-shrink:0;}
   .policy-item.open .policy-item-toggle{transform:rotate(180deg);}
-  .policy-item-body{display:none;padding:14px 16px 16px;background:var(--gray-50);border-top:1px solid var(--border);font-size:13.5px;color:var(--gray-700);line-height:1.8;word-break:break-word;}
+  .policy-item-body{display:none;padding:14px 16px 16px;background:var(--gray-50);border-top:1px solid var(--border);font-size:13.5px;color:var(--gray-700);line-height:1.8;word-break:break-word;overflow-x:auto;}
   .policy-item-body.is-text{white-space:pre-wrap;}
   .policy-item.open .policy-item-body{display:block;}
   .policy-item-actions{display:flex;gap:4px;opacity:0;transition:opacity 0.15s;}
@@ -949,6 +949,7 @@
   .policy-item-body.is-html s{text-decoration:line-through;color:var(--gray-400);}
   .policy-item-body.is-html a{color:var(--accent);text-decoration:underline;}
   .policy-item-body.is-html a:hover{color:#3a5f95;}
+  @media(max-width:900px){.policy-item-body.is-html a{padding:2px 0;display:inline-block;}}
   .policy-item-body.is-html hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
   .policy-item-body.is-html blockquote{border-left:3px solid var(--accent-light);margin:8px 0;padding:6px 12px;background:var(--accent-bg);color:var(--gray-600);border-radius:0 var(--radius) var(--radius) 0;}
   .policy-item-body.is-html code{background:var(--gray-100);padding:1px 5px;border-radius:3px;font-family:var(--font-mono);font-size:12.5px;color:var(--danger);}
@@ -968,7 +969,25 @@
     .policy-sidebar{border-right:none;border-bottom:1px solid var(--border);padding:8px 0;display:flex;flex-wrap:nowrap;overflow-x:auto;gap:0;}
     .policy-cat-item{border-left:none;border-bottom:3px solid transparent;white-space:nowrap;padding:8px 12px;}
     .policy-cat-item.active{border-bottom-color:var(--accent);border-left-color:transparent;}
-    .policy-content{padding:16px;}
+    .policy-content{padding:12px 10px;}
+
+    /* 모바일: 표 가로 스크롤 */
+    .policy-item-body{padding:10px 12px 14px;font-size:13px;overflow-x:auto;}
+    .policy-item-body table{font-size:12px;min-width:360px;}
+    .policy-item-body th,.policy-item-body td{padding:5px 8px;}
+
+    /* 모바일: HTML 콘텐츠 크기 조정 */
+    .policy-item-body.is-html h1{font-size:15px;}
+    .policy-item-body.is-html h2{font-size:14px;}
+    .policy-item-body.is-html h3{font-size:13.5px;}
+    .policy-item-body.is-html h4{font-size:13px;}
+    .policy-item-body.is-html ul,.policy-item-body.is-html ol{padding-left:18px;}
+    .policy-item-body.is-html pre{font-size:11px;padding:8px 10px;}
+
+    /* 모바일: 항목 헤더 */
+    .policy-item-header{padding:10px 12px;}
+    .policy-item-title{font-size:13px;}
+    .policy-content-title{font-size:15px;}
   }
 </style>
 </head>
