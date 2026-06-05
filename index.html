@@ -860,7 +860,6 @@
       <input type="text" class="form-input" id="cfgKey" placeholder="eyJhbGci...">
     </div>
     <div class="config-actions">
-      <button class="btn" onclick="useLocalStorage()">로컬 저장소로 사용</button>
       <button class="btn btn-primary" onclick="saveConfig()">연결하기</button>
     </div>
   </div>
@@ -884,8 +883,6 @@
     </div>
     <div class="login-error" id="loginError"></div>
     <button class="login-btn" id="loginBtn" onclick="doLogin()">로그인</button>
-    <div class="login-divider">또는</div>
-    <button class="login-btn-local" onclick="doLocalLogin()">🗂 로컬 저장소로 계속 (DB 없이 사용)</button>
   </div>
 </div>
 
@@ -1474,11 +1471,10 @@
     </div>
     <div style="font-size:13px;color:var(--gray-600);margin-bottom:16px;line-height:1.7">
       Supabase 테이블이 연결되지 않았습니다.<br>
-      DB 설정을 확인하거나, 일단 <strong>로컬로 계속</strong>을 누르세요.
+      DB 설정을 확인하고 다시 시도해주세요.
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeTableErrModal();openConfigPanel()">DB 설정 변경</button>
-      <button class="btn" onclick="closeTableErrModal();useLocalStorage()">로컬로 계속</button>
       <button class="btn btn-primary" onclick="location.reload()">&#8635; 새로고침</button>
     </div>
   </div>
