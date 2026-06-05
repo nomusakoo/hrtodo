@@ -640,13 +640,13 @@
     .tab-slide-right{animation:slideInFromRight 0.22s cubic-bezier(0.4,0,0.2,1) both;}
     .tab-slide-left {animation:slideInFromLeft  0.22s cubic-bezier(0.4,0,0.2,1) both;}
     /* 모바일 휴가/출장 태그 — 날짜 칸 안에 들어오도록 축소 */
-    .leave-chip{font-size:6px;padding:0px 3px;gap:1px;margin-bottom:1px;border-radius:6px;line-height:1.5;}
-    .leave-chip-icon{font-size:6px;}
+    .leave-chip{font-size:9px;padding:1px 5px;gap:1px;margin-bottom:1px;border-radius:8px;line-height:1.5;}
+    .leave-chip-icon{font-size:9px;}
     .leave-chip-label{max-width:22px;}
     /* 모바일: 이모지+라벨 숨기고 텍스트 약어만 표시 */
     .leave-chip-icon-pc{display:none;}
     .leave-chip-label-pc{display:none;}
-    .leave-chip-icon-mo{font-size:9px;font-weight:700;letter-spacing:-0.3px;}
+    .leave-chip-icon-mo{font-size:11px;font-weight:700;letter-spacing:-0.3px;}
     .week-leave-chip{font-size:9px;padding:1px 5px 1px 4px;gap:2px;}
     .week-leave-chips{padding:3px 6px 2px;gap:2px;}
     .stat-grid{grid-template-columns:1fr 1fr;gap:8px;}
@@ -5756,7 +5756,7 @@ function leaveChipHtml(lv) {
     onmouseenter="showLeaveTooltip(event,${lv.id})"
     onmouseleave="hideLeaveTooltip()">
     <span class="leave-chip-icon leave-chip-icon-pc">${icon}</span>
-    <span class="leave-chip-icon leave-chip-icon-mo">${lv.member[0]}${short}</span>
+    <span class="leave-chip-icon-mo">${lv.member[0]} ${lv.type}</span>
     <span class="leave-chip-label leave-chip-label-pc">${escHtml(label)}</span>
   </div>`;
 }
