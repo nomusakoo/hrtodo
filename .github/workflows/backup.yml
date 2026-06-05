@@ -2,8 +2,11 @@ name: Weekly Supabase Backup
 
 on:
   schedule:
-    - cron: '0 23 * * 0'   # 매주 월요일 오전 8시 KST (UTC 일요일 23:00)
-  workflow_dispatch:         # 수동 실행 버튼 활성화
+    - cron: '0 23 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   backup:
@@ -11,7 +14,7 @@ jobs:
 
     steps:
       - name: 레포지토리 체크아웃
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: 데이터 백업
         env:
@@ -36,16 +39,13 @@ jobs:
             -H "Authorization: Bearer $SUPABASE_KEY" \
             > backups/hr_master_events_$DATE.json
 
-          echo "백업 완료: $DATE"
-
-      - name: 오래된 백업 정리 (테이블당 최근 10개만 유지)
+      - name: 오래된 백업 정리
         run: |
           for TABLE in hr_tasks hr_exec_events hr_master_events; do
             FILES=$(ls -t backups/${TABLE}_*.json 2>/dev/null)
             COUNT=$(echo "$FILES" | wc -l)
             if [ "$COUNT" -gt 10 ]; then
               echo "$FILES" | tail -n +11 | xargs rm -f
-              echo "$TABLE: 오래된 파일 삭제 완료"
             fi
           done
 
