@@ -2327,68 +2327,94 @@ function updateHeaderUser() {
 async function startApp() {
   showLoading(true);
 
-  if (!useLocal && sbClient) {
-    const { ok, error } = await testConnection();
-    if (!ok) {
-      showLoading(false);
-      const code = error?.code || '';
-      const msg  = error?.message || JSON.stringify(error) || '';
-      console.error('[startApp] Supabase 오류 code:', code, 'msg:', msg);
+  try {
+    if (!useLocal && sbClient) {
+      const { ok, error } = await testConnection();
+      if (!ok) {
+        showLoading(false);
+        const code = error?.code || '';
+        const msg  = error?.message || JSON.stringify(error) || '';
+        console.error('[startApp] Supabase 오류 code:', code, 'msg:', msg);
 
-      const isSchemaCacheErr = code === 'PGRST205' || code === 'PGRST200'
-        || msg.includes('schema cache') || msg.includes('Could not find the table');
-      const isTableMissing = code === '42P01'
-        || (msg.includes('relation') && msg.includes('does not exist'));
+        const isSchemaCacheErr = code === 'PGRST205' || code === 'PGRST200'
+          || msg.includes('schema cache') || msg.includes('Could not find the table');
+        const isTableMissing = code === '42P01'
+          || (msg.includes('relation') && msg.includes('does not exist'));
 
-      if (isSchemaCacheErr || isTableMissing) {
-        showToast('Supabase 연결 재시도 중...', 'error');
-        await new Promise(r => setTimeout(r, 3000));
-        const retry = await testConnection();
-        if (retry.ok) {
-          setDbStatus(true, 'Supabase 연결됨');
-          await dbSeedIfEmpty();
-          tasks = await dbLoad();
-          masterEvents = await loadMasterEvents();
-          masterTitles = await loadMasterTitles();
-          execEvents = await loadExecEvents();
-          notes = await loadNotes();
-          policies = await loadPolicies();
-          leaves = await loadLeaves();
-          noteComments = await loadComments();
-          await migrateLegacyExecEvents();
+        if (isSchemaCacheErr || isTableMissing) {
+          showToast('Supabase 연결 재시도 중...', 'error');
+          await new Promise(r => setTimeout(r, 3000));
+          const retry = await testConnection();
+          if (retry.ok) {
+            setDbStatus(true, 'Supabase 연결됨');
+            await dbSeedIfEmpty();
+            tasks         = await dbLoad();
+            masterEvents  = await loadMasterEvents();
+            masterTitles  = await loadMasterTitles();
+            execEvents    = await loadExecEvents();
+            notes         = await loadNotesSafe();
+            policies      = await loadPoliciesSafe();
+            leaves        = await loadLeavesSafe();
+            noteComments  = await loadCommentsSafe();
+            await migrateLegacyExecEvents();
+            showLoading(false);
+            renderAll();
+            subscribeRealtime();
+            return;
+          }
           showLoading(false);
-          renderAll();
-          subscribeRealtime();
+          document.getElementById('tableErrModal').classList.add('open');
           return;
         }
+
         showLoading(false);
-        document.getElementById('tableErrModal').classList.add('open');
+        document.getElementById('dbErrorText').textContent = `연결 실패(${code}): ${msg}`;
+        document.getElementById('dbErrorNotice').classList.add('show');
+        openConfigPanel();
         return;
       }
-
-      showLoading(false);
-      document.getElementById('dbErrorText').textContent = `연결 실패(${code}): ${msg}`;
-      document.getElementById('dbErrorNotice').classList.add('show');
-      openConfigPanel();
-      return;
+      setDbStatus(true, 'Supabase 연결됨');
     }
-    setDbStatus(true, 'Supabase 연결됨');
-  }
 
-  await dbSeedIfEmpty();
-  tasks = await dbLoad();
-  masterEvents = await loadMasterEvents();
-  masterTitles = await loadMasterTitles();
-  execEvents = await loadExecEvents();
-  notes = await loadNotes();
-  policies = await loadPolicies();
-  leaves = await loadLeaves();
-  noteComments = await loadComments();
-  await migrateLegacyExecEvents();
-  if (useLocal || !sbClient) setDbStatus(false, '로컬 저장소');
-  showLoading(false);
-  renderAll();
-  subscribeRealtime();
+    await dbSeedIfEmpty();
+    tasks         = await dbLoad();
+    masterEvents  = await loadMasterEvents();
+    masterTitles  = await loadMasterTitles();
+    execEvents    = await loadExecEvents();
+    notes         = await loadNotesSafe();
+    policies      = await loadPoliciesSafe();
+    leaves        = await loadLeavesSafe();
+    noteComments  = await loadCommentsSafe();
+    await migrateLegacyExecEvents();
+    if (useLocal || !sbClient) setDbStatus(false, '로컬 저장소');
+    showLoading(false);
+    renderAll();
+    subscribeRealtime();
+
+  } catch (err) {
+    console.error('[startApp] 예외 발생:', err);
+    showLoading(false);
+    showToast('앱 초기화 중 오류가 발생했습니다. 새로고침해 주세요.', 'error');
+    renderAll(); // 오류가 있어도 화면은 보여주기
+  }
+}
+
+// 신규 테이블 — 없어도 앱이 멈추지 않도록 safe 버전
+async function loadLeavesSafe() {
+  try { return await loadLeaves(); }
+  catch (e) { console.warn('[leaves] 테이블 없음, 빈 배열로 진행:', e.message||e); return []; }
+}
+async function loadCommentsSafe() {
+  try { return await loadComments(); }
+  catch (e) { console.warn('[comments] 테이블 없음, 빈 배열로 진행:', e.message||e); return []; }
+}
+async function loadNotesSafe() {
+  try { return await loadNotes(); }
+  catch (e) { console.warn('[notes] 테이블 없음, 빈 배열로 진행:', e.message||e); return []; }
+}
+async function loadPoliciesSafe() {
+  try { return await loadPolicies(); }
+  catch (e) { console.warn('[policies] 테이블 없음, 빈 배열로 진행:', e.message||e); return []; }
 }
 
 function renderAll() {
@@ -4532,13 +4558,16 @@ function calcRepeatDatesUntil(baseDate, unit, endDate) {
   return dates;
 }
 
-// ── OUTSIDE CLICK ──
-document.getElementById('taskModal').addEventListener('click',function(e){if(e.target===this)closeModal();});
-document.getElementById('excelModal').addEventListener('click',function(e){if(e.target===this)closeExcelModal();});
-document.getElementById('repeatDelModal').addEventListener('click',function(e){if(e.target===this)closeRepeatDelModal();});
-document.getElementById('memoEditModal').addEventListener('click',function(e){if(e.target===this)closeMemoEditModal();});
-document.getElementById('policyEditModal').addEventListener('click',function(e){if(e.target===this)closePolicyEditModal();});
-document.getElementById('memoFullModal').addEventListener('click',function(e){if(e.target===this)closeMemoFullModal();});
+// ── OUTSIDE CLICK (DOM 준비 후 등록) ──
+document.addEventListener('DOMContentLoaded', function() {
+  const safeOn = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
+  safeOn('taskModal',      function(e){if(e.target===this)closeModal();});
+  safeOn('excelModal',     function(e){if(e.target===this)closeExcelModal();});
+  safeOn('repeatDelModal', function(e){if(e.target===this)closeRepeatDelModal();});
+  safeOn('memoEditModal',  function(e){if(e.target===this)closeMemoEditModal();});
+  safeOn('policyEditModal',function(e){if(e.target===this)closePolicyEditModal();});
+  safeOn('memoFullModal',  function(e){if(e.target===this)closeMemoFullModal();});
+});
 
 
 // ── 키보드 단축키 ──
@@ -4841,8 +4870,9 @@ function openPasteModal() {
 function closePasteModal() {
   document.getElementById('pasteModal').classList.remove('open');
 }
-document.getElementById('pasteModal').addEventListener('click', e => {
-  if (e.target === document.getElementById('pasteModal')) closePasteModal();
+document.addEventListener('DOMContentLoaded', function() {
+  const pm = document.getElementById('pasteModal');
+  if (pm) pm.addEventListener('click', e => { if (e.target === pm) closePasteModal(); });
 });
 
 // ── 탭 전환 ──
@@ -6602,6 +6632,7 @@ window.addEventListener('focus', remoteRefresh);
   }
 })();
 </script>
+
 <!-- 메모 멤버 전체보기 모달 -->
 <div class="modal-overlay" id="memoFullModal">
   <div class="memo-full-modal">
