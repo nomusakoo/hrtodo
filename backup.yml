@@ -1,0 +1,58 @@
+name: Weekly Supabase Backup
+
+on:
+  schedule:
+    - cron: '0 23 * * 0'   # 매주 월요일 오전 8시 KST (UTC 일요일 23:00)
+  workflow_dispatch:         # 수동 실행 버튼 활성화
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 레포지토리 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 데이터 백업
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          DATE=$(date +'%Y-%m-%d')
+          mkdir -p backups
+
+          curl -s "$SUPABASE_URL/rest/v1/hr_tasks?select=*" \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_KEY" \
+            > backups/hr_tasks_$DATE.json
+
+          curl -s "$SUPABASE_URL/rest/v1/hr_exec_events?select=*" \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_KEY" \
+            > backups/hr_exec_events_$DATE.json
+
+          curl -s "$SUPABASE_URL/rest/v1/hr_master_events?select=*" \
+            -H "apikey: $SUPABASE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_KEY" \
+            > backups/hr_master_events_$DATE.json
+
+          echo "백업 완료: $DATE"
+
+      - name: 오래된 백업 정리 (테이블당 최근 10개만 유지)
+        run: |
+          for TABLE in hr_tasks hr_exec_events hr_master_events; do
+            FILES=$(ls -t backups/${TABLE}_*.json 2>/dev/null)
+            COUNT=$(echo "$FILES" | wc -l)
+            if [ "$COUNT" -gt 10 ]; then
+              echo "$FILES" | tail -n +11 | xargs rm -f
+              echo "$TABLE: 오래된 파일 삭제 완료"
+            fi
+          done
+
+      - name: GitHub에 커밋 & 푸시
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add backups/
+          git diff --staged --quiet || git commit -m "backup: $(date +'%Y-%m-%d') 주간 백업"
+          git push
