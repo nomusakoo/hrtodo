@@ -930,11 +930,30 @@
   .policy-empty-icon{font-size:32px;margin-bottom:12px;display:block;}
 
   /* 제도 본문 내 표 스타일 */
-  .policy-item-body table{width:100%;border-collapse:collapse;font-size:13px;margin:2px 0;}
+  .policy-item-body table{width:100%;border-collapse:collapse;font-size:13px;margin:4px 0 10px;}
   .policy-item-body th,.policy-item-body td{border:1px solid var(--border);padding:7px 10px;text-align:left;vertical-align:top;}
   .policy-item-body th{background:var(--gray-100);font-weight:600;color:var(--gray-700);font-size:12.5px;}
   .policy-item-body tr:nth-child(even) td{background:#fafafa;}
   .policy-item-body tr:hover td{background:var(--accent-bg);}
+  /* 제도 본문 내 HTML 리치 스타일 */
+  .policy-item-body.is-html{white-space:normal;}
+  .policy-item-body.is-html h1,.policy-item-body.is-html h2,.policy-item-body.is-html h3,.policy-item-body.is-html h4{font-weight:600;color:var(--primary);margin:14px 0 6px;line-height:1.4;}
+  .policy-item-body.is-html h1{font-size:17px;} .policy-item-body.is-html h2{font-size:15.5px;} .policy-item-body.is-html h3{font-size:14px;border-bottom:1px solid var(--border);padding-bottom:4px;} .policy-item-body.is-html h4{font-size:13.5px;}
+  .policy-item-body.is-html p{margin:0 0 8px;}
+  .policy-item-body.is-html ul,.policy-item-body.is-html ol{padding-left:22px;margin:4px 0 10px;}
+  .policy-item-body.is-html li{margin-bottom:3px;}
+  .policy-item-body.is-html ul li{list-style:disc;} .policy-item-body.is-html ol li{list-style:decimal;}
+  .policy-item-body.is-html b,.policy-item-body.is-html strong{font-weight:600;color:var(--gray-800);}
+  .policy-item-body.is-html i,.policy-item-body.is-html em{font-style:italic;}
+  .policy-item-body.is-html u{text-decoration:underline;}
+  .policy-item-body.is-html s{text-decoration:line-through;color:var(--gray-400);}
+  .policy-item-body.is-html a{color:var(--accent);text-decoration:underline;}
+  .policy-item-body.is-html a:hover{color:#3a5f95;}
+  .policy-item-body.is-html hr{border:none;border-top:1px solid var(--border);margin:12px 0;}
+  .policy-item-body.is-html blockquote{border-left:3px solid var(--accent-light);margin:8px 0;padding:6px 12px;background:var(--accent-bg);color:var(--gray-600);border-radius:0 var(--radius) var(--radius) 0;}
+  .policy-item-body.is-html code{background:var(--gray-100);padding:1px 5px;border-radius:3px;font-family:var(--font-mono);font-size:12.5px;color:var(--danger);}
+  .policy-item-body.is-html pre{background:var(--gray-100);padding:10px 14px;border-radius:var(--radius);font-family:var(--font-mono);font-size:12px;overflow-x:auto;line-height:1.6;margin:6px 0 10px;}
+  .policy-item-body.is-html span[style]{display:inline;}
 
   /* 제도 편집 모달 */
   .policy-edit-modal{background:#fff;border-radius:var(--radius-lg);padding:26px 28px 22px;width:540px;max-width:96vw;box-shadow:0 20px 50px rgba(0,0,0,0.15);}
@@ -1397,7 +1416,7 @@
     <div class="form-row">
       <label class="form-label">내용 *</label>
       <textarea class="policy-edit-textarea" id="policy-content"
-        placeholder="제도 내용을 자유롭게 입력하세요.&#10;엑셀·구글시트·Claude/Gemini에서 표를 복사해 붙여넣으면 표 형태 그대로 저장됩니다."
+        placeholder="제도 내용을 자유롭게 입력하세요.&#10;&#10;• 엑셀·구글시트에서 표를 복사해 붙여넣기 지원&#10;• Claude/Gemini 마크다운 표 붙여넣기 지원&#10;• HTML 코드 직접 입력 지원 (&lt;b&gt;, &lt;ul&gt;, &lt;table&gt; 등)"
         onpaste="setTimeout(()=>detectPolicyPaste(),30)" oninput="detectPolicyPaste()"></textarea>
       <div class="policy-paste-hint plain" id="policyPasteHint">엑셀·구글시트·마크다운 표 붙여넣기 지원</div>
     </div>
@@ -5251,7 +5270,8 @@ function renderPolicyContent() {
 }
 
 function renderPolicyItem(p) {
-  const { html, isTable } = contentToHtml(p.content || '');
+  const { html, isTable, isHtml } = contentToHtml(p.content || '');
+  const bodyCls = isHtml ? 'is-html' : (isTable ? '' : 'is-text');
   return `<div class="policy-item" id="policy-item-${p.id}">
     <div class="policy-item-header" onclick="togglePolicyItem(${p.id})">
       <span class="policy-item-title">${escHtml(p.title)}</span>
@@ -5261,7 +5281,7 @@ function renderPolicyItem(p) {
       </div>
       <span class="policy-item-toggle">&#9660;</span>
     </div>
-    <div class="policy-item-body${isTable ? '' : ' is-text'}">${html}</div>
+    <div class="policy-item-body${bodyCls ? ' '+bodyCls : ''}">${html}</div>
   </div>`;
 }
 
@@ -5278,11 +5298,16 @@ function selectPolicyCat(cat) {
 
 // ── contentToHtml: 원본 텍스트 → 표시용 HTML 변환 ──
 function contentToHtml(text) {
-  if (!text) return { html: '', isTable: false };
+  if (!text) return { html: '', isTable: false, isHtml: false };
+
+  // HTML 판별: <태그> 패턴이 있으면 HTML 모드
+  if (isHtmlContent(text)) {
+    return { html: sanitizeHtml(text), isTable: false, isHtml: true };
+  }
 
   // TSV 판별: 탭 문자가 있으면 TSV로 처리
   if (text.includes('\t')) {
-    return { html: buildHtmlTable(text, 'tsv'), isTable: true };
+    return { html: buildHtmlTable(text, 'tsv'), isTable: true, isHtml: false };
   }
 
   const lines = text.split(/\r?\n/);
@@ -5290,11 +5315,101 @@ function contentToHtml(text) {
   // 마크다운 표 판별: | 포함 라인이 2개 이상
   const mdLines = lines.filter(l => l.includes('|') && l.trim());
   if (mdLines.length >= 2) {
-    return { html: buildHtmlTable(lines, 'md'), isTable: true };
+    return { html: buildHtmlTable(lines, 'md'), isTable: true, isHtml: false };
   }
 
   // 일반 텍스트
-  return { html: escHtml(text), isTable: false };
+  return { html: escHtml(text), isTable: false, isHtml: false };
+}
+
+// HTML 콘텐츠 판별: 주요 HTML 태그가 있는지 확인
+function isHtmlContent(text) {
+  return /<\s*(b|strong|i|em|u|s|br|p|hr|ul|ol|li|h[1-4]|table|tr|td|th|thead|tbody|a|span|div|blockquote|code|pre)\b/i.test(text);
+}
+
+// HTML sanitizer: 허용 태그·속성만 남기고 나머지 제거
+function sanitizeHtml(html) {
+  // 허용 태그 목록
+  const ALLOW_TAGS = new Set([
+    'b','strong','i','em','u','s','strike','br','p','hr',
+    'ul','ol','li','h1','h2','h3','h4',
+    'table','thead','tbody','tr','th','td','colgroup','col',
+    'a','span','div','blockquote','code','pre'
+  ]);
+  // 태그별 허용 속성
+  const ALLOW_ATTRS = {
+    'a':    ['href','title'],
+    'td':   ['colspan','rowspan','align','valign'],
+    'th':   ['colspan','rowspan','align','valign'],
+    'col':  ['span'],
+    'span': ['style'],
+    'div':  ['style'],
+    'p':    ['style'],
+  };
+  // style 속성에서 허용할 CSS 속성
+  const ALLOW_STYLE_PROPS = new Set([
+    'color','background-color','background',
+    'font-weight','font-style','font-size',
+    'text-align','text-decoration',
+    'padding','margin','border',
+    'width','max-width','min-width',
+  ]);
+
+  const div = document.createElement('div');
+  div.innerHTML = html;
+
+  function cleanNode(node) {
+    if (node.nodeType === Node.TEXT_NODE) return;
+    if (node.nodeType !== Node.ELEMENT_NODE) {
+      node.parentNode && node.parentNode.removeChild(node);
+      return;
+    }
+    const tag = node.tagName.toLowerCase();
+    if (!ALLOW_TAGS.has(tag)) {
+      // 허용 안 된 태그: 내용물은 유지하고 태그만 제거(unwrap)
+      const parent = node.parentNode;
+      if (parent) {
+        while (node.firstChild) parent.insertBefore(node.firstChild, node);
+        parent.removeChild(node);
+      }
+      return;
+    }
+    // 허용된 태그: 속성 필터링
+    const allowed = ALLOW_ATTRS[tag] || [];
+    const attrsToRemove = [];
+    for (const attr of node.attributes) {
+      const name = attr.name.toLowerCase();
+      // on* 이벤트 속성 전부 제거
+      if (name.startsWith('on')) { attrsToRemove.push(name); continue; }
+      if (!allowed.includes(name)) { attrsToRemove.push(name); continue; }
+      // href: javascript: 차단
+      if (name === 'href') {
+        const val = attr.value.trim().toLowerCase().replace(/\s/g,'');
+        if (val.startsWith('javascript:') || val.startsWith('data:') || val.startsWith('vbscript:')) {
+          attrsToRemove.push(name); continue;
+        }
+      }
+      // style: 허용 CSS 속성만 유지
+      if (name === 'style') {
+        const cleaned = attr.value.split(';')
+          .map(s => s.trim()).filter(Boolean)
+          .filter(s => {
+            const prop = s.split(':')[0].trim().toLowerCase();
+            return ALLOW_STYLE_PROPS.has(prop);
+          }).join(';');
+        if (cleaned) node.setAttribute('style', cleaned);
+        else attrsToRemove.push('style');
+        continue;
+      }
+    }
+    attrsToRemove.forEach(a => node.removeAttribute(a));
+    // 자식 노드 재귀 처리 (역순으로 — 노드 제거 중 인덱스 변동 방지)
+    const children = Array.from(node.childNodes);
+    children.forEach(cleanNode);
+  }
+
+  Array.from(div.childNodes).forEach(cleanNode);
+  return div.innerHTML;
 }
 
 // ── 셀 내용 이스케이프: HTML 특수문자 + 셀 내 줄바꿈 → <br> ──
@@ -5403,11 +5518,14 @@ function detectPolicyPaste() {
   const hint = document.getElementById('policyPasteHint');
   if (!hint) return;
   if (!text.trim()) {
-    hint.textContent = '엑셀·구글시트·마크다운 표 붙여넣기 지원';
+    hint.textContent = '엑셀·구글시트·마크다운 표·HTML 코드 붙여넣기 지원';
     hint.className = 'policy-paste-hint plain';
     return;
   }
-  if (text.includes('\t')) {
+  if (isHtmlContent(text)) {
+    hint.textContent = '✓ HTML 코드가 감지됐습니다 — 저장 시 렌더링되어 표시됩니다';
+    hint.className = 'policy-paste-hint detected';
+  } else if (text.includes('\t')) {
     hint.textContent = '✓ 엑셀 / 구글시트 표가 감지됐습니다 — 저장 시 표로 표시됩니다';
     hint.className = 'policy-paste-hint detected';
   } else if (text.split(/\r?\n/).filter(l => l.includes('|') && l.trim()).length >= 2) {
