@@ -838,6 +838,49 @@
   .paste-row-err td{background:#fff5f5;}
   .paste-row-warn td{background:#fffbeb;}
   .paste-valid-icon{font-size:13px;text-align:center;}
+
+  /* ── 반복 삭제 팝업 ── */
+  .repeat-del-modal{background:#fff;border-radius:var(--radius-lg);padding:28px 28px 22px;width:400px;max-width:95vw;box-shadow:0 20px 50px rgba(0,0,0,0.18);}
+  .repeat-del-option{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius);cursor:pointer;margin-bottom:8px;transition:all 0.15s;user-select:none;}
+  .repeat-del-option:hover{border-color:var(--accent);background:var(--accent-bg);}
+  .repeat-del-option.selected{border-color:var(--accent);background:var(--accent-bg);}
+  .repeat-del-option input[type=radio]{accent-color:var(--accent);width:16px;height:16px;margin-top:2px;flex-shrink:0;cursor:pointer;}
+  .repeat-del-option-label{font-size:13.5px;font-weight:600;color:var(--gray-800);}
+  .repeat-del-option-desc{font-size:11.5px;color:var(--gray-400);margin-top:2px;}
+
+  /* ── 반복 등록 종료일 ── */
+  #repeatEndDateWrap{display:none;}
+  #repeatEndDateWrap.show{display:block;}
+
+  /* ── 메모 탭 ── */
+  #view-memo{display:none;}
+  .memo-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+  .memo-columns{display:grid;gap:20px;}
+  .memo-col-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid;}
+  .memo-col-title{font-size:14px;font-weight:600;}
+  .memo-col-count{font-size:11px;font-weight:400;margin-left:auto;padding:1px 8px;border-radius:99px;}
+  .memo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+  .memo-card{position:relative;border-radius:6px;padding:14px 14px 36px;min-height:110px;box-shadow:0 2px 8px rgba(0,0,0,0.09),0 1px 2px rgba(0,0,0,0.06);transition:transform 0.15s,box-shadow 0.15s;cursor:pointer;word-break:break-word;line-height:1.6;}
+  .memo-card:hover{transform:translateY(-2px) rotate(0.3deg);box-shadow:0 6px 18px rgba(0,0,0,0.14);}
+  .memo-card-body{font-size:13.5px;color:var(--gray-800);white-space:pre-wrap;}
+  .memo-card-footer{position:absolute;bottom:9px;left:14px;right:14px;display:flex;align-items:center;justify-content:space-between;}
+  .memo-card-date{font-size:10.5px;color:rgba(0,0,0,0.35);font-family:var(--font-mono);}
+  .memo-card-actions{display:flex;gap:4px;opacity:0;transition:opacity 0.15s;}
+  .memo-card:hover .memo-card-actions{opacity:1;}
+  .memo-card-btn{background:rgba(0,0,0,0.12);border:none;border-radius:4px;width:24px;height:24px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;color:rgba(0,0,0,0.5);transition:background 0.12s;}
+  .memo-card-btn:hover{background:rgba(0,0,0,0.22);color:rgba(0,0,0,0.8);}
+  .memo-add-btn{border:1.5px dashed;border-radius:6px;padding:14px;min-height:80px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;background:transparent;transition:all 0.15s;font-family:var(--font);}
+  .memo-add-btn:hover{background:rgba(0,0,0,0.04);}
+  /* 메모 편집 모달 */
+  .memo-edit-modal{background:#fff;border-radius:var(--radius-lg);padding:24px 24px 20px;width:420px;max-width:95vw;box-shadow:0 20px 50px rgba(0,0,0,0.18);}
+  .memo-edit-textarea{width:100%;min-height:120px;padding:10px 12px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:13.5px;font-family:var(--font);resize:vertical;outline:none;line-height:1.6;transition:border-color 0.15s;}
+  .memo-edit-textarea:focus{border-color:var(--accent);}
+  .memo-empty{text-align:center;padding:32px 16px;color:var(--gray-300);font-size:13px;}
+  @media(max-width:900px){
+    .memo-columns{grid-template-columns:1fr!important;}
+    .memo-grid{grid-template-columns:1fr 1fr;}
+  }
+  @media(max-width:500px){.memo-grid{grid-template-columns:1fr;}}
 </style>
 </head>
 <body>
@@ -984,6 +1027,7 @@
       <button class="tab-btn" id="tab-dashboard" onclick="switchTab('dashboard')">&#9636; 월별 대시보드</button>
       <button class="tab-btn" id="tab-weekly" onclick="switchTab('weekly')">&#9633; 주간 보기</button>
       <button class="tab-btn" id="tab-exec" onclick="switchTab('exec')">&#128188; 임원 대시보드</button>
+      <button class="tab-btn" id="tab-memo" onclick="switchTab('memo')">&#128203; 메모</button>
     </div>
 
     <!-- TASKS TAB -->
@@ -1140,6 +1184,15 @@
       <div class="dash-grid" id="dashCharts"></div>
     </div>
 
+    <!-- MEMO TAB -->
+    <div id="view-memo">
+      <div class="page-header">
+        <div class="page-title">메모<span id="memoCountLabel"></span></div>
+        <button class="btn btn-green" onclick="openMemoEditModal(null)">+ 메모 추가</button>
+      </div>
+      <div id="memoBoard"></div>
+    </div>
+
     <!-- EXEC DASHBOARD TAB (임원 대시보드) -->
     <div id="view-exec" style="display:none">
       <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
@@ -1177,6 +1230,65 @@
       </div>
     </div>
   </main>
+</div>
+
+<!-- REPEAT DELETE MODAL -->
+<div class="modal-overlay" id="repeatDelModal">
+  <div class="repeat-del-modal">
+    <div class="modal-header" style="margin-bottom:18px;">
+      <div class="modal-title">&#128260; 반복 업무 삭제</div>
+      <button class="modal-close" onclick="closeRepeatDelModal()">&#10005;</button>
+    </div>
+    <p style="font-size:13px;color:var(--gray-500);margin-bottom:16px;">반복 등록된 업무입니다. 어떻게 삭제하시겠습니까?</p>
+    <label class="repeat-del-option" id="rdopt-single" onclick="selectRepeatDelOpt('single')">
+      <input type="radio" name="repeatDelChoice" value="single" checked>
+      <div>
+        <div class="repeat-del-option-label">이 업무만 삭제</div>
+        <div class="repeat-del-option-desc">선택한 업무 1건만 삭제합니다.</div>
+      </div>
+    </label>
+    <label class="repeat-del-option" id="rdopt-future" onclick="selectRepeatDelOpt('future')">
+      <input type="radio" name="repeatDelChoice" value="future">
+      <div>
+        <div class="repeat-del-option-label">이 업무 및 이후 반복 업무 삭제</div>
+        <div class="repeat-del-option-desc">이 업무와 같은 반복 그룹에서 이 날짜 이후의 업무를 모두 삭제합니다.</div>
+      </div>
+    </label>
+    <label class="repeat-del-option" id="rdopt-all" onclick="selectRepeatDelOpt('all')">
+      <input type="radio" name="repeatDelChoice" value="all">
+      <div>
+        <div class="repeat-del-option-label">모든 반복 업무 삭제</div>
+        <div class="repeat-del-option-desc">같은 반복 그룹의 업무를 날짜 관계없이 전부 삭제합니다.</div>
+      </div>
+    </label>
+    <div class="modal-footer" style="margin-top:18px;">
+      <button class="btn" onclick="closeRepeatDelModal()">취소</button>
+      <button class="btn btn-danger" onclick="executeRepeatDelete()">&#10005; 삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- MEMO EDIT MODAL -->
+<div class="modal-overlay" id="memoEditModal">
+  <div class="memo-edit-modal">
+    <div class="modal-header" style="margin-bottom:16px;">
+      <div class="modal-title" id="memoEditModalTitle">&#128203; 메모 추가</div>
+      <button class="modal-close" onclick="closeMemoEditModal()">&#10005;</button>
+    </div>
+    <div class="form-row">
+      <label class="form-label">담당자</label>
+      <select class="form-select" id="memo-member"></select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">내용 *</label>
+      <textarea class="memo-edit-textarea" id="memo-content" placeholder="메모를 입력하세요..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="memoDeleteBtn" onclick="deleteMemoFromModal()" style="display:none;margin-right:auto">&#10005; 삭제</button>
+      <button class="btn" onclick="closeMemoEditModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveMemoFromModal()">&#10003; 저장</button>
+    </div>
+  </div>
 </div>
 
 <!-- ADD/EDIT MODAL -->
@@ -1237,7 +1349,7 @@
         <label for="f-repeat" style="font-size:13px;font-weight:600;color:var(--gray-700);cursor:pointer">반복 업무 등록</label>
       </div>
       <div id="repeatOptions" style="display:none;">
-        <div class="form-row-2" style="margin-bottom:0">
+        <div class="form-row-2" style="margin-bottom:8px;">
           <div class="form-row" style="margin-bottom:0">
             <label class="form-label">반복 단위</label>
             <select class="form-select" id="f-repeat-unit" onchange="updateRepeatPreview()">
@@ -1247,12 +1359,20 @@
               <option value="yearly">연간 (매년)</option>
             </select>
           </div>
-          <div class="form-row" style="margin-bottom:0">
+          <div class="form-row" style="margin-bottom:0" id="repeatCountWrap">
             <label class="form-label">반복 횟수</label>
-            <input type="number" class="form-input" id="f-repeat-count" value="4" min="2" max="52" placeholder="횟수" oninput="updateRepeatPreview()">
+            <input type="number" class="form-input" id="f-repeat-count" value="4" min="2" placeholder="횟수" oninput="updateRepeatPreview()">
+          </div>
+          <div class="form-row" style="margin-bottom:0;display:none" id="repeatEndDateWrap">
+            <label class="form-label">종료일</label>
+            <input type="date" class="form-input" id="f-repeat-end" oninput="updateRepeatPreview()">
           </div>
         </div>
-        <div style="margin-top:8px;font-size:11.5px;color:var(--gray-400)" id="repeatPreview"></div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+          <input type="checkbox" id="f-repeat-unlimited" onchange="toggleRepeatUnlimited()">
+          <label for="f-repeat-unlimited" style="font-size:12px;color:var(--gray-600);cursor:pointer">횟수 제한 없음 (종료일 지정)</label>
+        </div>
+        <div style="font-size:11.5px;color:var(--gray-400)" id="repeatPreview"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -1524,6 +1644,9 @@
     <button class="mobile-nav-btn" id="mnav-exec" onclick="switchTab('exec')">
       <span class="nav-icon">&#128188;</span>임원
     </button>
+    <button class="mobile-nav-btn" id="mnav-memo" onclick="switchTab('memo')">
+      <span class="nav-icon">&#128203;</span>메모
+    </button>
     <button class="mobile-nav-btn" onclick="openMemberSettingModal()">
       <span class="nav-icon">&#9881;</span>설정
     </button>
@@ -1622,6 +1745,7 @@ async function dbLoad() {
 
 async function dbInsert(task) {
   const row = { title:task.title, member:task.member, cat:task.cat, date:task.date, status:task.status, note:task.note||'', time:task.time||'' };
+  if (task.repeat_id) row.repeat_id = task.repeat_id;
   if (useLocal || !sbClient) {
     const arr = localLoad();
     const newId = arr.length ? Math.max(...arr.map(t=>t.id)) + 1 : 1;
@@ -1914,6 +2038,7 @@ async function startApp() {
           masterEvents = await loadMasterEvents();
           masterTitles = await loadMasterTitles();
           execEvents = await loadExecEvents();
+          notes = await loadNotes();
           await migrateLegacyExecEvents();
           showLoading(false);
           renderAll();
@@ -1939,6 +2064,7 @@ async function startApp() {
   masterEvents = await loadMasterEvents();
   masterTitles = await loadMasterTitles();
   execEvents = await loadExecEvents();
+  notes = await loadNotes();
   await migrateLegacyExecEvents();
   if (useLocal || !sbClient) setDbStatus(false, '로컬 저장소');
   showLoading(false);
@@ -2016,22 +2142,23 @@ function switchTab(tab) {
   document.getElementById('view-weekly').style.display    = tab==='weekly'    ? '' : 'none';
   document.getElementById('view-dashboard').style.display = tab==='dashboard' ? '' : 'none';
   document.getElementById('view-exec').style.display      = tab==='exec'      ? '' : 'none';
-  ['tasks','weekly','dashboard','exec'].forEach(t=>{
+  document.getElementById('view-memo').style.display      = tab==='memo'      ? '' : 'none';
+  ['tasks','weekly','dashboard','exec','memo'].forEach(t=>{
     const b=document.getElementById(`tab-${t}`); if(b) b.className='tab-btn'+(tab===t?' active':'');
   });
-  ['tasks','weekly','dashboard','exec'].forEach(t=>{
+  ['tasks','weekly','dashboard','exec','memo'].forEach(t=>{
     const el = document.getElementById(`mnav-${t}`);
     if (el) el.className = 'mobile-nav-btn' + (tab===t ? ' active' : '');
   });
   if (tab==='dashboard') renderDash();
   if (tab==='weekly') renderWeekly();
   if (tab==='exec') renderExecDash();
+  if (tab==='memo') renderMemoTab();
   if (tab==='tasks') {
-    renderTable(true);              // 진입 시 부드러운 등장 애니메이션
-    setTimeout(scrollTasksToToday, 70);  // 오늘 일정으로 스르륵 이동
-    return;                          // 상단 강제 스크롤 생략 (오늘 위치로 이동시키기 위함)
+    renderTable(true);
+    setTimeout(scrollTasksToToday, 70);
+    return;
   }
-  // 탭 전환 시 페이지 최상단으로 스크롤
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -2308,6 +2435,14 @@ async function applyBulkDelete() {
 
 async function deleteFromModal() {
   if (!editId) return;
+  const t = tasks.find(t => t.id === editId);
+  if (!t) return;
+  // 반복 그룹이면 모달 닫고 반복 삭제 팝업
+  if (t.repeat_id) {
+    closeModal();
+    openRepeatDelModal(editId);
+    return;
+  }
   if (!confirm('이 업무를 삭제하시겠습니까?')) return;
   const isOnDash = document.getElementById('view-dashboard').style.display !== 'none';
   const ok = await dbDelete(editId);
@@ -2375,10 +2510,75 @@ async function updateCat(id, cat) {
   if (updated) { t.cat=cat; renderTable(); showToast('카테고리를 변경했습니다.'); }
 }
 
+// ── 반복 삭제 팝업 상태 ──
+let _repeatDelTargetId = null;
+let _repeatDelOpt = 'single';
+
+function selectRepeatDelOpt(opt) {
+  _repeatDelOpt = opt;
+  ['single','future','all'].forEach(o => {
+    const el = document.getElementById('rdopt-'+o);
+    if (el) el.classList.toggle('selected', o === opt);
+    const radio = el ? el.querySelector('input[type=radio]') : null;
+    if (radio) radio.checked = (o === opt);
+  });
+}
+
+function openRepeatDelModal(id) {
+  _repeatDelTargetId = id;
+  _repeatDelOpt = 'single';
+  selectRepeatDelOpt('single');
+  document.getElementById('repeatDelModal').classList.add('open');
+}
+
+function closeRepeatDelModal() {
+  document.getElementById('repeatDelModal').classList.remove('open');
+  _repeatDelTargetId = null;
+}
+
+async function executeRepeatDelete() {
+  const id = _repeatDelTargetId;
+  if (!id) return;
+  const target = tasks.find(t => t.id === id);
+  if (!target) { closeRepeatDelModal(); return; }
+
+  const opt = _repeatDelOpt;
+  const rid = target.repeat_id;
+
+  let toDelete = [];
+  if (opt === 'single') {
+    toDelete = [id];
+  } else if (opt === 'future' && rid) {
+    toDelete = tasks.filter(t => t.repeat_id === rid && (t.date || '') >= (target.date || '')).map(t => t.id);
+  } else if (opt === 'all' && rid) {
+    toDelete = tasks.filter(t => t.repeat_id === rid).map(t => t.id);
+  } else {
+    toDelete = [id];
+  }
+
+  closeRepeatDelModal();
+  let count = 0;
+  for (const did of toDelete) {
+    const ok = await dbDelete(did);
+    if (ok) { tasks = tasks.filter(t => t.id !== did); count++; }
+  }
+  if (count > 0) {
+    renderTable();
+    showToast(`${count}건을 삭제했습니다.`);
+  }
+}
+
 async function deleteTask(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+  // 반복 그룹이면 팝업, 아니면 단순 confirm
+  if (t.repeat_id) {
+    openRepeatDelModal(id);
+    return;
+  }
   if (!confirm('정말 삭제하시겠습니까?')) return;
   const ok = await dbDelete(id);
-  if (ok) { tasks=tasks.filter(t=>t.id!==id); renderTable(); showToast('삭제했습니다.'); }
+  if (ok) { tasks = tasks.filter(t => t.id !== id); renderTable(); showToast('삭제했습니다.'); }
 }
 
 // ── MODAL ──
@@ -2398,6 +2598,11 @@ function openAddModal(prefillDate) {
   document.getElementById('repeatOptions').style.display='none';
   document.getElementById('repeatSection').style.display='block';
   document.getElementById('repeatPreview').textContent='';
+  // 종료일/무제한 초기화
+  if (document.getElementById('f-repeat-unlimited')) document.getElementById('f-repeat-unlimited').checked=false;
+  if (document.getElementById('repeatCountWrap'))    document.getElementById('repeatCountWrap').style.display='block';
+  if (document.getElementById('repeatEndDateWrap'))  document.getElementById('repeatEndDateWrap').style.display='none';
+  if (document.getElementById('f-repeat-end'))       document.getElementById('f-repeat-end').value='';
   document.getElementById('taskModal').classList.add('open');
   setTimeout(()=>document.getElementById('f-title').focus(), 50);
 }
@@ -2446,11 +2651,23 @@ async function saveTask() {
     const isRepeat = document.getElementById('f-repeat').checked;
     if (isRepeat) {
       const unit  = document.getElementById('f-repeat-unit').value;
-      const count = Math.max(2, Math.min(52, parseInt(document.getElementById('f-repeat-count').value)||4));
-      const dates = calcRepeatDates(date, unit, count);
+      const unlimited = document.getElementById('f-repeat-unlimited').checked;
+      let dates;
+      if (unlimited) {
+        const endDate = document.getElementById('f-repeat-end').value;
+        if (!endDate) { alert('종료일을 선택하세요.'); return; }
+        dates = calcRepeatDatesUntil(date, unit, endDate);
+      } else {
+        const count = Math.max(2, parseInt(document.getElementById('f-repeat-count').value)||4);
+        dates = calcRepeatDates(date, unit, count);
+      }
+      // 같은 반복 그룹을 묶는 UUID 생성
+      const repeatId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+        const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16);
+      });
       let added = 0;
       for (const d of dates) {
-        const newTask = await dbInsert({title, member, cat, date:d, time, status, note});
+        const newTask = await dbInsert({title, member, cat, date:d, time, status, note, repeat_id:repeatId});
         if (newTask) { tasks.push(newTask); added++; }
       }
       closeModal();
@@ -2945,6 +3162,7 @@ function toggleMyTaskOnly() {
     if (vis('view-tasks'))     { renderTable(true); setTimeout(scrollTasksToToday, 70); }
     if (vis('view-dashboard')) renderDash();
     if (vis('view-weekly'))    renderWeekly();
+    if (vis('view-memo'))      renderMemoTab();
   };
   rerenderActive();
   showToast(myTaskOnly ? `${myMember}님 업무만 표시합니다.` : '전체 업무를 표시합니다.');
@@ -3801,14 +4019,30 @@ function toggleRepeatOptions() {
   if (checked) updateRepeatPreview();
 }
 
+function toggleRepeatUnlimited() {
+  const unlimited = document.getElementById('f-repeat-unlimited').checked;
+  document.getElementById('repeatCountWrap').style.display  = unlimited ? 'none' : 'block';
+  document.getElementById('repeatEndDateWrap').style.display = unlimited ? 'block' : 'none';
+  updateRepeatPreview();
+}
+
 function updateRepeatPreview() {
   const baseDate = document.getElementById('f-date').value;
   const unit  = document.getElementById('f-repeat-unit').value;
-  const count = parseInt(document.getElementById('f-repeat-count').value) || 4;
+  const unlimited = document.getElementById('f-repeat-unlimited') && document.getElementById('f-repeat-unlimited').checked;
   if (!baseDate) { document.getElementById('repeatPreview').textContent = '날짜를 먼저 선택하세요.'; return; }
-  const dates = calcRepeatDates(baseDate, unit, count);
+  let dates;
+  if (unlimited) {
+    const endDate = document.getElementById('f-repeat-end').value;
+    if (!endDate) { document.getElementById('repeatPreview').textContent = '종료일을 선택하세요.'; return; }
+    if (endDate <= baseDate) { document.getElementById('repeatPreview').textContent = '종료일은 시작일보다 이후여야 합니다.'; return; }
+    dates = calcRepeatDatesUntil(baseDate, unit, endDate);
+  } else {
+    const count = parseInt(document.getElementById('f-repeat-count').value) || 4;
+    dates = calcRepeatDates(baseDate, unit, count);
+  }
   document.getElementById('repeatPreview').textContent =
-    `생성 예정: ${dates.slice(0,3).map(d=>fmtDate(d)).join(', ')}${dates.length>3?` 외 ${dates.length-3}건`:''}`;
+    `생성 예정: ${dates.slice(0,3).map(d=>fmtDate(d)).join(', ')}${dates.length>3?` 외 ${dates.length-3}건`:''}  (총 ${dates.length}건)`;
 }
 
 function calcRepeatDates(baseDate, unit, count) {
@@ -3825,15 +4059,39 @@ function calcRepeatDates(baseDate, unit, count) {
   return dates;
 }
 
+function calcRepeatDatesUntil(baseDate, unit, endDate) {
+  const dates = [];
+  const base = new Date(baseDate + 'T00:00:00');
+  const end  = new Date(endDate  + 'T00:00:00');
+  let i = 0;
+  while (i < 500) { // 최대 500회 안전장치
+    const d = new Date(base);
+    if (unit === 'weekly')         d.setDate(base.getDate() + i * 7);
+    else if (unit === 'monthly')   d.setMonth(base.getMonth() + i);
+    else if (unit === 'quarterly') d.setMonth(base.getMonth() + i * 3);
+    else if (unit === 'yearly')    d.setFullYear(base.getFullYear() + i);
+    if (d > end) break;
+    dates.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+    i++;
+  }
+  return dates;
+}
+
 // ── OUTSIDE CLICK ──
 document.getElementById('taskModal').addEventListener('click',function(e){if(e.target===this)closeModal();});
 document.getElementById('excelModal').addEventListener('click',function(e){if(e.target===this)closeExcelModal();});
+document.getElementById('repeatDelModal').addEventListener('click',function(e){if(e.target===this)closeRepeatDelModal();});
+document.getElementById('memoEditModal').addEventListener('click',function(e){if(e.target===this)closeMemoEditModal();});
 
 
 // ── 키보드 단축키 ──
 document.addEventListener('keydown', e => {
   // Escape: 열린 모달 닫기
-  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Escape') {
+    closeModal();
+    if (document.getElementById('repeatDelModal').classList.contains('open')) closeRepeatDelModal();
+    if (document.getElementById('memoEditModal').classList.contains('open')) closeMemoEditModal();
+  }
 
   // Ctrl+N / Cmd+N: 할 일 추가
   if ((e.ctrlKey || e.metaKey) && e.key === 'n') { e.preventDefault(); openAddModal(); }
@@ -3844,8 +4102,10 @@ document.addEventListener('keydown', e => {
     const taskModal = document.getElementById('taskModal');
     const execModal = document.getElementById('execEventModal');
     const pasteModal = document.getElementById('pasteModal');
+    const memoModal = document.getElementById('memoEditModal');
     if (taskModal.classList.contains('open'))  { saveTask(); return; }
     if (execModal.classList.contains('open'))  { saveExecForm(); return; }
+    if (memoModal.classList.contains('open'))  { saveMemoFromModal(); return; }
     if (document.getElementById('pwModal').classList.contains('open')) { savePw(); return; }
     if (pasteModal.classList.contains('open') && !document.getElementById('pasteSaveBtn').disabled) { savePasteData(); return; }
   }
@@ -4533,6 +4793,184 @@ async function deleteExecInlineEvent(id) {
 }
 
 // ══════════════════════════════════════════════
+//  MEMO (팀원 포스트잇 메모)
+// ══════════════════════════════════════════════
+const NOTES_KEY = 'hr_notes_v1';
+let notes = [];
+let memoEditId = null;
+
+// ── 로컬 저장 ──
+function notesLocalLoad() {
+  try { const d = JSON.parse(localStorage.getItem(NOTES_KEY)); return Array.isArray(d) ? d : []; }
+  catch { return []; }
+}
+function notesLocalSave() { localStorage.setItem(NOTES_KEY, JSON.stringify(notes)); }
+
+// ── Supabase CRUD ──
+async function loadNotes() {
+  if (!useLocal && sbClient) {
+    const { data, error } = await sbClient.from('hr_notes').select('*').order('created_at', { ascending:false });
+    if (!error && Array.isArray(data)) return data;
+    if (error) console.warn('[notes] Supabase 로드 실패, 로컬 폴백:', error.message||error);
+  }
+  return notesLocalLoad();
+}
+
+async function noteInsert(n) {
+  const row = { member:n.member, content:n.content };
+  if (!useLocal && sbClient) {
+    const { data, error } = await sbClient.from('hr_notes').insert(row).select();
+    if (error) { showToast('메모 저장 오류: '+(error.message||''), 'error'); return null; }
+    const nr = data && data[0];
+    if (nr) notes.unshift(nr);
+    return nr;
+  }
+  const newId = notes.length ? Math.max(...notes.map(n=>n.id||0)) + 1 : 1;
+  const nr = { id:newId, ...row, created_at: new Date().toISOString() };
+  notes.unshift(nr); notesLocalSave(); return nr;
+}
+
+async function noteUpdate(id, content) {
+  if (!useLocal && sbClient) {
+    const { error } = await sbClient.from('hr_notes').update({ content }).eq('id', id);
+    if (error) { showToast('메모 수정 오류: '+(error.message||''), 'error'); return false; }
+  }
+  const n = notes.find(n => n.id === id); if (n) n.content = content;
+  if (useLocal || !sbClient) notesLocalSave();
+  return true;
+}
+
+async function noteDelete(id) {
+  if (!useLocal && sbClient) {
+    const { error } = await sbClient.from('hr_notes').delete().eq('id', id);
+    if (error) { showToast('메모 삭제 오류: '+(error.message||''), 'error'); return false; }
+  }
+  notes = notes.filter(n => n.id !== id);
+  if (useLocal || !sbClient) notesLocalSave();
+  return true;
+}
+
+// ── 렌더 ──
+function getActiveNotes() {
+  return (myTaskOnly && myMember) ? notes.filter(n => n.member === myMember) : notes;
+}
+
+function renderMemoTab() {
+  const board = document.getElementById('memoBoard');
+  if (!board) return;
+  const active = getActiveNotes();
+  const label = document.getElementById('memoCountLabel');
+  if (label) label.textContent = `총 ${active.length}건`;
+
+  // 표시할 멤버 목록
+  const visibleMembers = (myTaskOnly && myMember) ? [myMember] : MEMBERS;
+  const cols = visibleMembers.length;
+  board.style.gridTemplateColumns = `repeat(${Math.min(cols, 3)}, 1fr)`;
+  board.className = 'memo-columns';
+
+  if (!active.length && visibleMembers.length === 0) {
+    board.innerHTML = `<div class="memo-empty">등록된 메모가 없습니다.</div>`;
+    return;
+  }
+
+  board.innerHTML = visibleMembers.map(m => {
+    const mNotes = active.filter(n => n.member === m);
+    const bg  = memberBg(m);
+    const tx  = memberTx(m);
+    const col = memberColor(m);
+    return `<div>
+      <div class="memo-col-header" style="border-color:${col};">
+        <span class="avatar" style="background:${bg};color:${tx};width:26px;height:26px;font-size:12px;">${m[0]}</span>
+        <span class="memo-col-title" style="color:${tx};">${m}</span>
+        <span class="memo-col-count" style="background:${bg};color:${tx};">${mNotes.length}건</span>
+      </div>
+      <div class="memo-grid" id="memo-grid-${m.replace(/\s/g,'_')}">
+        ${mNotes.map(n => renderMemoCard(n, bg, col)).join('')}
+        <button class="memo-add-btn" style="border-color:${col};color:${col};" onclick="openMemoEditModal(null,'${escHtml(m)}')">
+          <span style="font-size:18px;line-height:1">+</span> 메모 추가
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderMemoCard(n, bg, col) {
+  const dateStr = n.created_at ? new Date(n.created_at).toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit'}) : '';
+  // 배경에 약간의 회전 변형 (카드마다 일관성 있는 미세 회전)
+  const rot = ((n.id || 0) % 5 - 2) * 0.6;
+  return `<div class="memo-card" style="background:${bg};transform:rotate(${rot}deg);"
+      onclick="openMemoEditModal(${n.id})">
+    <div class="memo-card-body">${escHtml(n.content)}</div>
+    <div class="memo-card-footer">
+      <span class="memo-card-date">${dateStr}</span>
+      <div class="memo-card-actions">
+        <button class="memo-card-btn" onclick="event.stopPropagation();openMemoEditModal(${n.id})" title="수정">&#9998;</button>
+        <button class="memo-card-btn" onclick="event.stopPropagation();deleteMemoCard(${n.id})" title="삭제">&#10005;</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── 모달 ──
+function openMemoEditModal(id, prefillMember) {
+  memoEditId = id;
+  const isEdit = id !== null;
+  document.getElementById('memoEditModalTitle').textContent = isEdit ? '&#128203; 메모 수정' : '&#128203; 메모 추가';
+
+  // 담당자 select 채우기
+  const sel = document.getElementById('memo-member');
+  const defaultMember = prefillMember || (myTaskOnly && myMember ? myMember : (currentUserName && MEMBERS.includes(currentUserName) ? currentUserName : MEMBERS[0] || ''));
+  sel.innerHTML = MEMBERS.map(m => `<option value="${escHtml(m)}" ${m===defaultMember?'selected':''}>${m}</option>`).join('');
+
+  if (isEdit) {
+    const n = notes.find(n => n.id === id);
+    if (n) {
+      sel.value = n.member;
+      document.getElementById('memo-content').value = n.content || '';
+    }
+    document.getElementById('memoDeleteBtn').style.display = '';
+  } else {
+    document.getElementById('memo-content').value = '';
+    document.getElementById('memoDeleteBtn').style.display = 'none';
+  }
+  document.getElementById('memoEditModal').classList.add('open');
+  setTimeout(() => document.getElementById('memo-content').focus(), 50);
+}
+
+function closeMemoEditModal() {
+  document.getElementById('memoEditModal').classList.remove('open');
+  memoEditId = null;
+}
+
+async function saveMemoFromModal() {
+  const member  = document.getElementById('memo-member').value;
+  const content = document.getElementById('memo-content').value.trim();
+  if (!content) { showToast('내용을 입력하세요.', 'error'); return; }
+  if (!member)  { showToast('담당자를 선택하세요.', 'error'); return; }
+
+  if (memoEditId !== null) {
+    const ok = await noteUpdate(memoEditId, content);
+    if (ok) { closeMemoEditModal(); renderMemoTab(); showToast('메모를 수정했습니다.'); }
+  } else {
+    const nr = await noteInsert({ member, content });
+    if (nr) { closeMemoEditModal(); renderMemoTab(); showToast('메모를 추가했습니다.'); }
+  }
+}
+
+async function deleteMemoFromModal() {
+  if (memoEditId === null) return;
+  if (!confirm('이 메모를 삭제하시겠습니까?')) return;
+  const ok = await noteDelete(memoEditId);
+  if (ok) { closeMemoEditModal(); renderMemoTab(); showToast('메모를 삭제했습니다.'); }
+}
+
+async function deleteMemoCard(id) {
+  if (!confirm('이 메모를 삭제하시겠습니까?')) return;
+  const ok = await noteDelete(id);
+  if (ok) { renderMemoTab(); showToast('메모를 삭제했습니다.'); }
+}
+
+// ══════════════════════════════════════════════
 //  REALTIME 동기화 (모바일 ↔ PC 자동 반영)
 // ══════════════════════════════════════════════
 let realtimeChannel = null;
@@ -4541,8 +4979,10 @@ let _remoteRefreshTimer = null;
 function isEditingOpen() {
   const tm = document.getElementById('taskModal');
   const em = document.getElementById('execEventModal');
+  const mm = document.getElementById('memoEditModal');
   return (tm && tm.classList.contains('open'))
       || (em && em.classList.contains('open'))
+      || (mm && mm.classList.contains('open'))
       || document.querySelector('.master-inline-form.open') !== null;
 }
 
@@ -4554,6 +4994,7 @@ function subscribeRealtime() {
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_tasks' },        scheduleRemoteRefresh)
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_exec_events' },   scheduleRemoteRefresh)
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_master_events' }, scheduleRemoteRefresh)
+      .on('postgres_changes', { event:'*', schema:'public', table:'hr_notes' },         scheduleRemoteRefresh)
       .subscribe();
   } catch (err) { console.warn('[realtime] 구독 실패:', err); }
 }
@@ -4566,8 +5007,8 @@ function scheduleRemoteRefresh() {
 async function remoteRefresh() {
   if (useLocal || !sbClient) return;
   try {
-    const [t, ex, me] = await Promise.all([dbLoad(), loadExecEvents(), loadMasterEvents()]);
-    tasks = t; execEvents = ex; masterEvents = me;
+    const [t, ex, me, nt] = await Promise.all([dbLoad(), loadExecEvents(), loadMasterEvents(), loadNotes()]);
+    tasks = t; execEvents = ex; masterEvents = me; notes = nt;
     rerenderCurrentView();
   } catch (err) { console.warn('[realtime] 갱신 실패:', err); }
 }
@@ -4580,6 +5021,7 @@ function rerenderCurrentView() {
   if (visible('view-dashboard')) renderDash();
   if (visible('view-weekly')) renderWeekly();
   if (visible('view-exec')) renderExecDash();
+  if (visible('view-memo')) renderMemoTab();
   const mc = document.getElementById('masterCalModal');
   if (mc && mc.style.display !== 'none') renderMasterCalPage();
   updateCounts();
