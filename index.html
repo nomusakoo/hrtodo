@@ -4923,7 +4923,7 @@ function renderMemoCard(n, bg, col) {
 function openMemoEditModal(id, prefillMember) {
   memoEditId = id;
   const isEdit = id !== null;
-  document.getElementById('memoEditModalTitle').textContent = isEdit ? '&#128203; 메모 수정' : '&#128203; 메모 추가';
+  document.getElementById('memoEditModalTitle').innerHTML = isEdit ? '📋 메모 수정' : '📋 메모 추가';
 
   // 담당자 select 채우기
   const sel = document.getElementById('memo-member');
