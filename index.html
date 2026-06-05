@@ -87,7 +87,7 @@
   .task-table td{padding:10px 14px;border-bottom:1px solid var(--gray-100);font-size:13.5px;color:var(--gray-700);vertical-align:middle;}
   .task-table tr:last-child td{border-bottom:none;}
   .task-table tr:hover td{filter:brightness(0.97);}
-  .task-table tr.done td{color:var(--gray-400);}
+  .task-table tr.done td{color:inherit;}
   .task-table tr.done .task-title{text-decoration:line-through;}
   .task-title-link{cursor:pointer;}
   .task-title-link:hover{color:var(--accent);text-decoration:underline;}
@@ -666,7 +666,7 @@
       box-shadow:var(--shadow-sm);
       position:relative;
     }
-    .task-table tbody tr.done { opacity:0.65; }
+    .task-table tbody tr.done { opacity:1; }
 
     /* 긴급/지연 — 카드 전체 색 제거, 업무명 td에만 적용 */
     .task-table tbody tr.row-overdue td { background:transparent !important; }
