@@ -643,6 +643,10 @@
     .leave-chip{font-size:6px;padding:0px 3px;gap:1px;margin-bottom:1px;border-radius:6px;line-height:1.5;}
     .leave-chip-icon{font-size:6px;}
     .leave-chip-label{max-width:22px;}
+    /* 모바일: 이모지+라벨 숨기고 텍스트 약어만 표시 */
+    .leave-chip-icon-pc{display:none;}
+    .leave-chip-label-pc{display:none;}
+    .leave-chip-icon-mo{font-size:9px;font-weight:700;letter-spacing:-0.3px;}
     .week-leave-chip{font-size:9px;padding:1px 5px 1px 4px;gap:2px;}
     .week-leave-chips{padding:3px 6px 2px;gap:2px;}
     .stat-grid{grid-template-columns:1fr 1fr;gap:8px;}
@@ -924,6 +928,8 @@
   .leave-chip:hover{filter:brightness(0.94);}
   .leave-chip-icon{font-size:10px;line-height:1;flex-shrink:0;}
   .leave-chip-label{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:80px;}
+  /* PC: 모바일 전용 약어 숨김 */
+  .leave-chip-icon-mo{display:none;}
 
   /* 공통 툴팁 — JS로 위치 제어 */
   .leave-tooltip-popup{
@@ -5727,19 +5733,31 @@ function leaveTypeIcon(type) {
 }
 
 // 캘린더용 pill 칩
+function leaveTypeShort(type) {
+  if (!type) return '휴';
+  if (type.includes('연차')) return '연';
+  if (type.includes('반차')) return '반';
+  if (type.includes('출장')) return '출';
+  if (type.includes('병가')) return '병';
+  if (type.includes('경조')) return '경';
+  return type[0] || '휴';
+}
+
 function leaveChipHtml(lv) {
-  const col = memberColor(lv.member);
-  const bg  = memberBg(lv.member);
-  const tx  = memberTx(lv.member);
-  const icon = leaveTypeIcon(lv.type);
+  const col   = memberColor(lv.member);
+  const bg    = memberBg(lv.member);
+  const tx    = memberTx(lv.member);
+  const icon  = leaveTypeIcon(lv.type);
+  const short = leaveTypeShort(lv.type);
   const label = `${lv.member[0]} ${lv.type}`;
   return `<div class="leave-chip"
     style="background:${bg};color:${tx};border-color:${col}30;"
     onclick="event.stopPropagation();openLeaveEditModal(${lv.id})"
     onmouseenter="showLeaveTooltip(event,${lv.id})"
     onmouseleave="hideLeaveTooltip()">
-    <span class="leave-chip-icon">${icon}</span>
-    <span class="leave-chip-label">${escHtml(label)}</span>
+    <span class="leave-chip-icon leave-chip-icon-pc">${icon}</span>
+    <span class="leave-chip-icon leave-chip-icon-mo">${lv.member[0]}${short}</span>
+    <span class="leave-chip-label leave-chip-label-pc">${escHtml(label)}</span>
   </div>`;
 }
 
