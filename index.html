@@ -293,7 +293,7 @@
   .cal-chip { display:flex; align-items:center; gap:3px; padding:2px 5px; border-radius:3px; font-size:10.5px; font-weight:500; margin-bottom:2px; cursor:grab; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; transition:filter 0.15s; user-select:none; min-width:0; max-width:100%; }
   .cal-chip:hover { filter:brightness(0.92); }
   .cal-chip.dragging { opacity:0.35; cursor:grabbing; }
-  .cal-chip.is-done { opacity:0.5; text-decoration:line-through; }
+  .cal-chip.is-done { opacity:1; text-decoration:line-through; }
   .cal-chip-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
   .cal-chip-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
   .cal-more { font-size:10px; color:var(--accent); cursor:pointer; padding:2px 4px; font-weight:600; border-radius:3px; }
@@ -542,7 +542,8 @@
   .week-task-chip.wc-이상원{background:#f0fdf4;border-left-color:#22c55e;}
   .week-task-chip.wc-구우회{background:#eff6ff;border-left-color:var(--accent);}
   .week-task-chip.wc-이호동{background:#faf5ff;border-left-color:#8b5cf6;}
-  .week-task-chip.is-done{opacity:0.5;}
+  .week-task-chip.is-done{opacity:1;text-decoration:line-through;}
+  .week-task-chip.is-done .chip-title{text-decoration:line-through;}
   .week-task-chip .chip-title{font-weight:500;color:var(--gray-700);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .week-task-chip .chip-meta{display:flex;align-items:center;gap:4px;margin-top:2px;}
   .week-task-chip .chip-name{font-size:10px;color:var(--gray-400);}
@@ -4122,7 +4123,7 @@ function openCalMore(dateStr) {
         const statusLbl = {'todo':'예정','진행중':'진행 중','완료':'완료','보류':'보류'}[t.status]||t.status;
         return `<div class="cal-more-item" onclick="closeCalMore();openEditModal(${t.id})">
           <span class="cal-more-item-dot" style="background:${isDone?'var(--gray-300)':bg}"></span>
-          <span class="cal-more-item-title${isDone?' is-done':''}" style="${isDone?'text-decoration:line-through;color:var(--gray-400)':''}">${escHtml(t.title)}</span>
+          <span class="cal-more-item-title${isDone?' is-done':''}" style="${isDone?'text-decoration:line-through;':''}">${escHtml(t.title)}</span>
           <span class="cal-more-item-meta">${t.member} · ${statusLbl}</span>
         </div>`;
       }).join('')
