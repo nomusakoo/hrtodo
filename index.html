@@ -853,7 +853,7 @@
   #repeatEndDateWrap.show{display:block;}
 
   /* ── 메모 탭 ── */
-  #view-memo{display:none;}
+  #view-memo{}
   .memo-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
   .memo-columns{display:grid;gap:20px;}
   .memo-col-header{display:flex;align-items:center;gap:8px;margin-bottom:12px;padding-bottom:10px;border-bottom:2px solid;}
@@ -867,6 +867,10 @@
   .memo-card-date{font-size:10.5px;color:rgba(0,0,0,0.35);font-family:var(--font-mono);}
   .memo-card-actions{display:flex;gap:4px;opacity:0;transition:opacity 0.15s;}
   .memo-card:hover .memo-card-actions{opacity:1;}
+  /* 모바일: 버튼 항상 표시 */
+  @media(hover:none){.memo-card-actions{opacity:1;}}
+  /* 꾹 누르기 피드백 */
+  .memo-card.long-press-active{transform:scale(0.96) rotate(0deg) !important;box-shadow:0 0 0 3px var(--danger) !important;transition:transform 0.1s,box-shadow 0.1s;}
   .memo-card-btn{background:rgba(0,0,0,0.12);border:none;border-radius:4px;width:24px;height:24px;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;color:rgba(0,0,0,0.5);transition:background 0.12s;}
   .memo-card-btn:hover{background:rgba(0,0,0,0.22);color:rgba(0,0,0,0.8);}
   .memo-add-btn{border:1.5px dashed;border-radius:6px;padding:14px;min-height:80px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:13px;font-weight:500;background:transparent;transition:all 0.15s;font-family:var(--font);}
@@ -1185,7 +1189,7 @@
     </div>
 
     <!-- MEMO TAB -->
-    <div id="view-memo">
+    <div id="view-memo" style="display:none">
       <div class="page-header">
         <div class="page-title">메모<span id="memoCountLabel"></span></div>
         <button class="btn btn-green" onclick="openMemoEditModal(null)">+ 메모 추가</button>
@@ -4896,10 +4900,14 @@ function renderMemoTab() {
 
 function renderMemoCard(n, bg, col) {
   const dateStr = n.created_at ? new Date(n.created_at).toLocaleDateString('ko-KR',{month:'2-digit',day:'2-digit'}) : '';
-  // 배경에 약간의 회전 변형 (카드마다 일관성 있는 미세 회전)
   const rot = ((n.id || 0) % 5 - 2) * 0.6;
-  return `<div class="memo-card" style="background:${bg};transform:rotate(${rot}deg);"
-      onclick="openMemoEditModal(${n.id})">
+  return `<div class="memo-card" id="memo-card-${n.id}"
+      style="background:${bg};transform:rotate(${rot}deg);"
+      onclick="openMemoEditModal(${n.id})"
+      ontouchstart="memoLongPressStart(event,${n.id})"
+      ontouchend="memoLongPressEnd(event)"
+      ontouchmove="memoLongPressCancel()"
+      oncontextmenu="event.preventDefault();deleteMemoCard(${n.id})">
     <div class="memo-card-body">${escHtml(n.content)}</div>
     <div class="memo-card-footer">
       <span class="memo-card-date">${dateStr}</span>
@@ -4968,6 +4976,38 @@ async function deleteMemoCard(id) {
   if (!confirm('이 메모를 삭제하시겠습니까?')) return;
   const ok = await noteDelete(id);
   if (ok) { renderMemoTab(); showToast('메모를 삭제했습니다.'); }
+}
+
+// ── 꾹 누르기 삭제 (모바일) ──
+let _memoPressTimer = null;
+let _memoPressId = null;
+
+function memoLongPressStart(e, id) {
+  _memoPressId = id;
+  const card = document.getElementById('memo-card-' + id);
+  _memoPressTimer = setTimeout(() => {
+    if (card) card.classList.add('long-press-active');
+    // 진동 피드백 (지원 기기)
+    if (navigator.vibrate) navigator.vibrate(60);
+    setTimeout(() => {
+      if (card) card.classList.remove('long-press-active');
+      deleteMemoCard(id);
+    }, 120);
+  }, 600);
+}
+
+function memoLongPressEnd(e) {
+  clearTimeout(_memoPressTimer);
+  _memoPressTimer = null;
+  const card = _memoPressId ? document.getElementById('memo-card-' + _memoPressId) : null;
+  if (card) card.classList.remove('long-press-active');
+}
+
+function memoLongPressCancel() {
+  clearTimeout(_memoPressTimer);
+  _memoPressTimer = null;
+  const card = _memoPressId ? document.getElementById('memo-card-' + _memoPressId) : null;
+  if (card) card.classList.remove('long-press-active');
 }
 
 // ══════════════════════════════════════════════
