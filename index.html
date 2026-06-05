@@ -2144,6 +2144,16 @@ let tabConfig = loadTabConfig();
 // ── 메모 접기/펼치기 상태 ──
 const memoExpandState = {};
 
+// ── 데이터 ──
+let notes        = [];
+let memoEditId   = null;
+let policies     = [];
+let policyEditId = null;
+let activePolicyCat = null;
+let leaves       = [];
+let leaveEditId  = null;
+let noteComments = [];
+
 // 내 업무만 보기 ON이면 myMember만, 아니면 전체 tasks 반환
 function activeTasks() {
   return (myTaskOnly && myMember) ? tasks.filter(t => t.member === myMember) : tasks;
@@ -5242,18 +5252,7 @@ async function deleteExecInlineEvent(id) {
 //  MEMO (팀원 포스트잇 메모)
 // ══════════════════════════════════════════════
 const NOTES_KEY = 'hr_notes_v1';
-let notes = [];
-let memoEditId = null;
-let policies = [];
-let policyEditId = null;
-let activePolicyCat = null;
 
-// ── 휴가/출장 ──
-let leaves = [];
-let leaveEditId = null;
-
-// ── 메모 댓글 ──
-let noteComments = [];
 function notesLocalLoad() {
   try { const d = JSON.parse(localStorage.getItem(NOTES_KEY)); return Array.isArray(d) ? d : []; }
   catch { return []; }
