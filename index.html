@@ -635,8 +635,8 @@
 
     /* 모바일 탭 슬라이드 애니메이션 */
     .tab-views-wrapper{overflow:hidden;position:relative;width:100%;}
-    .tab-views-track{display:flex;transition:transform 0.32s cubic-bezier(0.4,0,0.2,1);will-change:transform;}
-    .tab-view-slide{flex:0 0 100%;min-width:100%;box-sizing:border-box;padding:0;}
+    .tab-views-track{display:flex;will-change:transform;}
+    .tab-view-slide{flex:0 0 100vw;min-width:100vw;box-sizing:border-box;overflow-x:hidden;}
     /* 탭바 스크롤 부드럽게 */
     .tab-bar{scroll-behavior:smooth;}
     /* 모바일 휴가/출장 태그 — 날짜 칸 안에 들어오도록 축소 */
@@ -2442,26 +2442,20 @@ function renderAll() {
   initRegModeToggle();
   initMyTaskBtn();
   populateMonthFilter();
+  initSlideTrack();
   const firstVisible = tabConfig.find(t => t.visible);
-  const firstId = firstVisible ? firstVisible.id : 'tasks';
-  // 모바일: 모든 슬라이드 보이게 하고 트랙 위치 초기화
-  if (window.innerWidth <= 900) {
-    const visibleIds = tabConfig.filter(t => t.visible).map(t => t.id);
-    visibleIds.forEach(id => {
-      const el = document.getElementById('view-' + id);
-      if (el) { el.style.display = ''; el.style.minWidth = '100%'; el.style.flex = '0 0 100%'; }
-    });
-    TAB_META.forEach(t => {
-      if (!visibleIds.includes(t.id)) {
-        const el = document.getElementById('view-' + t.id);
-        if (el) el.style.display = 'none';
-      }
-    });
-    const track = document.getElementById('tabViewsTrack');
-    if (track) { track.style.transition = 'none'; track.style.transform = 'translateX(0)'; }
-  }
-  switchTab(firstId, false);
+  switchTab(firstVisible ? firstVisible.id : 'tasks', false);
 }
+
+// 화면 크기 변경 시 트랙 재초기화
+window.addEventListener('resize', () => {
+  initSlideTrack();
+  const active = document.querySelector('.tab-btn.active');
+  if (active) {
+    const id = active.id.replace('tab-', '');
+    switchTab(id, false);
+  }
+});
 
 function showLoading(v) { document.getElementById('loadingOverlay').classList.toggle('hidden', !v); }
 
@@ -2560,45 +2554,67 @@ function getVisibleTabIds() {
   return tabConfig.filter(t => t.visible).map(t => t.id);
 }
 
+// 트랙 초기화: 모바일에서 모든 가시 탭을 flex 아이템으로 배치
+function initSlideTrack() {
+  const visibleIds = getVisibleTabIds();
+  const allIds = TAB_META.map(t => t.id);
+  const track = document.getElementById('tabViewsTrack');
+  if (!track) return;
+
+  if (window.innerWidth <= 900) {
+    // 모바일: 가시 탭 모두 flex row로 배치
+    visibleIds.forEach(id => {
+      const el = document.getElementById('view-' + id);
+      if (!el) return;
+      el.style.display = '';
+      el.style.minWidth = '100vw';
+      el.style.width    = '100vw';
+      el.style.flex     = '0 0 100vw';
+      el.style.boxSizing = 'border-box';
+    });
+    // 비가시 탭 숨김
+    allIds.filter(id => !visibleIds.includes(id)).forEach(id => {
+      const el = document.getElementById('view-' + id);
+      if (el) { el.style.display = 'none'; el.style.minWidth = ''; el.style.flex = ''; }
+    });
+    track.style.display = 'flex';
+    track.style.width   = (visibleIds.length * 100) + 'vw';
+  } else {
+    // PC: flex 해제, display 직접 제어
+    allIds.forEach(id => {
+      const el = document.getElementById('view-' + id);
+      if (!el) return;
+      el.style.minWidth = '';
+      el.style.width    = '';
+      el.style.flex     = '';
+    });
+    track.style.display = '';
+    track.style.width   = '';
+    track.style.transform  = '';
+    track.style.transition = '';
+  }
+}
+
 function applySlideTransition(targetId, animate) {
   const visibleIds = getVisibleTabIds();
   const idx = visibleIds.indexOf(targetId);
-  if (idx < 0) return;
-
-  const isMobile = window.innerWidth <= 900;
   const track = document.getElementById('tabViewsTrack');
 
-  if (isMobile && track && animate) {
-    // 슬라이드: display:none 해제하고 transform으로 이동
-    visibleIds.forEach(id => {
-      const el = document.getElementById('view-' + id);
-      if (el) { el.style.display = ''; el.style.minWidth = '100%'; el.style.flex = '0 0 100%'; }
-    });
-    // 비가시 탭 숨기기 (메모리/성능)
-    const allIds = TAB_META.map(t => t.id);
-    allIds.forEach(id => {
-      if (!visibleIds.includes(id)) {
-        const el = document.getElementById('view-' + id);
-        if (el) el.style.display = 'none';
-      }
-    });
-    track.style.transition = 'transform 0.32s cubic-bezier(0.4,0,0.2,1)';
-    track.style.transform = `translateX(-${idx * 100}%)`;
+  if (window.innerWidth <= 900) {
+    // 모바일: translateX 슬라이드
+    if (!track) return;
+    track.style.transition = animate
+      ? 'transform 0.32s cubic-bezier(0.4,0,0.2,1)'
+      : 'none';
+    track.style.transform = `translateX(-${idx * 100}vw)`;
   } else {
-    // PC or 즉시전환
-    if (track) { track.style.transition = 'none'; track.style.transform = `translateX(-${idx * 100}%)`; }
+    // PC: display 전환
     const allIds = TAB_META.map(t => t.id);
     allIds.forEach(id => {
       const el = document.getElementById('view-' + id);
-      if (el) {
-        if (isMobile) {
-          // 모바일: 비가시 탭 숨김
-          el.style.display = visibleIds.includes(id) ? '' : 'none';
-        } else {
-          el.style.display = (id === targetId) ? '' : 'none';
-        }
-      }
+      if (el) el.style.display = (id === targetId) ? '' : 'none';
     });
+    if (track) { track.style.transition = 'none'; track.style.transform = ''; }
   }
 }
 
@@ -2606,16 +2622,12 @@ function scrollTabBarToActive(tabId) {
   const btn = document.getElementById('tab-' + tabId);
   const bar = document.querySelector('.tab-bar');
   if (!btn || !bar) return;
-  const btnLeft = btn.offsetLeft;
-  const btnWidth = btn.offsetWidth;
-  const barWidth = bar.offsetWidth;
-  const scrollTarget = btnLeft - barWidth / 2 + btnWidth / 2;
+  const scrollTarget = btn.offsetLeft - bar.offsetWidth / 2 + btn.offsetWidth / 2;
   bar.scrollTo({ left: scrollTarget, behavior: 'smooth' });
 }
 
 function switchTab(tab, animate = true) {
   const allIds = TAB_META.map(t => t.id);
-  // 탭 버튼 active 상태
   allIds.forEach(t => {
     const btn = document.getElementById('tab-' + t);
     if (btn) btn.className = 'tab-btn' + (t === tab ? ' active' : '');
@@ -2636,7 +2648,7 @@ function switchTab(tab, animate = true) {
     setTimeout(scrollTasksToToday, 70);
     return;
   }
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (window.innerWidth > 900) window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ── 업무/휴가 모달 탭 전환 ──
@@ -6590,14 +6602,14 @@ async function deletePolicyItem(id) {
     // 경계 rubber band
     let offset = dx;
     if ((_curIdx === 0 && dx > 0) || (_curIdx === order.length - 1 && dx < 0)) offset = dx * 0.22;
-    track.style.transform = `translateX(calc(${-_curIdx * 100}% + ${offset}px))`;
+    track.style.transform = `translateX(calc(${-_curIdx * 100}vw + ${offset}px))`;
   }
 
   function onTouchEnd(e) {
     if (!isMobile()) return;
     const track = document.getElementById('tabViewsTrack');
     if (!_dragging || _locked) {
-      if (track) { track.style.transition = 'transform 0.32s cubic-bezier(0.4,0,0.2,1)'; track.style.transform = `translateX(-${_curIdx * 100}%)`; }
+      if (track) { track.style.transition = 'transform 0.32s cubic-bezier(0.4,0,0.2,1)'; track.style.transform = `translateX(-${_curIdx * 100}vw)`; }
       return;
     }
     const t = e.changedTouches[0];
@@ -6610,7 +6622,7 @@ async function deletePolicyItem(id) {
     if ((isFling || isHalf) && dx < 0 && _curIdx < order.length - 1) newIdx = _curIdx + 1;
     else if ((isFling || isHalf) && dx > 0 && _curIdx > 0) newIdx = _curIdx - 1;
     if (newIdx !== _curIdx) switchTab(order[newIdx], true);
-    else if (track) { track.style.transition = 'transform 0.32s cubic-bezier(0.4,0,0.2,1)'; track.style.transform = `translateX(-${_curIdx * 100}%)`; }
+    else if (track) { track.style.transition = 'transform 0.32s cubic-bezier(0.4,0,0.2,1)'; track.style.transform = `translateX(-${_curIdx * 100}vw)`; }
   }
 
   document.addEventListener('DOMContentLoaded', () => {
