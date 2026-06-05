@@ -632,6 +632,13 @@
       padding-top:58px;
     }
     .main-content{padding:12px 10px 80px;}
+
+    /* 모바일 탭 슬라이드 애니메이션 */
+    .tab-views-wrapper{overflow:hidden;position:relative;width:100%;}
+    .tab-views-track{display:flex;transition:transform 0.32s cubic-bezier(0.4,0,0.2,1);will-change:transform;}
+    .tab-view-slide{flex:0 0 100%;min-width:100%;box-sizing:border-box;padding:0;}
+    /* 탭바 스크롤 부드럽게 */
+    .tab-bar{scroll-behavior:smooth;}
     .stat-grid{grid-template-columns:1fr 1fr;gap:8px;}
     .stat-card{padding:12px 14px;}
     .stat-value{font-size:22px;}
@@ -1215,7 +1222,7 @@
   </nav>
 
   <main class="main-content">
-    <div class="tab-bar">
+    <div class="tab-bar" id="mainTabBar">
       <button class="tab-btn active" id="tab-tasks" onclick="switchTab('tasks')">📋 할 일 관리</button>
       <button class="tab-btn" id="tab-dashboard" onclick="switchTab('dashboard')">📅 월별 대시보드</button>
       <button class="tab-btn" id="tab-weekly" onclick="switchTab('weekly')">🗓 주간 보기</button>
@@ -1224,8 +1231,9 @@
       <button class="tab-btn" id="tab-policy" onclick="switchTab('policy')">📚 제도</button>
     </div>
 
-    <!-- TASKS TAB -->
-    <div id="view-tasks">
+    <div class="tab-views-wrapper" id="tabViewsWrapper">
+      <div class="tab-views-track" id="tabViewsTrack">
+    <div id="view-tasks" class="tab-view-slide">
       <div class="page-header">
         <div class="page-title">할 일 관리<span id="taskCountLabel"></span></div>
       </div>
@@ -1314,7 +1322,7 @@
     </div>
 
     <!-- WEEKLY TAB -->
-    <div id="view-weekly" style="display:none">
+    <div id="view-weekly" class="tab-view-slide" style="display:none">
       <div class="page-header"><div class="page-title">주간 보기</div></div>
       <div class="week-nav">
         <button class="btn btn-sm" onclick="shiftWeek(-1)">&#8592; 이전 주</button>
@@ -1331,7 +1339,7 @@
     </div>
 
     <!-- DASHBOARD TAB -->
-    <div id="view-dashboard" style="display:none">
+    <div id="view-dashboard" class="tab-view-slide" style="display:none">
       <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <div class="page-title">월별 대시보드</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
@@ -1379,7 +1387,7 @@
     </div>
 
     <!-- MEMO TAB -->
-    <div id="view-memo" style="display:none">
+    <div id="view-memo" class="tab-view-slide" style="display:none">
       <div class="page-header">
         <div class="page-title">메모<span id="memoCountLabel"></span></div>
         <button class="btn btn-green" onclick="openMemoEditModal(null)">+ 메모 추가</button>
@@ -1388,7 +1396,7 @@
     </div>
 
     <!-- POLICY TAB (제도) -->
-    <div id="view-policy" style="display:none">
+    <div id="view-policy" class="tab-view-slide" style="display:none">
       <div class="page-header">
         <div class="page-title">제도 안내<span id="policyCountLabel"></span></div>
         <button class="btn btn-green" onclick="openPolicyEditModal(null)">+ 항목 추가</button>
@@ -1402,7 +1410,7 @@
     </div>
 
     <!-- EXEC DASHBOARD TAB (임원 대시보드) -->
-    <div id="view-exec" style="display:none">
+    <div id="view-exec" class="tab-view-slide" style="display:none">
       <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
         <div class="page-title">임원 대시보드<span id="execCountLabel"></span></div>
         <div class="exec-toolbar" style="margin-bottom:0">
@@ -1436,7 +1444,9 @@
           <div class="cal-grid" id="execCalGrid"></div>
         </div>
       </div>
-    </div>
+    </div><!-- /view-exec -->
+      </div><!-- /tab-views-track -->
+    </div><!-- /tab-views-wrapper -->
   </main>
 </div>
 
@@ -2427,7 +2437,24 @@ function renderAll() {
   initMyTaskBtn();
   populateMonthFilter();
   const firstVisible = tabConfig.find(t => t.visible);
-  switchTab(firstVisible ? firstVisible.id : 'tasks');
+  const firstId = firstVisible ? firstVisible.id : 'tasks';
+  // 모바일: 모든 슬라이드 보이게 하고 트랙 위치 초기화
+  if (window.innerWidth <= 900) {
+    const visibleIds = tabConfig.filter(t => t.visible).map(t => t.id);
+    visibleIds.forEach(id => {
+      const el = document.getElementById('view-' + id);
+      if (el) { el.style.display = ''; el.style.minWidth = '100%'; el.style.flex = '0 0 100%'; }
+    });
+    TAB_META.forEach(t => {
+      if (!visibleIds.includes(t.id)) {
+        const el = document.getElementById('view-' + t.id);
+        if (el) el.style.display = 'none';
+      }
+    });
+    const track = document.getElementById('tabViewsTrack');
+    if (track) { track.style.transition = 'none'; track.style.transform = 'translateX(0)'; }
+  }
+  switchTab(firstId, false);
 }
 
 function showLoading(v) { document.getElementById('loadingOverlay').classList.toggle('hidden', !v); }
@@ -2522,16 +2549,77 @@ function renderMobileNav() {
   </button>`;
 }
 
-function switchTab(tab) {
-  const allTabs = TAB_META.map(t => t.id);
-  allTabs.forEach(t => {
-    const el = document.getElementById('view-' + t);
-    if (el) el.style.display = (t === tab) ? '' : 'none';
+// ── 탭 슬라이드 유틸 ──
+function getVisibleTabIds() {
+  return tabConfig.filter(t => t.visible).map(t => t.id);
+}
+
+function applySlideTransition(targetId, animate) {
+  const visibleIds = getVisibleTabIds();
+  const idx = visibleIds.indexOf(targetId);
+  if (idx < 0) return;
+
+  const isMobile = window.innerWidth <= 900;
+  const track = document.getElementById('tabViewsTrack');
+
+  if (isMobile && track && animate) {
+    // 슬라이드: display:none 해제하고 transform으로 이동
+    visibleIds.forEach(id => {
+      const el = document.getElementById('view-' + id);
+      if (el) { el.style.display = ''; el.style.minWidth = '100%'; el.style.flex = '0 0 100%'; }
+    });
+    // 비가시 탭 숨기기 (메모리/성능)
+    const allIds = TAB_META.map(t => t.id);
+    allIds.forEach(id => {
+      if (!visibleIds.includes(id)) {
+        const el = document.getElementById('view-' + id);
+        if (el) el.style.display = 'none';
+      }
+    });
+    track.style.transition = 'transform 0.32s cubic-bezier(0.4,0,0.2,1)';
+    track.style.transform = `translateX(-${idx * 100}%)`;
+  } else {
+    // PC or 즉시전환
+    if (track) { track.style.transition = 'none'; track.style.transform = `translateX(-${idx * 100}%)`; }
+    const allIds = TAB_META.map(t => t.id);
+    allIds.forEach(id => {
+      const el = document.getElementById('view-' + id);
+      if (el) {
+        if (isMobile) {
+          // 모바일: 비가시 탭 숨김
+          el.style.display = visibleIds.includes(id) ? '' : 'none';
+        } else {
+          el.style.display = (id === targetId) ? '' : 'none';
+        }
+      }
+    });
+  }
+}
+
+function scrollTabBarToActive(tabId) {
+  const btn = document.getElementById('tab-' + tabId);
+  const bar = document.querySelector('.tab-bar');
+  if (!btn || !bar) return;
+  const btnLeft = btn.offsetLeft;
+  const btnWidth = btn.offsetWidth;
+  const barWidth = bar.offsetWidth;
+  const scrollTarget = btnLeft - barWidth / 2 + btnWidth / 2;
+  bar.scrollTo({ left: scrollTarget, behavior: 'smooth' });
+}
+
+function switchTab(tab, animate = true) {
+  const allIds = TAB_META.map(t => t.id);
+  // 탭 버튼 active 상태
+  allIds.forEach(t => {
     const btn = document.getElementById('tab-' + t);
     if (btn) btn.className = 'tab-btn' + (t === tab ? ' active' : '');
     const mnav = document.getElementById('mnav-' + t);
     if (mnav) mnav.className = 'mobile-nav-btn' + (t === tab ? ' active' : '');
   });
+
+  applySlideTransition(tab, animate);
+  scrollTabBarToActive(tab);
+
   if (tab === 'dashboard') renderDash();
   if (tab === 'weekly')    renderWeekly();
   if (tab === 'exec')      renderExecDash();
@@ -6449,55 +6537,74 @@ async function deletePolicyItem(id) {
 }
 
 // ══════════════════════════════════════════════
-//  모바일 스와이프 탭 전환
+//  모바일 스와이프 탭 전환 (실시간 팔로우 + snap)
 // ══════════════════════════════════════════════
 (function() {
-  function getTabOrder() {
-    return tabConfig.filter(t => t.visible).map(t => t.id);
-  }
-  let _swipeStartX = 0, _swipeStartY = 0, _swipeStartTime = 0, _swipeLocked = false;
+  function getTabOrder() { return tabConfig.filter(t => t.visible).map(t => t.id); }
+  function isMobile() { return window.innerWidth <= 900; }
 
-  function getCurrentTab() {
-    return getTabOrder().find(t => {
-      const el = document.getElementById('view-' + t);
+  let _startX = 0, _startY = 0, _startTime = 0;
+  let _locked = false, _dragging = false, _curIdx = 0;
+
+  function getCurrentIdx() {
+    const order = getTabOrder();
+    const cur = order.find(id => {
+      const el = document.getElementById('view-' + id);
       return el && el.style.display !== 'none';
-    }) || getTabOrder()[0] || 'tasks';
+    }) || order[0];
+    const idx = order.indexOf(cur);
+    return idx < 0 ? 0 : idx;
   }
 
   function onTouchStart(e) {
-    if (isEditingOpen()) return;
-    const tag = e.target.tagName;
-    if (/INPUT|TEXTAREA|SELECT|BUTTON/.test(tag)) return;
+    if (!isMobile() || isEditingOpen()) return;
+    if (/INPUT|TEXTAREA|SELECT|BUTTON/.test(e.target.tagName)) return;
     const t = e.touches[0];
-    _swipeStartX = t.clientX; _swipeStartY = t.clientY;
-    _swipeStartTime = Date.now(); _swipeLocked = false;
-  }
-
-  function onTouchEnd(e) {
-    if (_swipeLocked || isEditingOpen()) return;
-    const tag = e.target.tagName;
-    if (/INPUT|TEXTAREA|SELECT|BUTTON/.test(tag)) return;
-    const t = e.changedTouches[0];
-    const dx = t.clientX - _swipeStartX;
-    const dy = t.clientY - _swipeStartY;
-    const dt = Date.now() - _swipeStartTime;
-    if (Math.abs(dx) < 60) return;
-    if (Math.abs(dy) > Math.abs(dx) * 0.6) return;
-    if (dt > 400) return;
-    const order = getTabOrder();
-    const cur = getCurrentTab();
-    const idx = order.indexOf(cur);
-    if (idx < 0) return;
-    if (dx < 0 && idx < order.length - 1) switchTab(order[idx + 1]);
-    else if (dx > 0 && idx > 0) switchTab(order[idx - 1]);
+    _startX = t.clientX; _startY = t.clientY;
+    _startTime = Date.now();
+    _locked = false; _dragging = false;
+    _curIdx = getCurrentIdx();
+    const track = document.getElementById('tabViewsTrack');
+    if (track) track.style.transition = 'none';
   }
 
   function onTouchMove(e) {
-    if (_swipeLocked) return;
+    if (!isMobile() || _locked) return;
     const t = e.touches[0];
-    const dx = Math.abs(t.clientX - _swipeStartX);
-    const dy = Math.abs(t.clientY - _swipeStartY);
-    if (dy > dx && dy > 8) _swipeLocked = true;
+    const dx = t.clientX - _startX;
+    const dy = t.clientY - _startY;
+    if (!_dragging) {
+      if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 6) { _locked = true; return; }
+      if (Math.abs(dx) > 6) _dragging = true;
+    }
+    if (!_dragging) return;
+    const order = getTabOrder();
+    const track = document.getElementById('tabViewsTrack');
+    if (!track) return;
+    // 경계 rubber band
+    let offset = dx;
+    if ((_curIdx === 0 && dx > 0) || (_curIdx === order.length - 1 && dx < 0)) offset = dx * 0.22;
+    track.style.transform = `translateX(calc(${-_curIdx * 100}% + ${offset}px))`;
+  }
+
+  function onTouchEnd(e) {
+    if (!isMobile()) return;
+    const track = document.getElementById('tabViewsTrack');
+    if (!_dragging || _locked) {
+      if (track) { track.style.transition = 'transform 0.32s cubic-bezier(0.4,0,0.2,1)'; track.style.transform = `translateX(-${_curIdx * 100}%)`; }
+      return;
+    }
+    const t = e.changedTouches[0];
+    const dx = t.clientX - _startX;
+    const dt = Date.now() - _startTime;
+    const order = getTabOrder();
+    const isFling = dt < 250 && Math.abs(dx) > 30;
+    const isHalf  = Math.abs(dx) > window.innerWidth * 0.35;
+    let newIdx = _curIdx;
+    if ((isFling || isHalf) && dx < 0 && _curIdx < order.length - 1) newIdx = _curIdx + 1;
+    else if ((isFling || isHalf) && dx > 0 && _curIdx > 0) newIdx = _curIdx - 1;
+    if (newIdx !== _curIdx) switchTab(order[newIdx], true);
+    else if (track) { track.style.transition = 'transform 0.32s cubic-bezier(0.4,0,0.2,1)'; track.style.transform = `translateX(-${_curIdx * 100}%)`; }
   }
 
   document.addEventListener('DOMContentLoaded', () => {
