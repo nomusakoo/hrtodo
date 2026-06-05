@@ -5254,13 +5254,6 @@ let leaveEditId = null;
 
 // ── 메모 댓글 ──
 let noteComments = [];
-
-// ── 휴가/출장 ──
-let leaves = [];
-let leaveEditId = null;
-
-// ── 메모 댓글 ──
-let noteComments = [];
 function notesLocalLoad() {
   try { const d = JSON.parse(localStorage.getItem(NOTES_KEY)); return Array.isArray(d) ? d : []; }
   catch { return []; }
