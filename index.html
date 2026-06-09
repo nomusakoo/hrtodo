@@ -4943,7 +4943,7 @@ async function loadExecEvents() {
   if (!useLocal && sbClient) {
     const { data, error } = await sbClient.from('hr_exec_events').select('*').order('date', { ascending: true });
     if (!error && Array.isArray(data)) {
-      return data.map(r => ({ id:r.id, date:r.date, time:r.time||'', title:r.title, desc:r.description||'', deadline:!!r.deadline }));
+      return data.map(r => ({ id:r.id, date:r.date, time:r.event_time||'', title:r.title, desc:r.description||'', deadline:!!r.deadline }));
     }
     // 테이블 없음/오류 → localStorage 폴백 (콘솔에만 경고)
     if (error) console.warn('[execEvents] Supabase 로드 실패, 로컬 폴백:', error.message||error);
@@ -4956,10 +4956,10 @@ async function execInsert(evt) {
   const row = { date:evt.date, time:evt.time||'', title:evt.title, desc:evt.desc||'', deadline:!!evt.deadline };
   if (!useLocal && sbClient) {
     const { data, error } = await sbClient.from('hr_exec_events')
-      .insert({ date:row.date, time:row.time, title:row.title, description:row.desc, deadline:row.deadline }).select();
+      .insert({ date:row.date, event_time:row.time, title:row.title, description:row.desc, deadline:row.deadline }).select();
     if (error) { showToast('임원 일정 저장 오류: '+(error.message||''), 'error'); return null; }
     const r = (data && data[0]);
-    const nr = r ? { id:r.id, date:r.date, time:r.time||'', title:r.title, desc:r.description||'', deadline:!!r.deadline } : null;
+    const nr = r ? { id:r.id, date:r.date, time:r.event_time||'', title:r.title, desc:r.description||'', deadline:!!r.deadline } : null;
     if (nr) execEvents.push(nr);
     return nr;
   }
@@ -4971,7 +4971,7 @@ async function execUpdate(id, fields) {
   if (!useLocal && sbClient) {
     const payload = {};
     if ('date' in fields)     payload.date = fields.date;
-    if ('time' in fields)     payload.time = fields.time||'';
+    if ('time' in fields)     payload.event_time = fields.time||'';
     if ('title' in fields)    payload.title = fields.title;
     if ('desc' in fields)     payload.description = fields.desc;
     if ('deadline' in fields) payload.deadline = !!fields.deadline;
