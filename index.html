@@ -827,6 +827,40 @@
   .paste-valid-icon{font-size:13px;text-align:center;}
 
   .cal-chip.cal-chip-multi { border-radius: 3px; }
+  /* 멀티데이 오버레이 바 (월별 캘린더) */
+  .cal-grid { position: relative; }
+  .cal-multiday-bar {
+    position: absolute;
+    display: flex; align-items: center;
+    cursor: pointer;
+    z-index: 2;
+    overflow: hidden;
+    transition: filter 0.15s;
+    box-sizing: border-box;
+  }
+  .cal-multiday-bar:hover { filter: brightness(0.9); }
+  .cal-multiday-bar.is-done { opacity: 0.6; text-decoration: line-through; }
+  /* 멀티데이 슬롯 spacer (높이 확보용 투명 칩) */
+  .cal-chip-spacer {
+    height: 22px; margin-bottom: 2px; visibility: hidden; pointer-events: none;
+  }
+  /* 멀티데이 오버레이 바 (주간 보기) */
+  .week-grid { position: relative; }
+  .week-multiday-bar {
+    position: absolute;
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer;
+    z-index: 2;
+    overflow: hidden;
+    transition: filter 0.15s, box-shadow 0.15s;
+    box-sizing: border-box;
+    border-radius: 4px;
+  }
+  .week-multiday-bar:hover { filter: brightness(0.9); box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+  .week-multiday-bar.is-done { opacity: 0.6; text-decoration: line-through; }
+  .week-chip-spacer {
+    height: 28px; margin-bottom: 5px; visibility: hidden; pointer-events: none;
+  }
   /* 반복 삭제 팝업 */
   .repeat-del-modal{background:#fff;border-radius:var(--radius-lg);padding:28px 28px 22px;width:400px;max-width:95vw;box-shadow:0 20px 50px rgba(0,0,0,0.18);}
   .repeat-del-option{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius);cursor:pointer;margin-bottom:8px;transition:all 0.15s;user-select:none;}
@@ -1654,9 +1688,10 @@
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-danger" id="modalDeleteBtn" onclick="deleteFromModal()" style="display:none;margin-right:auto">&#10005; 삭제</button>
-      <button class="btn btn-danger" id="leaveDeleteBtn" onclick="deleteLeaveFromModal()" style="display:none;margin-right:auto">&#10005; 삭제</button>
-      <span style="font-size:11px;color:var(--gray-400);margin-right:auto" id="modalShortcutHint">Ctrl+Enter 저장</span>
+      <button class="btn btn-danger" id="modalDeleteBtn" onclick="deleteFromModal()" style="display:none">&#10005; 삭제</button>
+      <button class="btn btn-danger" id="leaveDeleteBtn" onclick="deleteLeaveFromModal()" style="display:none">&#10005; 삭제</button>
+      <span style="flex:1"></span>
+      <span style="font-size:11px;color:var(--gray-400)" id="modalShortcutHint">Ctrl+Enter 저장</span>
       <button class="btn" onclick="closeModal()">취소</button>
       <button class="btn btn-primary" id="modalSaveBtn" onclick="saveTaskOrLeave()">&#10003; 저장</button>
     </div>
@@ -4139,62 +4174,189 @@ function shiftWeek(dir) { currentWeekOffset+=dir; renderWeekly(); }
 function goThisWeek() { currentWeekOffset=0; renderWeekly(); }
 
 function renderWeekly() {
-  const weekStart=getWeekStartDate(currentWeekOffset);
-  const weekDays=[];
+  const weekStart = getWeekStartDate(currentWeekOffset);
+  const weekDays  = [];
   for (let i=0;i<7;i++) { const d=new Date(weekStart); d.setDate(weekStart.getDate()+i); weekDays.push(d); }
-  const fmt=d=>`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
-  document.getElementById('weekLabel').textContent=`${fmt(weekStart)} ~ ${fmt(weekDays[6])}`;
-  const today=new Date(); today.setHours(0,0,0,0);
-  const dayNames=['일','월','화','수','목','금','토'];
-  document.getElementById('weekGrid').innerHTML=weekDays.map((d,i)=>{
-    const dateStr=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    const isToday=d.getTime()===today.getTime();
+  const fmt = d => `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
+  document.getElementById('weekLabel').textContent = `${fmt(weekStart)} ~ ${fmt(weekDays[6])}`;
+
+  const today    = new Date(); today.setHours(0,0,0,0);
+  const dayNames = ['일','월','화','수','목','금','토'];
+
+  function ds(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  const weekDateStrs = weekDays.map(ds);
+  const weekStart_s  = weekDateStrs[0];
+  const weekEnd_s    = weekDateStrs[6];
+
+  // 멀티데이 / 단일일 분류
+  const multiDayTasks = activeTasks().filter(t => t.end_date && t.end_date > t.date);
+  const singleDayTasks = activeTasks().filter(t => !t.end_date || t.end_date <= t.date);
+
+  // 이번 주에 걸리는 멀티데이 업무
+  const weekMulti = multiDayTasks.filter(t => (t.date||'') <= weekEnd_s && (t.end_date||t.date||'') >= weekStart_s);
+
+  // 슬롯 배정 (7칸 행에서 col 단위)
+  const MAX_SLOTS = 4;
+  const weekSlots = Array(MAX_SLOTS).fill(null).map(() => Array(7).fill(null));
+  const weekMultiPlacements = [];
+
+  const sortedWeekMulti = [...weekMulti].sort((a,b) => (a.date||'') > (b.date||'') ? 1 : -1);
+  for (const t of sortedWeekMulti) {
+    const colStart = Math.max(0, weekDateStrs.indexOf(weekDateStrs.find(s => s >= (t.date||''))));
+    const colEnd   = Math.min(6, (() => { for(let i=6;i>=0;i--) if(weekDateStrs[i] <= (t.end_date||t.date||'')) return i; return -1; })());
+    if (colStart === -1 || colEnd < colStart) continue;
+
+    let slotIdx = -1;
+    for (let s=0; s<MAX_SLOTS; s++) {
+      let ok = true;
+      for (let c=colStart; c<=colEnd; c++) if (weekSlots[s][c] !== null) { ok=false; break; }
+      if (ok) { slotIdx = s; break; }
+    }
+    if (slotIdx === -1) slotIdx = MAX_SLOTS;
+    if (slotIdx < MAX_SLOTS) {
+      for (let c=colStart; c<=colEnd; c++) weekSlots[slotIdx][c] = t.id;
+      weekMultiPlacements.push({t, colStart, colEnd, slotIdx});
+    }
+  }
+
+  // 각 열(요일)에서 멀티데이가 점유한 슬롯 수
+  const colUsedSlots = weekDays.map((_, ci) => {
+    const used = new Set();
+    weekMultiPlacements.filter(p => p.colStart <= ci && ci <= p.colEnd).forEach(p => used.add(p.slotIdx));
+    return used;
+  });
+
+  // 열별 단일일 업무 + 건 수 표시
+  const colSingleTasks = weekDateStrs.map(dateStr => singleDayTasks.filter(t => t.date === dateStr));
+  const colTotalCounts = weekDateStrs.map((dateStr, ci) => {
+    const single = singleDayTasks.filter(t => t.date === dateStr).length;
+    const multi  = multiDayTasks.filter(t => (t.date||'') <= dateStr && (t.end_date||t.date||'') >= dateStr).length;
+    return single + multi;
+  });
+
+  // 셀 HTML 생성
+  document.getElementById('weekGrid').innerHTML = weekDays.map((d, i) => {
+    const dateStr  = weekDateStrs[i];
+    const isToday  = d.getTime() === today.getTime();
     const isSun=i===0, isSat=i===6;
-    const isWeekend=isSun||isSat;
-    const dayTasks=activeTasks().filter(t=>{
-      const start = t.date || '';
-      const end   = t.end_date || t.date || '';
-      return start <= dateStr && dateStr <= end;
-    });
-    const headerCls=isToday?'is-today':isWeekend?'is-weekend':'';
-    const dateColor=isSun?'color:#dc2626':isSat?'color:#2563eb':'';
-    const chips=dayTasks.length===0
-      ?`<div class="week-empty-msg">업무 없음</div>`
-      :dayTasks.map(t=>{
-        const isMultiDay = t.end_date && t.end_date > t.date;
-        const isStart = t.date === dateStr;
-        const isEnd   = (t.end_date || t.date) === dateStr;
-        const borderL = isStart ? `border-left:3px solid ${memberColor(t.member)}` : 'border-left:3px solid transparent';
-        const borderR = (!isMultiDay || isEnd) ? '' : 'border-right:none;border-radius:4px 0 0 4px;margin-right:-6px;padding-right:4px;';
-        const borderStartR = (isMultiDay && !isEnd) ? 'border-radius:4px 0 0 4px;' : '';
-        const borderMid = (isMultiDay && !isStart && !isEnd) ? 'border-radius:0;margin-left:-6px;margin-right:-6px;padding-left:4px;padding-right:4px;' : '';
-        const borderEndStyle = (isMultiDay && isEnd && !isStart) ? 'border-radius:0 4px 4px 0;margin-left:-6px;padding-left:4px;' : '';
-        return `<div class="week-task-chip ${t.status==='완료'?'is-done':''}"
-            style="background:${memberBg(t.member)};${borderL};${borderStartR}${borderMid}${borderEndStyle}"
-            draggable="${isStart?'true':'false'}" data-task-id="${t.id}"
-            onclick="openEditModal(${t.id})" title="${escHtml(t.title)}${isMultiDay?' ('+fmtDate(t.date)+'~'+fmtDate(t.end_date)+')':''}">
-            <span class="chip-title">${isStart ? escHtml(t.title) : (isMultiDay ? '↔ '+escHtml(t.title) : escHtml(t.title))}</span>
-            ${isStart ? `<div class="chip-meta">
+    const isWeekend = isSun||isSat;
+    const headerCls = isToday?'is-today':isWeekend?'is-weekend':'';
+    const dateColor = isSun?'color:#dc2626':isSat?'color:#2563eb':'';
+
+    const usedSlots = colUsedSlots[i];
+    const singles   = colSingleTasks[i];
+    const maxSingle = Math.max(0, MAX_SLOTS - usedSlots.size);
+
+    // 멀티데이 슬롯 spacer
+    const spacers = Array.from(usedSlots).map(() =>
+      `<div class="week-task-chip week-chip-spacer"></div>`
+    ).join('');
+
+    const shownSingles = singles.slice(0, maxSingle);
+    const hiddenCnt    = singles.length - maxSingle + (multiDayTasks.filter(t => {
+      const s=t.date||'', e=t.end_date||t.date||'';
+      if (!(s<=dateStr && dateStr<=e)) return false;
+      return !weekMultiPlacements.some(p => p.t.id===t.id && p.colStart<=i && i<=p.colEnd);
+    }).length);
+
+    const singleChips = shownSingles.length === 0 && usedSlots.size === 0
+      ? `<div class="week-empty-msg">업무 없음</div>`
+      : shownSingles.map(t => `<div class="week-task-chip ${t.status==='완료'?'is-done':''}"
+            style="background:${memberBg(t.member)};border-left:3px solid ${memberColor(t.member)}"
+            draggable="true" data-task-id="${t.id}"
+            onclick="openEditModal(${t.id})" title="${escHtml(t.title)}">
+            <span class="chip-title">${escHtml(t.title)}</span>
+            <div class="chip-meta">
               <span style="width:14px;height:14px;border-radius:50%;background:${memberBg(t.member)};color:${memberTx(t.member)};font-size:8px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">${t.member[0]}</span>
               <span class="chip-name">${t.member}</span>
-            </div>` : ''}
-          </div>`;
-      }).join('');
+            </div>
+          </div>`).join('');
+
     const dayLeaveList = getLeavesForDate(dateStr);
     const weekLeaveRow = dayLeaveList.length
       ? `<div class="week-leave-chips">${dayLeaveList.map(lv => weekLeaveChipHtml(lv)).join('')}</div>`
       : '';
+
     return `<div class="week-day-col" data-date="${dateStr}">
       <div class="week-day-header ${headerCls}" onclick="openAddModal('${dateStr}')" title="${dateStr} 업무 추가" style="cursor:pointer;">
         <div class="wd-name" style="${dateColor}">${dayNames[i]}</div>
         <div class="wd-date" style="${dateColor}">${d.getDate()}</div>
-        <div style="font-size:10px;color:var(--gray-400)">${dayTasks.length}건</div>
+        <div style="font-size:10px;color:var(--gray-400)">${colTotalCounts[i]}건</div>
       </div>
       ${weekLeaveRow}
-      <div class="week-task-items" data-date="${dateStr}">${chips}</div>
+      <div class="week-task-items" data-date="${dateStr}">${spacers}${singleChips}${hiddenCnt>0?`<div class="week-empty-msg" style="font-size:10px;color:var(--accent);cursor:pointer" onclick="openCalMore('${dateStr}')">+${hiddenCnt}개 더</div>`:''}</div>
     </div>`;
   }).join('');
+
+  // 멀티데이 오버레이
+  requestAnimationFrame(() => _drawWeeklyMultiOverlays(weekMultiPlacements, weekDateStrs));
+
   bindWeeklyDrag();
+  // bindWeeklyDrag는 _weekDragBound 플래그로 중복 방지하므로 재설정 필요
+  const grid = document.getElementById('weekGrid');
+  if (grid) grid._weekDragBound = false;
+  bindWeeklyDrag();
+}
+
+function _drawWeeklyMultiOverlays(placements, weekDateStrs) {
+  const grid = document.getElementById('weekGrid');
+  if (!grid) return;
+  grid.querySelectorAll('.week-multiday-bar').forEach(el => el.remove());
+
+  const cols = grid.querySelectorAll('.week-day-col');
+  if (!cols.length) return;
+
+  const CHIP_H   = 28;  // week-task-chip 높이 (padding 포함)
+  const CHIP_GAP = 5;   // margin-bottom
+  const TOP_OFFSET = 3; // week-task-items 패딩
+
+  for (const p of placements) {
+    const {t, colStart, colEnd, slotIdx} = p;
+    const startCol = cols[colStart];
+    const endCol   = cols[colEnd];
+    if (!startCol || !endCol) continue;
+
+    const itemsStart = startCol.querySelector('.week-task-items');
+    const itemsEnd   = endCol.querySelector('.week-task-items');
+    if (!itemsStart) continue;
+
+    // week-task-items 기준 offset
+    const gridRect  = grid.getBoundingClientRect();
+    const startRect = itemsStart.getBoundingClientRect();
+    const endRect   = itemsEnd.getBoundingClientRect();
+
+    const left   = startRect.left - gridRect.left + 2;
+    const top    = startRect.top  - gridRect.top  + TOP_OFFSET + slotIdx * (CHIP_H + CHIP_GAP);
+    const width  = endRect.right  - startRect.left - 4;
+
+    const isDone   = t.status === '완료';
+    const bg       = memberColor(t.member);
+    const lightBg  = isDone ? 'var(--gray-100)' : memberBg(t.member);
+    const tx       = isDone ? 'var(--gray-400)' : memberTx(t.member);
+    const trueStart = t.date||'';
+    const trueEnd   = t.end_date||t.date||'';
+    const visStart  = weekDateStrs[colStart];
+    const visEnd    = weekDateStrs[colEnd];
+    const rTL = trueStart === visStart ? '4px' : '0';
+    const rTR = trueEnd   === visEnd   ? '4px' : '0';
+
+    const bar = document.createElement('div');
+    bar.className = `week-multiday-bar${isDone?' is-done':''}`;
+    bar.style.cssText = [
+      `left:${left}px`,`top:${top}px`,`width:${width}px`,`height:${CHIP_H}px`,
+      `background:${lightBg}`,`color:${tx}`,
+      `border-left:${trueStart===visStart?'3px solid '+bg:'none'}`,
+      `border-radius:${rTL} ${rTR} ${rTR} ${rTL}`,
+    ].join(';');
+    bar.setAttribute('data-task-id', t.id);
+    bar.setAttribute('title', `${t.title} (${fmtDate(trueStart)}~${fmtDate(trueEnd)})`);
+    bar.innerHTML = `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;font-weight:500;padding:0 6px;line-height:${CHIP_H}px;">${escHtml(t.title)}</span>
+      <span style="font-size:9px;padding-right:4px;opacity:0.7;white-space:nowrap;line-height:${CHIP_H}px;">${t.member}</span>`;
+    bar.addEventListener('click', e => { e.stopPropagation(); openEditModal(t.id); });
+    grid.appendChild(bar);
+  }
 }
 
 function bindWeeklyDrag() {
@@ -4412,88 +4574,261 @@ function renderCalendar(year, month) {
     `<div class="cal-legend-item"><div class="cal-legend-dot" style="background:${memberColor(m)}"></div>${m}</div>`
   ).join('') + `<div class="cal-legend-item"><div class="cal-legend-dot" style="background:var(--gray-300)"></div>완료</div>`;
 
-  const today = new Date(); today.setHours(0,0,0,0);
+  const today    = new Date(); today.setHours(0,0,0,0);
   const firstDay = new Date(year, month, 1);
   const lastDay  = new Date(year, month+1, 0);
   const startDow = firstDay.getDay();
   const totalCells = Math.ceil((startDow + lastDay.getDate()) / 7) * 7;
+  const totalRows  = totalCells / 7;
 
-  const MAX_SHOW = 5;
+  // ── 셀 날짜 배열 생성 ──
+  const cellDates = [];
+  for (let i = 0; i < totalCells; i++) {
+    const d = new Date(year, month, 1 + (i - startDow));
+    cellDates.push(d);
+  }
+  function dateStr(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+  const cellDateStrs = cellDates.map(dateStr);
+
+  // ── 셀 HTML (날짜 번호 + 단일일 칩 + 더보기 버튼 자리) ──
+  // 멀티데이 업무는 오버레이로 그릴 것이므로 셀 안엔 단일일 업무만 넣음
+  // 단, 멀티데이 업무가 차지하는 "행 슬롯"을 예약하기 위해 투명 spacer 삽입
+
+  // 멀티데이 업무 목록 (start < end)
+  const multiDayTasks = activeTasks().filter(t => t.end_date && t.end_date > t.date);
+  // 단일일 업무
+  const singleDayTasks = activeTasks().filter(t => !t.end_date || t.end_date <= t.date);
+
+  // 각 셀의 "슬롯 점유" 계산 — 멀티데이 업무가 어느 row/slot을 차지하는지
+  // slot: 0부터 시작, 멀티데이가 위, 단일일이 아래
+  // row × 7 grid 기준으로 오버레이 위치 계산
+  const MAX_SLOTS = 4; // 셀당 최대 표시 슬롯 (오버플로우는 더보기)
+
+  // rowSlots[rowIdx][slotIdx] = taskId or null
+  const rowSlots = Array.from({length: totalRows}, () => Array(MAX_SLOTS).fill(null));
+
+  // 멀티데이 업무를 행별로 슬롯 배정
+  // 각 업무마다 캘린더 그리드에서 차지하는 셀 인덱스 범위를 구함
+  const multiDayPlacements = []; // {task, rowIdx, colStart, colEnd, slotIdx}
+
+  // 업무를 시작일 순으로 정렬
+  const sortedMulti = [...multiDayTasks].sort((a,b) => (a.date||'') > (b.date||'') ? 1 : -1);
+
+  for (const t of sortedMulti) {
+    const tStart = t.date || '';
+    const tEnd   = t.end_date || t.date || '';
+
+    // 이 달 그리드에서 보이는 첫 셀 인덱스
+    let cellStart = cellDateStrs.findIndex(s => s >= tStart);
+    if (cellStart === -1) continue; // 이 달에 없음
+    // 이 달 그리드에서 보이는 마지막 셀 인덱스
+    let cellEnd = cellDateStrs.findLastIndex ? cellDateStrs.findLastIndex(s => s <= tEnd) :
+      (() => { for (let i = cellDateStrs.length-1; i>=0; i--) if (cellDateStrs[i] <= tEnd) return i; return -1; })();
+    if (cellEnd === -1 || cellEnd < cellStart) continue;
+
+    // 행별로 분할 (주 경계에서 끊김)
+    let ci = cellStart;
+    while (ci <= cellEnd) {
+      const rowIdx  = Math.floor(ci / 7);
+      const colStart = ci % 7;
+      const rowEnd  = Math.min(cellEnd, (rowIdx+1)*7 - 1);
+      const colEnd  = rowEnd % 7;
+
+      // 이 행에서 빈 슬롯 찾기 (colStart~colEnd 범위가 모두 비어있는 슬롯)
+      let slotIdx = -1;
+      for (let s = 0; s < MAX_SLOTS; s++) {
+        let ok = true;
+        for (let c = colStart; c <= colEnd; c++) {
+          if (rowSlots[rowIdx][s] !== null) { ok = false; break; }
+        }
+        if (ok) { slotIdx = s; break; }
+      }
+      if (slotIdx === -1) slotIdx = MAX_SLOTS; // 넘치면 더보기로
+
+      // 슬롯 점유 표시
+      if (slotIdx < MAX_SLOTS) {
+        for (let c = colStart; c <= colEnd; c++) {
+          rowSlots[rowIdx][slotIdx] = t.id;
+        }
+        multiDayPlacements.push({t, rowIdx, colStart, colEnd, slotIdx});
+      }
+      // else: 더보기로 처리 (셀의 hiddenCnt에서 카운트)
+
+      ci = (rowIdx+1)*7;
+    }
+  }
+
+  // ── 셀별 단일일 칩 슬롯 계산 ──
+  // 각 셀에서 멀티데이가 점유한 슬롯 수를 파악하고, 남은 슬롯에 단일일 칩 배치
+  // hiddenCnt도 여기서 계산
+  const cellSingleTasks = cellDateStrs.map((ds, ci) => {
+    return singleDayTasks.filter(t => t.date === ds);
+  });
+
+  // 멀티데이 업무 중 셀에 표시 안 되는(슬롯 초과) 것의 개수
+  const cellMultiHidden = cellDateStrs.map((ds, ci) => {
+    return multiDayTasks.filter(t => {
+      const s = t.date||'', e = t.end_date||t.date||'';
+      if (!(s <= ds && ds <= e)) return false;
+      // placement에 있는지 확인
+      return !multiDayPlacements.some(p => p.t.id === t.id &&
+        p.rowIdx === Math.floor(ci/7) &&
+        p.colStart <= (ci%7) && (ci%7) <= p.colEnd);
+    }).length;
+  });
+
+  // ── 셀 HTML 생성 ──
   let html = '';
   for (let i = 0; i < totalCells; i++) {
-    const dayOffset  = i - startDow;
-    const cellDate   = new Date(year, month, 1 + dayOffset);
-    const isOtherMonth = cellDate.getMonth() !== month;
-    const isToday    = cellDate.getTime() === today.getTime();
-    const dow        = cellDate.getDay();
+    const d    = cellDates[i];
+    const ds   = cellDateStrs[i];
+    const isOtherMonth = d.getMonth() !== month;
+    const isToday      = d.getTime() === today.getTime();
+    const dow  = d.getDay();
     const isSun = dow===0, isSat = dow===6;
-    const dateStr    = `${cellDate.getFullYear()}-${String(cellDate.getMonth()+1).padStart(2,'0')}-${String(cellDate.getDate()).padStart(2,'0')}`;
 
-    // 이 날에 표시할 업무: date <= dateStr <= end_date (or date === dateStr if no end_date)
-    const dayTasks = activeTasks().filter(t => {
-      const start = t.date || '';
-      const end   = t.end_date || t.date || '';
-      return start <= dateStr && dateStr <= end;
-    });
-    // 더보기 계산: 시작일이 이 셀인 업무 + 연속 중인 업무 모두 포함
-    const shown    = dayTasks.slice(0, MAX_SHOW);
-    const hiddenCnt = dayTasks.length - MAX_SHOW;
+    const rowIdx  = Math.floor(i/7);
+    const colIdx  = i%7;
 
-    const chips = shown.map(t => {
+    // 이 셀에서 멀티데이가 점유한 슬롯들
+    const usedSlots = new Set();
+    multiDayPlacements
+      .filter(p => p.rowIdx === rowIdx && p.colStart <= colIdx && colIdx <= p.colEnd)
+      .forEach(p => usedSlots.add(p.slotIdx));
+
+    // 남은 슬롯에 단일일 칩 배치
+    const singles = cellSingleTasks[i];
+    // Master 이벤트
+    const masterEvts = getMasterEventsForDate(ds);
+    // 휴가/출장
+    const dayLeaves = getLeavesForDate(ds);
+
+    // 단일칩 + master + leave 합쳐서 슬롯 계산
+    const allSingles = [
+      ...masterEvts.map(e => ({type:'master', e})),
+      ...dayLeaves.map(lv => ({type:'leave', lv})),
+      ...singles.map(t => ({type:'task', t}))
+    ];
+
+    const MAX_SHOW_SINGLE = Math.max(0, MAX_SLOTS - usedSlots.size);
+    const shownSingles = allSingles.slice(0, MAX_SHOW_SINGLE);
+    const hiddenCnt    = allSingles.length - MAX_SHOW_SINGLE + cellMultiHidden[i];
+
+    // spacer: 멀티데이가 점유한 슬롯 수만큼 투명 칩 (높이 확보)
+    const spacers = Array.from(usedSlots).map(() =>
+      `<div class="cal-chip-spacer"></div>`
+    ).join('');
+
+    const singleChips = shownSingles.map(item => {
+      if (item.type === 'master') {
+        const e = item.e;
+        const c = MCAT[e.cat] || MCAT['급여·세금'];
+        return `<div class="cal-chip" style="background:${c.bg};color:${c.tx};cursor:default;border-left:3px solid ${c.dot};"
+          title="[${e.cat==='임원 일정'?'임원 일정':'법정일정'}] ${escHtml(e.title)}">
+          <span class="cal-chip-title" style="font-weight:600">${e.deadline?'⚑ ':''}${escHtml(e.title)}</span>
+        </div>`;
+      }
+      if (item.type === 'leave') {
+        return leaveChipHtml(item.lv);
+      }
+      // task
+      const t = item.t;
       const bg = memberColor(t.member);
       const isDone = t.status === '완료';
       const lightBg = memberBg(t.member);
       const tx = memberTx(t.member);
-      const isMultiDay = t.end_date && t.end_date > t.date;
-      const isStart = t.date === dateStr;
-      const isEnd   = (t.end_date || t.date) === dateStr;
-      // 멀티데이 바 스타일
-      let barStyle = '';
-      if (isMultiDay) {
-        barStyle = `border-radius:${isStart?'4px':'0'} ${isEnd?'4px':'0'} ${isEnd?'4px':'0'} ${isStart?'4px':'0'};`
-          + (isStart ? '' : 'margin-left:-5px;padding-left:3px;')
-          + (isEnd   ? '' : 'margin-right:-5px;padding-right:3px;');
-      }
-      return `<div class="cal-chip ${isDone?'is-done':''}${isMultiDay?' cal-chip-multi':''}"
-        style="background:${isDone?'var(--gray-100)':lightBg};color:${isDone?'var(--gray-400)':tx};${isMultiDay?'border-left:'+(isStart?'3px solid '+bg:'none')+';'+barStyle:''}"
-        draggable="${isStart?'true':'false'}"
-        data-task-id="${t.id}"
+      return `<div class="cal-chip ${isDone?'is-done':''}"
+        style="background:${isDone?'var(--gray-100)':lightBg};color:${isDone?'var(--gray-400)':tx};border-left:3px solid ${isDone?'var(--gray-300)':bg};"
+        draggable="true" data-task-id="${t.id}"
         onclick="event.stopPropagation();openEditModal(${t.id})"
-        title="${escHtml(t.title)}${isMultiDay?' ('+fmtDate(t.date)+'~'+fmtDate(t.end_date)+')':''}">
-        ${isStart ? `<span class="cal-chip-dot" style="background:${isDone?'var(--gray-300)':bg}"></span>` : ''}
-        <span class="cal-chip-title">${isStart ? escHtml(t.title) : '&nbsp;'}</span>
+        title="${escHtml(t.title)}">
+        <span class="cal-chip-title">${escHtml(t.title)}</span>
       </div>`;
     }).join('');
-
-    // Master 캘린더 이벤트 칩
-    const masterEvts = getMasterEventsForDate(dateStr);
-    const masterChips = masterEvts.map(e => {
-      const c = MCAT[e.cat] || MCAT['급여·세금'];
-      return `<div class="cal-chip" style="background:${c.bg};color:${c.tx};cursor:default;border-left:3px solid ${c.dot};"
-        title="[${e.cat==='임원 일정'?'임원 일정':'법정일정'}] ${escHtml(e.title)}">
-        <span class="cal-chip-title" style="font-weight:600">${e.deadline?'⚑ ':''}${escHtml(e.title)}</span>
-      </div>`;
-    }).join('');
-
-    // 휴가/출장 칩
-    const dayLeaves = getLeavesForDate(dateStr);
-    const leaveChips = dayLeaves.map(lv => leaveChipHtml(lv)).join('');
 
     const moreBtn = hiddenCnt > 0
-      ? `<div class="cal-more" onclick="event.stopPropagation();openCalMore('${dateStr}')">+${hiddenCnt}개 더보기</div>`
+      ? `<div class="cal-more" onclick="event.stopPropagation();openCalMore('${ds}')">+${hiddenCnt}개 더보기</div>`
       : '';
 
     html += `<div class="cal-cell${isOtherMonth?' cal-other-month':''}${isToday?' cal-today':''}${isSun?' cal-sunday':''}${isSat?' cal-saturday':''}"
-      data-date="${dateStr}"
-      onclick="calCellClick('${dateStr}', event)">
-      <div class="cal-day-num">${cellDate.getDate()}</div>
-      ${masterChips}${leaveChips}${chips}${moreBtn}
+      data-date="${ds}" onclick="calCellClick('${ds}', event)">
+      <div class="cal-day-num">${d.getDate()}</div>
+      ${spacers}${singleChips}${moreBtn}
     </div>`;
   }
   document.getElementById('calGrid').innerHTML = html;
 
+  // ── 멀티데이 오버레이 그리기 (DOM 삽입 후) ──
+  requestAnimationFrame(() => _drawMultiDayOverlays(year, month, multiDayPlacements, cellDates));
+
   // 드래그 이벤트 바인딩
   bindCalDrag();
+}
+
+function _drawMultiDayOverlays(year, month, placements, cellDates) {
+  const grid = document.getElementById('calGrid');
+  if (!grid) return;
+
+  // 기존 오버레이 제거
+  grid.querySelectorAll('.cal-multiday-bar').forEach(el => el.remove());
+
+  const gridRect = grid.getBoundingClientRect();
+  const cells = grid.querySelectorAll('.cal-cell');
+  if (!cells.length) return;
+
+  // 셀 크기 샘플링
+  const cellW = cells[0].offsetWidth;
+  const cellH = cells[0].offsetHeight;
+  const CHIP_H = 20;    // 오버레이 바 높이 (px)
+  const CHIP_GAP = 2;   // 바 사이 간격
+  const TOP_OFFSET = 28; // 날짜 번호 아래 여백 (cal-day-num 높이 + margin)
+
+  for (const p of placements) {
+    const {t, rowIdx, colStart, colEnd, slotIdx} = p;
+
+    // 셀 위치 계산 (grid 내 relative)
+    const cellIndex = rowIdx * 7 + colStart;
+    const cellEl    = cells[cellIndex];
+    if (!cellEl) continue;
+
+    const left   = cellEl.offsetLeft + 2;
+    const top    = cellEl.offsetTop + TOP_OFFSET + slotIdx * (CHIP_H + CHIP_GAP);
+    const endCellEl = cells[rowIdx * 7 + colEnd];
+    const width  = (endCellEl.offsetLeft + endCellEl.offsetWidth - cellEl.offsetLeft) - 4;
+
+    const isDone   = t.status === '완료';
+    const bg       = memberColor(t.member);
+    const lightBg  = isDone ? 'var(--gray-100)' : memberBg(t.member);
+    const tx       = isDone ? 'var(--gray-400)' : memberTx(t.member);
+    const isVisStart = t.date >= cellDates[rowIdx*7] && t.date <= cellDates[rowIdx*7+6]
+      ? t.date === (cellDates[rowIdx*7+colStart] ? `${cellDates[rowIdx*7+colStart].getFullYear()}-${String(cellDates[rowIdx*7+colStart].getMonth()+1).padStart(2,'0')}-${String(cellDates[rowIdx*7+colStart].getDate()).padStart(2,'0')}` : '') : false;
+    const trueStart = t.date;
+    const trueEnd   = t.end_date;
+    const visStartStr = `${cellDates[rowIdx*7+colStart].getFullYear()}-${String(cellDates[rowIdx*7+colStart].getMonth()+1).padStart(2,'0')}-${String(cellDates[rowIdx*7+colStart].getDate()).padStart(2,'0')}`;
+    const showText  = trueStart === visStartStr; // 이 행에서 업무의 실제 시작일인 경우만 제목 표시
+
+    const bar = document.createElement('div');
+    bar.className = `cal-multiday-bar${isDone?' is-done':''}`;
+    bar.style.cssText = [
+      `left:${left}px`,
+      `top:${top}px`,
+      `width:${width}px`,
+      `height:${CHIP_H}px`,
+      `background:${lightBg}`,
+      `color:${tx}`,
+      `border-left:${colStart===0 && trueStart < visStartStr ? 'none' : '3px solid '+bg}`,
+      `border-radius:${trueStart===visStartStr?'4px':'0'} ${trueEnd===`${cellDates[rowIdx*7+colEnd].getFullYear()}-${String(cellDates[rowIdx*7+colEnd].getMonth()+1).padStart(2,'0')}-${String(cellDates[rowIdx*7+colEnd].getDate()).padStart(2,'0')}`?'4px':'0'} ${trueEnd===`${cellDates[rowIdx*7+colEnd].getFullYear()}-${String(cellDates[rowIdx*7+colEnd].getMonth()+1).padStart(2,'0')}-${String(cellDates[rowIdx*7+colEnd].getDate()).padStart(2,'0')}`?'4px':'0'} ${trueStart===visStartStr?'4px':'0'}`,
+    ].join(';');
+    bar.setAttribute('data-task-id', t.id);
+    bar.setAttribute('title', `${escHtml(t.title)} (${fmtDate(trueStart)}~${fmtDate(trueEnd)})`);
+    bar.innerHTML = showText
+      ? `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;font-weight:500;padding:0 4px;line-height:${CHIP_H}px;">${escHtml(t.title)}</span>`
+      : '';
+    bar.addEventListener('click', e => { e.stopPropagation(); openEditModal(t.id); });
+    grid.appendChild(bar);
+  }
 }
 
 function bindCalDrag() {
