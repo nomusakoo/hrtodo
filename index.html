@@ -4252,10 +4252,11 @@ function renderWeekly() {
     const singles   = colSingleTasks[i];
     const maxSingle = Math.max(0, MAX_SLOTS - usedSlots.size);
 
-    // 멀티데이 슬롯 spacer
-    const spacers = Array.from(usedSlots).map(() =>
-      `<div class="week-task-chip week-chip-spacer"></div>`
-    ).join('');
+    // 멀티데이 바가 차지하는 슬롯 수만큼 week-task-items 위에 padding 부여
+    const CHIP_H = 28, CHIP_GAP = 5;
+    const multiPadTop = usedSlots.size > 0
+      ? usedSlots.size * (CHIP_H + CHIP_GAP) + 6
+      : 0;
 
     const shownSingles = singles.slice(0, maxSingle);
     const hiddenCnt    = singles.length - maxSingle + (multiDayTasks.filter(t => {
@@ -4289,7 +4290,7 @@ function renderWeekly() {
         <div style="font-size:10px;color:var(--gray-400)">${colTotalCounts[i]}건</div>
       </div>
       ${weekLeaveRow}
-      <div class="week-task-items" data-date="${dateStr}">${spacers}${singleChips}${hiddenCnt>0?`<div class="week-empty-msg" style="font-size:10px;color:var(--accent);cursor:pointer" onclick="openCalMore('${dateStr}')">+${hiddenCnt}개 더</div>`:''}</div>
+      <div class="week-task-items" data-date="${dateStr}" style="padding-top:${multiPadTop > 0 ? multiPadTop+'px' : '6px'}">${singleChips}${hiddenCnt>0?`<div class="week-empty-msg" style="font-size:10px;color:var(--accent);cursor:pointer" onclick="openCalMore('${dateStr}')">+${hiddenCnt}개 더</div>`:''}</div>
     </div>`;
   }).join('');
 
