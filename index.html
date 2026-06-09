@@ -643,9 +643,9 @@
     .tab-slide-left {animation:slideInFromLeft  0.22s cubic-bezier(0.4,0,0.2,1) both;}
     /* 모바일 휴가/출장 태그 — 날짜 칸 안에 들어오도록 축소 */
     /* 모바일 휴가/출장 태그 */
-    .leave-chip{font-size:8px;padding:1px 3px;border-radius:2px;margin-bottom:2px;width:100%;box-sizing:border-box;border-left:2px solid !important;border-top:none !important;border-right:none !important;border-bottom:none !important;}
-    .leave-chip .leave-chip-label{overflow:visible;white-space:nowrap;text-overflow:clip;max-width:none;}
-    .week-leave-chip{font-size:9px;padding:1px 5px 1px 4px;gap:2px;}
+    .leave-chip{font-size:clamp(7px,2vw,9px);padding:1px 6px;border-radius:20px;margin-bottom:2px;max-width:100%;box-sizing:border-box;}
+    .leave-chip .leave-chip-label{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+    .week-leave-chip{font-size:clamp(8px,2vw,9px);padding:1px 7px;gap:2px;}
     .week-leave-chips{padding:3px 6px 2px;gap:2px;}
     .stat-grid{grid-template-columns:1fr 1fr;gap:8px;}
     .stat-card{padding:12px 14px;}
@@ -926,10 +926,10 @@
   /* #leaveSection display는 JS inline style로만 제어 */
   #taskSection.hide{display:none;}
 
-  /* ── 휴가/출장 캘린더 태그 (pill) ── */
-  .leave-chip{display:flex;align-items:center;padding:2px 5px;border-radius:3px;font-size:10.5px;font-weight:500;margin-bottom:2px;cursor:pointer;position:relative;border:1px solid transparent;border-left-width:3px !important;transition:filter 0.12s;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:100%;box-sizing:border-box;}
+  /* ── 휴가/출장 캘린더 태그 (둥근 pill) ── */
+  .leave-chip{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:clamp(8px,1.4vw,10.5px);font-weight:600;margin-bottom:2px;cursor:pointer;position:relative;border:1px solid transparent;transition:filter 0.12s;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:100%;box-sizing:border-box;width:auto;}
   .leave-chip:hover{filter:brightness(0.92);}
-  .leave-chip-label{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;flex:1;}
+  .leave-chip-label{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
 
   /* 공통 툴팁 — JS로 위치 제어 */
   .leave-tooltip-popup{
@@ -953,7 +953,7 @@
 
   /* 주간보기 휴가 태그 */
   .week-leave-chips{display:flex;flex-wrap:wrap;gap:3px;padding:4px 8px 4px;border-bottom:1px solid var(--gray-100);min-height:0;}
-  .week-leave-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 8px 2px 5px;border-radius:20px;font-size:10px;font-weight:600;cursor:pointer;transition:filter 0.12s;border:1px solid transparent;}
+  .week-leave-chip{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:clamp(9px,1.3vw,10px);font-weight:600;cursor:pointer;transition:filter 0.12s;border:1px solid transparent;white-space:nowrap;}
   .week-leave-chip:hover{filter:brightness(0.93);}
 
   /* ── 메모 댓글 ── */
@@ -6002,7 +6002,7 @@ function leaveChipHtml(lv) {
   const tx    = memberTx(lv.member);
   const label = `${lv.member[0]} ${lv.type}`;
   return `<div class="leave-chip"
-    style="background:${bg};color:${tx};border-color:${col};border-left-color:${col};"
+    style="background:${bg};color:${tx};border-color:${col}55;"
     onclick="event.stopPropagation();openLeaveEditModal(${lv.id})"
     onmouseenter="showLeaveTooltip(event,${lv.id})"
     onmouseleave="hideLeaveTooltip()">
@@ -6015,13 +6015,12 @@ function weekLeaveChipHtml(lv) {
   const col = memberColor(lv.member);
   const bg  = memberBg(lv.member);
   const tx  = memberTx(lv.member);
-  const icon = leaveTypeIcon(lv.type);
   return `<span class="week-leave-chip"
     style="background:${bg};color:${tx};border-color:${col}40;"
     onclick="event.stopPropagation();openLeaveEditModal(${lv.id})"
     onmouseenter="showLeaveTooltip(event,${lv.id})"
     onmouseleave="hideLeaveTooltip()">
-    ${icon} ${escHtml(lv.member[0]+' '+lv.type)}
+    ${escHtml(lv.member[0]+' '+lv.type)}
   </span>`;
 }
 
