@@ -169,7 +169,8 @@
   .form-textarea{resize:vertical;min-height:80px;}
   .form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
   .form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
-  .modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:22px;}
+  .modal-footer{display:flex;align-items:center;gap:8px;margin-top:22px;}
+  .modal-footer .modal-footer-right{display:flex;align-items:center;gap:8px;margin-left:auto;}
 
   /* DASHBOARD */
   .dash-toolbar{display:flex;align-items:center;gap:12px;margin-bottom:22px;flex-wrap:wrap;}
@@ -523,8 +524,9 @@
 
   .week-nav{display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
   .week-label{font-size:15px;font-weight:600;color:var(--primary);min-width:160px;text-align:center;}
-  .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;}
-  .week-day-col{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);min-height:120px;}
+  .week-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;position:relative;overflow:visible;}
+  .week-day-col{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:visible;box-shadow:var(--shadow-sm);min-height:120px;}
+  .week-day-col > .week-day-header{border-radius:var(--radius-lg) var(--radius-lg) 0 0;overflow:hidden;}
   .week-day-header{padding:8px 10px;text-align:center;font-size:12px;font-weight:600;border-bottom:1px solid var(--border);background:var(--gray-50);min-height:72px;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:background 0.15s;}
   .week-day-header:hover{background:#e8f0fe;}
   .week-day-header .wd-name{color:var(--gray-600);}
@@ -532,7 +534,7 @@
   .week-day-header.is-today{background:var(--accent-bg);}
   .week-day-header.is-today .wd-name,.week-day-header.is-today .wd-date{color:var(--accent);}
   .week-day-header.is-weekend .wd-name,.week-day-header.is-weekend .wd-date{color:var(--gray-400);}
-  .week-task-items{padding:6px;}
+  .week-task-items{padding:6px;position:relative;}
   .week-task-chip{display:flex;flex-direction:column;padding:5px 7px;border-radius:5px;margin-bottom:5px;font-size:11.5px;border-left:3px solid transparent;cursor:grab;user-select:none;transition:opacity 0.15s,box-shadow 0.15s;}
   .week-task-chip:hover{box-shadow:0 2px 8px rgba(0,0,0,0.10);}
   .week-task-chip.dragging{opacity:0.3;cursor:grabbing;}
@@ -1690,10 +1692,11 @@
     <div class="modal-footer">
       <button class="btn btn-danger" id="modalDeleteBtn" onclick="deleteFromModal()" style="display:none">&#10005; 삭제</button>
       <button class="btn btn-danger" id="leaveDeleteBtn" onclick="deleteLeaveFromModal()" style="display:none">&#10005; 삭제</button>
-      <span style="flex:1"></span>
-      <span style="font-size:11px;color:var(--gray-400)" id="modalShortcutHint">Ctrl+Enter 저장</span>
-      <button class="btn" onclick="closeModal()">취소</button>
-      <button class="btn btn-primary" id="modalSaveBtn" onclick="saveTaskOrLeave()">&#10003; 저장</button>
+      <div class="modal-footer-right">
+        <span style="font-size:11px;color:var(--gray-400)" id="modalShortcutHint">Ctrl+Enter 저장</span>
+        <button class="btn" onclick="closeModal()">취소</button>
+        <button class="btn btn-primary" id="modalSaveBtn" onclick="saveTaskOrLeave()">&#10003; 저장</button>
+      </div>
     </div>
   </div>
 </div>
@@ -4303,14 +4306,15 @@ function renderWeekly() {
 function _drawWeeklyMultiOverlays(placements, weekDateStrs) {
   const grid = document.getElementById('weekGrid');
   if (!grid) return;
+  // 기존 오버레이 제거
   grid.querySelectorAll('.week-multiday-bar').forEach(el => el.remove());
 
   const cols = grid.querySelectorAll('.week-day-col');
   if (!cols.length) return;
 
-  const CHIP_H   = 28;  // week-task-chip 높이 (padding 포함)
-  const CHIP_GAP = 5;   // margin-bottom
-  const TOP_OFFSET = 3; // week-task-items 패딩
+  const CHIP_H   = 28;  // 바 높이 (px)
+  const CHIP_GAP = 5;   // 바 사이 간격
+  const PAD      = 6;   // week-task-items padding
 
   for (const p of placements) {
     const {t, colStart, colEnd, slotIdx} = p;
@@ -4320,23 +4324,23 @@ function _drawWeeklyMultiOverlays(placements, weekDateStrs) {
 
     const itemsStart = startCol.querySelector('.week-task-items');
     const itemsEnd   = endCol.querySelector('.week-task-items');
-    if (!itemsStart) continue;
+    if (!itemsStart || !itemsEnd) continue;
 
-    // week-task-items 기준 offset
-    const gridRect  = grid.getBoundingClientRect();
-    const startRect = itemsStart.getBoundingClientRect();
-    const endRect   = itemsEnd.getBoundingClientRect();
+    // itemsStart 기준 상대좌표 계산
+    const itemsStartRect = itemsStart.getBoundingClientRect();
+    const itemsEndRect   = itemsEnd.getBoundingClientRect();
 
-    const left   = startRect.left - gridRect.left + 2;
-    const top    = startRect.top  - gridRect.top  + TOP_OFFSET + slotIdx * (CHIP_H + CHIP_GAP);
-    const width  = endRect.right  - startRect.left - 4;
+    const left  = 2;   // itemsStart 내부 왼쪽 여백
+    const top   = PAD + slotIdx * (CHIP_H + CHIP_GAP);
+    // 끝 컬럼 오른쪽 끝 - 시작 컬럼 왼쪽 시작
+    const width = (itemsEndRect.right - itemsStartRect.left) - 4;
 
-    const isDone   = t.status === '완료';
-    const bg       = memberColor(t.member);
-    const lightBg  = isDone ? 'var(--gray-100)' : memberBg(t.member);
-    const tx       = isDone ? 'var(--gray-400)' : memberTx(t.member);
-    const trueStart = t.date||'';
-    const trueEnd   = t.end_date||t.date||'';
+    const isDone  = t.status === '완료';
+    const bg      = memberColor(t.member);
+    const lightBg = isDone ? 'var(--gray-100)' : memberBg(t.member);
+    const tx      = isDone ? 'var(--gray-400)' : memberTx(t.member);
+    const trueStart = t.date || '';
+    const trueEnd   = t.end_date || t.date || '';
     const visStart  = weekDateStrs[colStart];
     const visEnd    = weekDateStrs[colEnd];
     const rTL = trueStart === visStart ? '4px' : '0';
@@ -4345,9 +4349,13 @@ function _drawWeeklyMultiOverlays(placements, weekDateStrs) {
     const bar = document.createElement('div');
     bar.className = `week-multiday-bar${isDone?' is-done':''}`;
     bar.style.cssText = [
-      `left:${left}px`,`top:${top}px`,`width:${width}px`,`height:${CHIP_H}px`,
-      `background:${lightBg}`,`color:${tx}`,
-      `border-left:${trueStart===visStart?'3px solid '+bg:'none'}`,
+      `left:${left}px`,
+      `top:${top}px`,
+      `width:${width}px`,
+      `height:${CHIP_H}px`,
+      `background:${lightBg}`,
+      `color:${tx}`,
+      `border-left:${trueStart === visStart ? '3px solid '+bg : 'none'}`,
       `border-radius:${rTL} ${rTR} ${rTR} ${rTL}`,
     ].join(';');
     bar.setAttribute('data-task-id', t.id);
@@ -4355,7 +4363,9 @@ function _drawWeeklyMultiOverlays(placements, weekDateStrs) {
     bar.innerHTML = `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;font-weight:500;padding:0 6px;line-height:${CHIP_H}px;">${escHtml(t.title)}</span>
       <span style="font-size:9px;padding-right:4px;opacity:0.7;white-space:nowrap;line-height:${CHIP_H}px;">${t.member}</span>`;
     bar.addEventListener('click', e => { e.stopPropagation(); openEditModal(t.id); });
-    grid.appendChild(bar);
+
+    // week-grid가 아닌 itemsStart에 추가 → 출장/휴가 칩 아래에 독립적으로 배치
+    itemsStart.appendChild(bar);
   }
 }
 
