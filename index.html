@@ -3122,10 +3122,10 @@ function openEditModal(id) {
   document.getElementById('f-time').value=t.time||'';
   document.getElementById('f-status').value=t.status;
   document.getElementById('f-note').value=t.note||'';
-  document.getElementById('modalDeleteBtn').style.display='';
   document.getElementById('leaveDeleteBtn').style.display='none';
   document.getElementById('taskModalTabBar').style.display='none';
   switchTaskModalTab('task');
+  document.getElementById('modalDeleteBtn').style.display='';  // switchTaskModalTab 이후에 설정
   document.getElementById('repeatSection').style.display='none';
   document.getElementById('taskModal').classList.add('open');
 }
