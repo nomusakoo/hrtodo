@@ -4188,87 +4188,47 @@ function renderWeekly() {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   }
   const weekDateStrs = weekDays.map(ds);
-  const weekStart_s  = weekDateStrs[0];
-  const weekEnd_s    = weekDateStrs[6];
 
-  // 멀티데이 / 단일일 분류
-  const multiDayTasks = activeTasks().filter(t => t.end_date && t.end_date > t.date);
-  const singleDayTasks = activeTasks().filter(t => !t.end_date || t.end_date <= t.date);
-
-  // 이번 주에 걸리는 멀티데이 업무
-  const weekMulti = multiDayTasks.filter(t => (t.date||'') <= weekEnd_s && (t.end_date||t.date||'') >= weekStart_s);
-
-  // 슬롯 배정 (7칸 행에서 col 단위)
-  const MAX_SLOTS = 4;
-  const weekSlots = Array(MAX_SLOTS).fill(null).map(() => Array(7).fill(null));
-  const weekMultiPlacements = [];
-
-  const sortedWeekMulti = [...weekMulti].sort((a,b) => (a.date||'') > (b.date||'') ? 1 : -1);
-  for (const t of sortedWeekMulti) {
-    const colStart = Math.max(0, weekDateStrs.indexOf(weekDateStrs.find(s => s >= (t.date||''))));
-    const colEnd   = Math.min(6, (() => { for(let i=6;i>=0;i--) if(weekDateStrs[i] <= (t.end_date||t.date||'')) return i; return -1; })());
-    if (colStart === -1 || colEnd < colStart) continue;
-
-    let slotIdx = -1;
-    for (let s=0; s<MAX_SLOTS; s++) {
-      let ok = true;
-      for (let c=colStart; c<=colEnd; c++) if (weekSlots[s][c] !== null) { ok=false; break; }
-      if (ok) { slotIdx = s; break; }
-    }
-    if (slotIdx === -1) slotIdx = MAX_SLOTS;
-    if (slotIdx < MAX_SLOTS) {
-      for (let c=colStart; c<=colEnd; c++) weekSlots[slotIdx][c] = t.id;
-      weekMultiPlacements.push({t, colStart, colEnd, slotIdx});
-    }
-  }
-
-  // 각 열(요일)에서 멀티데이가 점유한 슬롯 수
-  const colUsedSlots = weekDays.map((_, ci) => {
-    const used = new Set();
-    weekMultiPlacements.filter(p => p.colStart <= ci && ci <= p.colEnd).forEach(p => used.add(p.slotIdx));
-    return used;
-  });
-
-  // 열별 단일일 업무 + 건 수 표시
-  const colSingleTasks = weekDateStrs.map(dateStr => singleDayTasks.filter(t => t.date === dateStr));
-  const colTotalCounts = weekDateStrs.map((dateStr, ci) => {
-    const single = singleDayTasks.filter(t => t.date === dateStr).length;
-    const multi  = multiDayTasks.filter(t => (t.date||'') <= dateStr && (t.end_date||t.date||'') >= dateStr).length;
-    return single + multi;
-  });
-
-  // 셀 HTML 생성
   document.getElementById('weekGrid').innerHTML = weekDays.map((d, i) => {
-    const dateStr  = weekDateStrs[i];
-    const isToday  = d.getTime() === today.getTime();
+    const dateStr   = weekDateStrs[i];
+    const isToday   = d.getTime() === today.getTime();
     const isSun=i===0, isSat=i===6;
     const isWeekend = isSun||isSat;
     const headerCls = isToday?'is-today':isWeekend?'is-weekend':'';
     const dateColor = isSun?'color:#dc2626':isSat?'color:#2563eb':'';
 
-    const usedSlots = colUsedSlots[i];
-    const singles   = colSingleTasks[i];
-    const maxSingle = Math.max(0, MAX_SLOTS - usedSlots.size);
+    // 이 날짜에 걸리는 모든 업무 (단일 + 멀티데이 기간 포함)
+    const dayTasks = activeTasks().filter(t => {
+      const s = t.date || '';
+      const e = t.end_date || t.date || '';
+      return s <= dateStr && dateStr <= e;
+    });
 
-    const shownSingles = singles.slice(0, maxSingle);
-    const hiddenCnt    = singles.length - maxSingle + (multiDayTasks.filter(t => {
-      const s=t.date||'', e=t.end_date||t.date||'';
-      if (!(s<=dateStr && dateStr<=e)) return false;
-      return !weekMultiPlacements.some(p => p.t.id===t.id && p.colStart<=i && i<=p.colEnd);
-    }).length);
-
-    const singleChips = shownSingles.length === 0 && usedSlots.size === 0
+    const chips = dayTasks.length === 0
       ? `<div class="week-empty-msg">업무 없음</div>`
-      : shownSingles.map(t => `<div class="week-task-chip ${t.status==='완료'?'is-done':''}"
-            style="background:${memberBg(t.member)};border-left:3px solid ${memberColor(t.member)}"
-            draggable="true" data-task-id="${t.id}"
-            onclick="openEditModal(${t.id})" title="${escHtml(t.title)}">
-            <span class="chip-title">${escHtml(t.title)}</span>
-            <div class="chip-meta">
-              <span style="width:14px;height:14px;border-radius:50%;background:${memberBg(t.member)};color:${memberTx(t.member)};font-size:8px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">${t.member[0]}</span>
-              <span class="chip-name">${t.member}</span>
-            </div>
-          </div>`).join('');
+      : dayTasks.map(t => {
+          const isMulti = t.end_date && t.end_date > t.date;
+          const isStart = t.date === dateStr;
+          const isEnd   = (t.end_date || t.date) === dateStr;
+          // 멀티데이는 기간 정보를 부제목으로 표시
+          let periodTag = '';
+          if (isMulti) {
+            if (isStart && isEnd) periodTag = '';
+            else if (isStart)     periodTag = ` <span style="font-size:9px;opacity:0.7">▶ 시작</span>`;
+            else if (isEnd)       periodTag = ` <span style="font-size:9px;opacity:0.7">종료 ◀</span>`;
+            else                  periodTag = ` <span style="font-size:9px;opacity:0.7">━ 진행</span>`;
+          }
+          return `<div class="week-task-chip ${t.status==='완료'?'is-done':''}"
+              style="background:${memberBg(t.member)};border-left:3px solid ${memberColor(t.member)}"
+              draggable="${isStart?'true':'false'}" data-task-id="${t.id}"
+              onclick="openEditModal(${t.id})" title="${escHtml(t.title)}${isMulti?' ('+fmtDate(t.date)+'~'+fmtDate(t.end_date)+')':''}">
+              <span class="chip-title">${escHtml(t.title)}${periodTag}</span>
+              <div class="chip-meta">
+                <span style="width:14px;height:14px;border-radius:50%;background:${memberBg(t.member)};color:${memberTx(t.member)};font-size:8px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">${t.member[0]}</span>
+                <span class="chip-name">${t.member}</span>
+              </div>
+            </div>`;
+        }).join('');
 
     const dayLeaveList = getLeavesForDate(dateStr);
     const weekLeaveRow = dayLeaveList.length
@@ -4279,92 +4239,14 @@ function renderWeekly() {
       <div class="week-day-header ${headerCls}" onclick="openAddModal('${dateStr}')" title="${dateStr} 업무 추가" style="cursor:pointer;">
         <div class="wd-name" style="${dateColor}">${dayNames[i]}</div>
         <div class="wd-date" style="${dateColor}">${d.getDate()}</div>
-        <div style="font-size:10px;color:var(--gray-400)">${colTotalCounts[i]}건</div>
+        <div style="font-size:10px;color:var(--gray-400)">${dayTasks.length}건</div>
       </div>
       ${weekLeaveRow}
-      <div class="week-task-items" data-date="${dateStr}">${singleChips}${hiddenCnt>0?`<div class="week-empty-msg" style="font-size:10px;color:var(--accent);cursor:pointer" onclick="openCalMore('${dateStr}')">+${hiddenCnt}개 더</div>`:''}</div>
+      <div class="week-task-items" data-date="${dateStr}">${chips}</div>
     </div>`;
   }).join('');
 
-  // 멀티데이 바를 week-task-items 첫 번째 자식으로 삽입 (normal flow)
-  _insertWeeklyMultiBars(weekMultiPlacements, weekDateStrs);
-
   bindWeeklyDrag();
-}
-
-function _insertWeeklyMultiBars(placements, weekDateStrs) {
-  const grid = document.getElementById('weekGrid');
-  if (!grid) return;
-
-  const cols = grid.querySelectorAll('.week-day-col');
-  if (!cols.length) return;
-
-  const CHIP_H   = 28;
-  const CHIP_GAP = 5;
-
-  // slotIdx 순서대로 정렬해서 위에서부터 삽입
-  const sorted = [...placements].sort((a, b) => a.slotIdx - b.slotIdx || a.colStart - b.colStart);
-
-  for (const p of sorted) {
-    const {t, colStart, colEnd, slotIdx} = p;
-
-    for (let ci = colStart; ci <= colEnd; ci++) {
-      const col = cols[ci];
-      if (!col) continue;
-      const itemsEl = col.querySelector('.week-task-items');
-      if (!itemsEl) continue;
-
-      const isDone    = t.status === '완료';
-      const bg        = memberColor(t.member);
-      const lightBg   = isDone ? 'var(--gray-100)' : memberBg(t.member);
-      const tx        = isDone ? 'var(--gray-400)' : memberTx(t.member);
-      const trueStart = t.date || '';
-      const trueEnd   = t.end_date || t.date || '';
-      const visStart  = weekDateStrs[colStart];
-      const visEnd    = weekDateStrs[colEnd];
-      const isFirst   = ci === colStart;
-      const isLast    = ci === colEnd;
-      const rTL = isFirst ? '4px' : '0';
-      const rTR = isLast  ? '4px' : '0';
-
-      const bar = document.createElement('div');
-      bar.className = 'week-multiday-bar' + (isDone ? ' is-done' : '');
-      bar.style.cssText = [
-        'height:' + CHIP_H + 'px',
-        'margin-bottom:' + CHIP_GAP + 'px',
-        'background:' + lightBg,
-        'color:' + tx,
-        'border-left:' + (isFirst && trueStart === visStart ? '3px solid ' + bg : 'none'),
-        'border-radius:' + rTL + ' ' + rTR + ' ' + rTR + ' ' + rTL,
-        'display:flex',
-        'align-items:center',
-        'overflow:hidden',
-        'cursor:pointer',
-        'user-select:none',
-        'box-sizing:border-box',
-        'width:calc(100% - 4px)',
-        'margin-left:2px',
-      ].join(';');
-      bar.setAttribute('data-task-id', t.id);
-      bar.setAttribute('title', t.title + ' (' + fmtDate(trueStart) + '~' + fmtDate(trueEnd) + ')');
-      bar.innerHTML = isFirst
-        ? '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;font-weight:500;padding:0 6px;flex:1;">' + escHtml(t.title) + '</span>'
-          + '<span style="font-size:9px;padding-right:4px;opacity:0.7;white-space:nowrap;">' + t.member + '</span>'
-        : '<span style="flex:1;">&nbsp;</span>';
-      bar.addEventListener('click', e => { e.stopPropagation(); openEditModal(t.id); });
-
-      // week-task-items 맨 앞(이미 삽입된 bar 뒤)에 삽입
-      const existingBars = itemsEl.querySelectorAll('.week-multiday-bar');
-      const insertAfter = existingBars.length > 0 ? existingBars[existingBars.length - 1] : null;
-      if (insertAfter && insertAfter.nextSibling) {
-        itemsEl.insertBefore(bar, insertAfter.nextSibling);
-      } else if (insertAfter) {
-        itemsEl.appendChild(bar);
-      } else {
-        itemsEl.insertBefore(bar, itemsEl.firstChild);
-      }
-    }
-  }
 }
 
 function bindWeeklyDrag() {
