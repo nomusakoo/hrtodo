@@ -4252,12 +4252,6 @@ function renderWeekly() {
     const singles   = colSingleTasks[i];
     const maxSingle = Math.max(0, MAX_SLOTS - usedSlots.size);
 
-    // 멀티데이 바가 차지하는 슬롯 수만큼 week-task-items 위에 padding 부여
-    const CHIP_H = 28, CHIP_GAP = 5;
-    const multiPadTop = usedSlots.size > 0
-      ? usedSlots.size * (CHIP_H + CHIP_GAP) + 6
-      : 0;
-
     const shownSingles = singles.slice(0, maxSingle);
     const hiddenCnt    = singles.length - maxSingle + (multiDayTasks.filter(t => {
       const s=t.date||'', e=t.end_date||t.date||'';
@@ -4283,6 +4277,13 @@ function renderWeekly() {
       ? `<div class="week-leave-chips">${dayLeaveList.map(lv => weekLeaveChipHtml(lv)).join('')}</div>`
       : '';
 
+    // 멀티데이 바가 차지하는 높이만큼 week-task-items를 아래로 밀기
+    const multiSlotCount = usedSlots.size;
+    const CHIP_H = 28, CHIP_GAP = 5;
+    const taskItemsMarginTop = multiSlotCount > 0
+      ? `margin-top:${multiSlotCount*(CHIP_H+CHIP_GAP)}px`
+      : '';
+
     return `<div class="week-day-col" data-date="${dateStr}">
       <div class="week-day-header ${headerCls}" onclick="openAddModal('${dateStr}')" title="${dateStr} 업무 추가" style="cursor:pointer;">
         <div class="wd-name" style="${dateColor}">${dayNames[i]}</div>
@@ -4290,7 +4291,7 @@ function renderWeekly() {
         <div style="font-size:10px;color:var(--gray-400)">${colTotalCounts[i]}건</div>
       </div>
       ${weekLeaveRow}
-      <div class="week-task-items" data-date="${dateStr}" style="padding-top:${multiPadTop > 0 ? multiPadTop+'px' : '6px'}">${singleChips}${hiddenCnt>0?`<div class="week-empty-msg" style="font-size:10px;color:var(--accent);cursor:pointer" onclick="openCalMore('${dateStr}')">+${hiddenCnt}개 더</div>`:''}</div>
+      <div class="week-task-items" data-date="${dateStr}" style="${taskItemsMarginTop}">${singleChips}${hiddenCnt>0?`<div class="week-empty-msg" style="font-size:10px;color:var(--accent);cursor:pointer" onclick="openCalMore('${dateStr}')">+${hiddenCnt}개 더</div>`:''}</div>
     </div>`;
   }).join('');
 
@@ -4337,11 +4338,8 @@ function _drawWeeklyMultiOverlays(placements, weekDateStrs) {
       const isFirst   = ci === colStart;
       const isLast    = ci === colEnd;
 
-      // week-task-items 위쪽 경계를 week-day-col 기준으로 계산
-      // (week-leave-chips 높이가 포함된 실제 오프셋)
-      const colRect   = col.getBoundingClientRect();
-      const itemsRect = itemsEl.getBoundingClientRect();
-      const topInCol  = itemsRect.top - colRect.top + 6 + slotIdx * (CHIP_H + CHIP_GAP);
+      // week-task-items의 offsetTop은 week-day-col 기준 상대값 (leave-chips 높이 포함)
+      const topInCol  = itemsEl.offsetTop + 6 + slotIdx * (CHIP_H + CHIP_GAP);
 
       const rTL = isFirst ? '4px' : '0';
       const rTR = isLast  ? '4px' : '0';
