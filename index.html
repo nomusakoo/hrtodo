@@ -732,38 +732,10 @@
     .task-table colgroup { display:none; }
     .task-table tbody tr td { height:auto; }
 
-    /* 모달 날짜/시간/상태 — 모바일 한 줄 3칸 강제 */
+    /* 모달 날짜 — 모바일 2칸 그리드 유지 */
     .form-row-3 {
-      grid-template-columns: 5fr 4fr 4fr !important;
-      gap: 6px;
+      grid-template-columns: 1fr 1fr !important;
     }
-    .form-row-3 > div:nth-child(3) { grid-column: auto; }
-    .form-row-3 .form-row { margin-bottom: 0; min-width: 0; }
-    .form-row-3 .form-input,
-    .form-row-3 .form-select {
-      width: 100% !important;
-      min-width: 0 !important;
-      max-width: 100% !important;
-      padding: 5px 4px !important;
-      font-size: 13px !important;
-      height: 38px !important;
-      box-sizing: border-box !important;
-      -webkit-appearance: none;
-      appearance: none;
-      text-align: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .form-row-3 input[type="date"],
-    .form-row-3 input[type="time"] {
-      display: block;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      text-align: center;
-      line-height: 28px;
-    }
-    .form-row-3 .form-label { font-size: 10px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; }
 
     /* 빠른입력행 */
     #quickAddRow { display:flex !important; flex-direction:column; gap:6px; padding:10px; background:#f0f5ff; border-radius:var(--radius-lg); border:1px solid var(--accent-light); margin-bottom:10px; }
@@ -854,7 +826,8 @@
   .paste-row-warn td{background:#fffbeb;}
   .paste-valid-icon{font-size:13px;text-align:center;}
 
-  /* ── 반복 삭제 팝업 ── */
+  .cal-chip.cal-chip-multi { border-radius: 3px; }
+  /* 반복 삭제 팝업 */
   .repeat-del-modal{background:#fff;border-radius:var(--radius-lg);padding:28px 28px 22px;width:400px;max-width:95vw;box-shadow:0 20px 50px rgba(0,0,0,0.18);}
   .repeat-del-option{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius);cursor:pointer;margin-bottom:8px;transition:all 0.15s;user-select:none;}
   .repeat-del-option:hover{border-color:var(--accent);background:var(--accent-bg);}
@@ -1582,11 +1555,17 @@
           </select>
         </div>
       </div>
-      <div class="form-row-3" style="margin-top:16px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px">
         <div class="form-row" style="margin-bottom:0">
-          <label class="form-label">날짜 *</label>
-          <input type="date" class="form-input" id="f-date" onchange="updateRepeatPreview()">
+          <label class="form-label">시작일 *</label>
+          <input type="date" class="form-input" id="f-date" onchange="updateRepeatPreview();syncEndDateMin()">
         </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label class="form-label">종료일 <span style="font-size:10px;color:var(--gray-400)">(선택)</span></label>
+          <input type="date" class="form-input" id="f-end-date">
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px">
         <div class="form-row" style="margin-bottom:0">
           <label class="form-label">시간 <span style="font-size:10px;color:var(--gray-400)">(선택)</span></label>
           <input type="time" class="form-input" id="f-time" placeholder="--:--">
@@ -2040,6 +2019,7 @@ async function dbLoad() {
 
 async function dbInsert(task) {
   const row = { title:task.title, member:task.member, cat:task.cat, date:task.date, status:task.status, note:task.note||'', time:task.time||'' };
+  if (task.end_date) row.end_date = task.end_date;
   if (task.repeat_id) row.repeat_id = task.repeat_id;
   if (useLocal || !sbClient) {
     const arr = localLoad();
@@ -2749,7 +2729,7 @@ function renderTable(animate=false) {
       <td><input type="checkbox" class="task-check" data-id="${t.id}" ${checked?'checked':''} onchange="onRowCheck(${t.id},this.checked)"></td>
       <td data-label="일정" style="font-family:var(--font-mono);font-size:12px;color:var(--gray-500);white-space:nowrap;">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:nowrap;">
-          <span>${fmtDate(t.date)}</span>${t.time?`<span style="display:inline-block;width:1px;height:11px;background:var(--gray-300);border-radius:1px;flex-shrink:0;"></span><span style="font-size:11px;color:var(--accent);letter-spacing:0.5px;">⏰&nbsp;&nbsp;${t.time}</span>`:''}${ddayBadge(t.date,t.status)?`<span style="display:inline-block;width:1px;height:11px;background:var(--gray-300);border-radius:1px;flex-shrink:0;"></span>${ddayBadge(t.date,t.status)}`:''}
+          <span>${fmtDate(t.date)}${t.end_date&&t.end_date>t.date?`<span style="color:var(--gray-300)"> ~ </span>${fmtDate(t.end_date)}`:''}</span>${t.time?`<span style="display:inline-block;width:1px;height:11px;background:var(--gray-300);border-radius:1px;flex-shrink:0;"></span><span style="font-size:11px;color:var(--accent);letter-spacing:0.5px;">⏰&nbsp;&nbsp;${t.time}</span>`:''}${ddayBadge(t.date,t.status)?`<span style="display:inline-block;width:1px;height:11px;background:var(--gray-300);border-radius:1px;flex-shrink:0;"></span>${ddayBadge(t.date,t.status)}`:''}
         </div>
       </td>
       <td data-label="업무명"><span class="task-title task-title-link" onclick="openEditModal(${t.id})">${escHtml(t.title)}</span></td>
@@ -2911,13 +2891,15 @@ async function deleteFromModal() {
     openRepeatDelModal(editId);
     return;
   }
-  if (!confirm('이 업무를 삭제하시겠습니까?')) return;
-  const isOnDash = document.getElementById('view-dashboard').style.display !== 'none';
+  const isOnDash   = document.getElementById('view-dashboard').style.display !== 'none';
+  const isOnWeekly = document.getElementById('view-weekly').style.display    !== 'none';
   const ok = await dbDelete(editId);
   if (ok) {
     tasks = tasks.filter(t => t.id !== editId);
     closeModal();
-    if (isOnDash) renderDash(); else renderTable();
+    if (isOnDash) renderDash();
+    else if (isOnWeekly) { renderWeekly(); renderTable(); }
+    else renderTable();
     showToast('삭제했습니다.');
   }
 }
@@ -3058,6 +3040,7 @@ function openAddModal(prefillDate) {
   document.getElementById('f-member').value = (currentUserName && MEMBERS.includes(currentUserName)) ? currentUserName : '';
   document.getElementById('f-cat').value='기타';
   document.getElementById('f-date').value=prefillDate || new Date().toISOString().split('T')[0];
+  document.getElementById('f-end-date').value='';
   document.getElementById('f-time').value='';
   document.getElementById('f-status').value='todo';
   document.getElementById('f-note').value='';
@@ -3097,6 +3080,7 @@ function openEditModal(id) {
   document.getElementById('f-member').value=t.member;
   document.getElementById('f-cat').value=t.cat;
   document.getElementById('f-date').value=t.date;
+  document.getElementById('f-end-date').value=t.end_date||'';
   document.getElementById('f-time').value=t.time||'';
   document.getElementById('f-status').value=t.status;
   document.getElementById('f-note').value=t.note||'';
@@ -3109,23 +3093,34 @@ function openEditModal(id) {
 }
 function closeModal() { document.getElementById('taskModal').classList.remove('open'); }
 
+function syncEndDateMin() {
+  const dateVal = document.getElementById("f-date").value;
+  const endEl = document.getElementById("f-end-date");
+  if (!endEl) return;
+  endEl.min = dateVal;
+  if (endEl.value && endEl.value < dateVal) endEl.value = dateVal;
+}
+
+
 async function saveTask() {
   const title=document.getElementById('f-title').value.trim();
   const member=document.getElementById('f-member').value;
   const cat=document.getElementById('f-cat').value;
   const date=document.getElementById('f-date').value;
+  const endDate=document.getElementById('f-end-date').value||'';
   const time=document.getElementById('f-time').value||'';
   const status=document.getElementById('f-status').value;
   const note=document.getElementById('f-note').value.trim();
   if (!title)  { alert('업무명을 입력하세요.'); return; }
   if (!member) { alert('담당자를 선택하세요.'); return; }
   if (!date)   { alert('날짜를 선택하세요.'); return; }
+  if (endDate && endDate < date) { alert('종료일은 시작일보다 같거나 이후여야 합니다.'); return; }
 
   const isOnDash   = document.getElementById('view-dashboard').style.display !== 'none';
   const isOnWeekly = document.getElementById('view-weekly').style.display    !== 'none';
 
   if (editId) {
-    const fields={title,member,cat,date,time,status,note};
+    const fields={title,member,cat,date,end_date:endDate||null,time,status,note};
     const updated=await dbUpdate(editId,fields);
     if (updated) {
       const t=tasks.find(t=>t.id===editId); if(t) Object.assign(t,fields);
@@ -3160,7 +3155,7 @@ async function saveTask() {
       if (isOnDash) renderDash(); else if (isOnWeekly) { renderWeekly(); renderTable(); } else renderTable();
       showToast(`반복 업무 ${added}건을 추가했습니다.`);
     } else {
-      const newTask=await dbInsert({title,member,cat,date,time,status,note});
+      const newTask=await dbInsert({title,member,cat,date,end_date:endDate||null,time,status,note});
       if (newTask) {
         tasks.push(newTask);
         closeModal();
@@ -3177,8 +3172,8 @@ async function saveTask() {
 function exportExcel() {
   const filtered = getFiltered();
   const data = [
-    ['날짜','시간','업무명','담당자','카테고리','상태','비고','반복단위(주간/월간/분기/연간)'],
-    ...filtered.map(t=>[t.date, t.time||'', t.title, t.member, t.cat, t.status, t.note||'',''])
+    ['날짜','종료일','시간','업무명','담당자','카테고리','상태','비고','반복단위(주간/월간/분기/연간)'],
+    ...filtered.map(t=>[t.date, t.end_date||'', t.time||'', t.title, t.member, t.cat, t.status, t.note||'',''])
   ];
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(data);
@@ -4156,21 +4151,35 @@ function renderWeekly() {
     const isToday=d.getTime()===today.getTime();
     const isSun=i===0, isSat=i===6;
     const isWeekend=isSun||isSat;
-    const dayTasks=activeTasks().filter(t=>t.date===dateStr);
+    const dayTasks=activeTasks().filter(t=>{
+      const start = t.date || '';
+      const end   = t.end_date || t.date || '';
+      return start <= dateStr && dateStr <= end;
+    });
     const headerCls=isToday?'is-today':isWeekend?'is-weekend':'';
     const dateColor=isSun?'color:#dc2626':isSat?'color:#2563eb':'';
     const chips=dayTasks.length===0
       ?`<div class="week-empty-msg">업무 없음</div>`
-      :dayTasks.map(t=>`<div class="week-task-chip ${t.status==='완료'?'is-done':''}"
-          style="background:${memberBg(t.member)};border-left-color:${memberColor(t.member)}"
-          draggable="true" data-task-id="${t.id}"
-          onclick="openEditModal(${t.id})" title="${escHtml(t.title)}">
-          <span class="chip-title">${escHtml(t.title)}</span>
-          <div class="chip-meta">
-            <span style="width:14px;height:14px;border-radius:50%;background:${memberBg(t.member)};color:${memberTx(t.member)};font-size:8px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">${t.member[0]}</span>
-            <span class="chip-name">${t.member}</span>
-          </div>
-        </div>`).join('');
+      :dayTasks.map(t=>{
+        const isMultiDay = t.end_date && t.end_date > t.date;
+        const isStart = t.date === dateStr;
+        const isEnd   = (t.end_date || t.date) === dateStr;
+        const borderL = isStart ? `border-left:3px solid ${memberColor(t.member)}` : 'border-left:3px solid transparent';
+        const borderR = (!isMultiDay || isEnd) ? '' : 'border-right:none;border-radius:4px 0 0 4px;margin-right:-6px;padding-right:4px;';
+        const borderStartR = (isMultiDay && !isEnd) ? 'border-radius:4px 0 0 4px;' : '';
+        const borderMid = (isMultiDay && !isStart && !isEnd) ? 'border-radius:0;margin-left:-6px;margin-right:-6px;padding-left:4px;padding-right:4px;' : '';
+        const borderEndStyle = (isMultiDay && isEnd && !isStart) ? 'border-radius:0 4px 4px 0;margin-left:-6px;padding-left:4px;' : '';
+        return `<div class="week-task-chip ${t.status==='완료'?'is-done':''}"
+            style="background:${memberBg(t.member)};${borderL};${borderStartR}${borderMid}${borderEndStyle}"
+            draggable="${isStart?'true':'false'}" data-task-id="${t.id}"
+            onclick="openEditModal(${t.id})" title="${escHtml(t.title)}${isMultiDay?' ('+fmtDate(t.date)+'~'+fmtDate(t.end_date)+')':''}">
+            <span class="chip-title">${isStart ? escHtml(t.title) : (isMultiDay ? '↔ '+escHtml(t.title) : escHtml(t.title))}</span>
+            ${isStart ? `<div class="chip-meta">
+              <span style="width:14px;height:14px;border-radius:50%;background:${memberBg(t.member)};color:${memberTx(t.member)};font-size:8px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;">${t.member[0]}</span>
+              <span class="chip-name">${t.member}</span>
+            </div>` : ''}
+          </div>`;
+      }).join('');
     const dayLeaveList = getLeavesForDate(dateStr);
     const weekLeaveRow = dayLeaveList.length
       ? `<div class="week-leave-chips">${dayLeaveList.map(lv => weekLeaveChipHtml(lv)).join('')}</div>`
@@ -4312,8 +4321,14 @@ function renderDash() {
   const { year, month } = getCalYM();
   const ym = `${year}-${String(month+1).padStart(2,'0')}`;
 
-  // 해당 월 업무만 필터
-  const inRange = activeTasks().filter(t => toYM(t.date) === ym);
+  // 해당 월 업무 필터 (멀티데이: start~end 중 해당 월에 하루라도 걸치면 포함)
+  const ymStart = `${year}-${String(month+1).padStart(2,'0')}-01`;
+  const ymEnd   = `${year}-${String(month+1).padStart(2,'0')}-${new Date(year,month+1,0).getDate()}`;
+  const inRange = activeTasks().filter(t => {
+    const s = t.date || '';
+    const e = t.end_date || t.date || '';
+    return s <= ymEnd && e >= ymStart;
+  });
   const total=inRange.length, done=inRange.filter(t=>t.status==='완료').length,
         progress=inRange.filter(t=>t.status==='진행중').length, todo=inRange.filter(t=>t.status==='todo').length;
   const rate=total?Math.round(done/total*100):0;
@@ -4414,7 +4429,13 @@ function renderCalendar(year, month) {
     const isSun = dow===0, isSat = dow===6;
     const dateStr    = `${cellDate.getFullYear()}-${String(cellDate.getMonth()+1).padStart(2,'0')}-${String(cellDate.getDate()).padStart(2,'0')}`;
 
-    const dayTasks = activeTasks().filter(t => t.date === dateStr);
+    // 이 날에 표시할 업무: date <= dateStr <= end_date (or date === dateStr if no end_date)
+    const dayTasks = activeTasks().filter(t => {
+      const start = t.date || '';
+      const end   = t.end_date || t.date || '';
+      return start <= dateStr && dateStr <= end;
+    });
+    // 더보기 계산: 시작일이 이 셀인 업무 + 연속 중인 업무 모두 포함
     const shown    = dayTasks.slice(0, MAX_SHOW);
     const hiddenCnt = dayTasks.length - MAX_SHOW;
 
@@ -4423,14 +4444,24 @@ function renderCalendar(year, month) {
       const isDone = t.status === '완료';
       const lightBg = memberBg(t.member);
       const tx = memberTx(t.member);
-      return `<div class="cal-chip ${isDone?'is-done':''}"
-        style="background:${isDone?'var(--gray-100)':lightBg};color:${isDone?'var(--gray-400)':tx};"
-        draggable="true"
+      const isMultiDay = t.end_date && t.end_date > t.date;
+      const isStart = t.date === dateStr;
+      const isEnd   = (t.end_date || t.date) === dateStr;
+      // 멀티데이 바 스타일
+      let barStyle = '';
+      if (isMultiDay) {
+        barStyle = `border-radius:${isStart?'4px':'0'} ${isEnd?'4px':'0'} ${isEnd?'4px':'0'} ${isStart?'4px':'0'};`
+          + (isStart ? '' : 'margin-left:-5px;padding-left:3px;')
+          + (isEnd   ? '' : 'margin-right:-5px;padding-right:3px;');
+      }
+      return `<div class="cal-chip ${isDone?'is-done':''}${isMultiDay?' cal-chip-multi':''}"
+        style="background:${isDone?'var(--gray-100)':lightBg};color:${isDone?'var(--gray-400)':tx};${isMultiDay?'border-left:'+(isStart?'3px solid '+bg:'none')+';'+barStyle:''}"
+        draggable="${isStart?'true':'false'}"
         data-task-id="${t.id}"
         onclick="event.stopPropagation();openEditModal(${t.id})"
-        title="${escHtml(t.title)}">
-        <span class="cal-chip-dot" style="background:${isDone?'var(--gray-300)':bg}"></span>
-        <span class="cal-chip-title">${escHtml(t.title)}</span>
+        title="${escHtml(t.title)}${isMultiDay?' ('+fmtDate(t.date)+'~'+fmtDate(t.end_date)+')':''}">
+        ${isStart ? `<span class="cal-chip-dot" style="background:${isDone?'var(--gray-300)':bg}"></span>` : ''}
+        <span class="cal-chip-title">${isStart ? escHtml(t.title) : '&nbsp;'}</span>
       </div>`;
     }).join('');
 
@@ -4531,7 +4562,11 @@ function bindCalDrag() {
 
 // ── 더보기 팝업 ──
 function openCalMore(dateStr) {
-  const dayTasks = activeTasks().filter(t => t.date === dateStr).sort((a,b) => (a.status==='완료'?1:0)-(b.status==='완료'?1:0));
+  const dayTasks = activeTasks().filter(t => {
+    const start = t.date || '';
+    const end   = t.end_date || t.date || '';
+    return start <= dateStr && dateStr <= end;
+  }).sort((a,b) => (a.status==='완료'?1:0)-(b.status==='완료'?1:0));
   const d = new Date(dateStr + 'T00:00:00');
   document.getElementById('calMoreTitle').textContent =
     `${d.getMonth()+1}월 ${d.getDate()}일 업무 (${dayTasks.length}건)`;
@@ -4543,7 +4578,7 @@ function openCalMore(dateStr) {
         return `<div class="cal-more-item" onclick="closeCalMore();openEditModal(${t.id})">
           <span class="cal-more-item-dot" style="background:${isDone?'var(--gray-300)':bg}"></span>
           <span class="cal-more-item-title${isDone?' is-done':''}" style="${isDone?'text-decoration:line-through;color:var(--gray-500);':''}">${escHtml(t.title)}</span>
-          <span class="cal-more-item-meta">${t.member} · ${statusLbl}</span>
+          <span class="cal-more-item-meta">${t.member} · ${statusLbl}${t.end_date&&t.end_date>t.date?' · '+fmtDate(t.date)+'~'+fmtDate(t.end_date):''}</span>
         </div>`;
       }).join('')
     : '<div style="padding:20px;text-align:center;color:var(--gray-400)">업무 없음</div>';
