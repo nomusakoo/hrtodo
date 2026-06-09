@@ -846,17 +846,15 @@
   .cal-chip-spacer {
     height: 22px; margin-bottom: 2px; visibility: hidden; pointer-events: none;
   }
-  /* 멀티데이 오버레이 바 (주간 보기) */
-  .week-grid { position: relative; }
+  /* 멀티데이 오버레이 바 (주간 보기) — normal flow */
   .week-multiday-bar {
-    position: absolute;
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: center;
     cursor: pointer;
-    z-index: 2;
     overflow: hidden;
     transition: filter 0.15s, box-shadow 0.15s;
     box-sizing: border-box;
     border-radius: 4px;
+    flex-shrink: 0;
   }
   .week-multiday-bar:hover { filter: brightness(0.9); box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
   .week-multiday-bar.is-done { opacity: 0.6; text-decoration: line-through; }
@@ -4277,13 +4275,6 @@ function renderWeekly() {
       ? `<div class="week-leave-chips">${dayLeaveList.map(lv => weekLeaveChipHtml(lv)).join('')}</div>`
       : '';
 
-    // 멀티데이 바가 차지하는 높이만큼 week-task-items를 아래로 밀기
-    const multiSlotCount = usedSlots.size;
-    const CHIP_H = 28, CHIP_GAP = 5;
-    const taskItemsMarginTop = multiSlotCount > 0
-      ? `margin-top:${multiSlotCount*(CHIP_H+CHIP_GAP)}px`
-      : '';
-
     return `<div class="week-day-col" data-date="${dateStr}">
       <div class="week-day-header ${headerCls}" onclick="openAddModal('${dateStr}')" title="${dateStr} 업무 추가" style="cursor:pointer;">
         <div class="wd-name" style="${dateColor}">${dayNames[i]}</div>
@@ -4291,24 +4282,19 @@ function renderWeekly() {
         <div style="font-size:10px;color:var(--gray-400)">${colTotalCounts[i]}건</div>
       </div>
       ${weekLeaveRow}
-      <div class="week-task-items" data-date="${dateStr}" style="${taskItemsMarginTop}">${singleChips}${hiddenCnt>0?`<div class="week-empty-msg" style="font-size:10px;color:var(--accent);cursor:pointer" onclick="openCalMore('${dateStr}')">+${hiddenCnt}개 더</div>`:''}</div>
+      <div class="week-task-items" data-date="${dateStr}">${singleChips}${hiddenCnt>0?`<div class="week-empty-msg" style="font-size:10px;color:var(--accent);cursor:pointer" onclick="openCalMore('${dateStr}')">+${hiddenCnt}개 더</div>`:''}</div>
     </div>`;
   }).join('');
 
-  // 멀티데이 오버레이
-  requestAnimationFrame(() => _drawWeeklyMultiOverlays(weekMultiPlacements, weekDateStrs));
+  // 멀티데이 바를 week-task-items 첫 번째 자식으로 삽입 (normal flow)
+  _insertWeeklyMultiBars(weekMultiPlacements, weekDateStrs);
 
-  bindWeeklyDrag();
-  // bindWeeklyDrag는 _weekDragBound 플래그로 중복 방지하므로 재설정 필요
-  const grid = document.getElementById('weekGrid');
-  if (grid) grid._weekDragBound = false;
   bindWeeklyDrag();
 }
 
-function _drawWeeklyMultiOverlays(placements, weekDateStrs) {
+function _insertWeeklyMultiBars(placements, weekDateStrs) {
   const grid = document.getElementById('weekGrid');
   if (!grid) return;
-  grid.querySelectorAll('.week-multiday-bar').forEach(el => el.remove());
 
   const cols = grid.querySelectorAll('.week-day-col');
   if (!cols.length) return;
@@ -4316,14 +4302,15 @@ function _drawWeeklyMultiOverlays(placements, weekDateStrs) {
   const CHIP_H   = 28;
   const CHIP_GAP = 5;
 
-  for (const p of placements) {
+  // slotIdx 순서대로 정렬해서 위에서부터 삽입
+  const sorted = [...placements].sort((a, b) => a.slotIdx - b.slotIdx || a.colStart - b.colStart);
+
+  for (const p of sorted) {
     const {t, colStart, colEnd, slotIdx} = p;
 
-    // ── 각 컬럼마다 독립적인 바 조각을 만들어 붙임 ──
     for (let ci = colStart; ci <= colEnd; ci++) {
       const col = cols[ci];
       if (!col) continue;
-
       const itemsEl = col.querySelector('.week-task-items');
       if (!itemsEl) continue;
 
@@ -4337,38 +4324,45 @@ function _drawWeeklyMultiOverlays(placements, weekDateStrs) {
       const visEnd    = weekDateStrs[colEnd];
       const isFirst   = ci === colStart;
       const isLast    = ci === colEnd;
-
-      // week-task-items의 offsetTop은 week-day-col 기준 상대값 (leave-chips 높이 포함)
-      const topInCol  = itemsEl.offsetTop + 6 + slotIdx * (CHIP_H + CHIP_GAP);
-
       const rTL = isFirst ? '4px' : '0';
       const rTR = isLast  ? '4px' : '0';
 
       const bar = document.createElement('div');
-      bar.className = `week-multiday-bar${isDone?' is-done':''}`;
-      // 각 컬럼 안에서 left:2~right:2로 꽉 채움 (컬럼 밖으로 안 나감)
+      bar.className = 'week-multiday-bar' + (isDone ? ' is-done' : '');
       bar.style.cssText = [
-        `left:2px`,
-        `right:2px`,
-        `top:${topInCol}px`,
-        `height:${CHIP_H}px`,
-        `background:${lightBg}`,
-        `color:${tx}`,
-        `border-left:${isFirst && trueStart === visStart ? '3px solid '+bg : 'none'}`,
-        `border-right:${isLast && trueEnd === visEnd ? '' : 'none'}`,
-        `border-radius:${rTL} ${rTR} ${rTR} ${rTL}`,
+        'height:' + CHIP_H + 'px',
+        'margin-bottom:' + CHIP_GAP + 'px',
+        'background:' + lightBg,
+        'color:' + tx,
+        'border-left:' + (isFirst && trueStart === visStart ? '3px solid ' + bg : 'none'),
+        'border-radius:' + rTL + ' ' + rTR + ' ' + rTR + ' ' + rTL,
+        'display:flex',
+        'align-items:center',
+        'overflow:hidden',
+        'cursor:pointer',
+        'user-select:none',
+        'box-sizing:border-box',
+        'width:calc(100% - 4px)',
+        'margin-left:2px',
       ].join(';');
       bar.setAttribute('data-task-id', t.id);
-      bar.setAttribute('title', `${t.title} (${fmtDate(trueStart)}~${fmtDate(trueEnd)})`);
-      // 제목은 첫 번째 컬럼에만 표시
+      bar.setAttribute('title', t.title + ' (' + fmtDate(trueStart) + '~' + fmtDate(trueEnd) + ')');
       bar.innerHTML = isFirst
-        ? `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;font-weight:500;padding:0 6px;line-height:${CHIP_H}px;">${escHtml(t.title)}</span>
-           <span style="font-size:9px;padding-right:4px;opacity:0.7;white-space:nowrap;line-height:${CHIP_H}px;">${t.member}</span>`
-        : '';
+        ? '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px;font-weight:500;padding:0 6px;flex:1;">' + escHtml(t.title) + '</span>'
+          + '<span style="font-size:9px;padding-right:4px;opacity:0.7;white-space:nowrap;">' + t.member + '</span>'
+        : '<span style="flex:1;">&nbsp;</span>';
       bar.addEventListener('click', e => { e.stopPropagation(); openEditModal(t.id); });
 
-      // 각 컬럼에 독립적으로 붙임 → 다른 컬럼을 절대 덮지 않음
-      col.appendChild(bar);
+      // week-task-items 맨 앞(이미 삽입된 bar 뒤)에 삽입
+      const existingBars = itemsEl.querySelectorAll('.week-multiday-bar');
+      const insertAfter = existingBars.length > 0 ? existingBars[existingBars.length - 1] : null;
+      if (insertAfter && insertAfter.nextSibling) {
+        itemsEl.insertBefore(bar, insertAfter.nextSibling);
+      } else if (insertAfter) {
+        itemsEl.appendChild(bar);
+      } else {
+        itemsEl.insertBefore(bar, itemsEl.firstChild);
+      }
     }
   }
 }
