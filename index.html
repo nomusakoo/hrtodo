@@ -5786,12 +5786,21 @@ async function noteUpdate(id, content, hideTicker) {
 }
 
 async function noteDelete(id) {
+  const idx = notes.findIndex(n => n.id === id);
+  const removed = idx !== -1 ? notes[idx] : null;
+  if (idx !== -1) notes.splice(idx, 1);
+  renderMemoTab(); // 서버 응답을 기다리지 않고 화면에서 즉시 제거
+
   if (!useLocal && sbClient) {
     const { error } = await sbClient.from('hr_notes').delete().eq('id', id);
-    if (error) { showToast('메모 삭제 오류: '+(error.message||''), 'error'); return false; }
+    if (error) {
+      if (removed) { notes.splice(idx, 0, removed); renderMemoTab(); } // 실패 시 복원
+      showToast('메모 삭제 오류: '+(error.message||''), 'error');
+      return false;
+    }
+  } else {
+    notesLocalSave();
   }
-  notes = notes.filter(n => n.id !== id);
-  if (useLocal || !sbClient) notesLocalSave();
   return true;
 }
 
@@ -6054,14 +6063,15 @@ async function saveMemoFromModal() {
 async function deleteMemoFromModal() {
   if (memoEditId === null) return;
   if (!confirm('이 메모를 삭제하시겠습니까?')) return;
+  closeMemoEditModal();
   const ok = await noteDelete(memoEditId);
-  if (ok) { closeMemoEditModal(); renderMemoTab(); showToast('메모를 삭제했습니다.'); }
+  if (ok) showToast('메모를 삭제했습니다.');
 }
 
 async function deleteMemoCard(id) {
   if (!confirm('이 메모를 삭제하시겠습니까?')) return;
   const ok = await noteDelete(id);
-  if (ok) { renderMemoTab(); showToast('메모를 삭제했습니다.'); }
+  if (ok) showToast('메모를 삭제했습니다.');
 }
 
 // ── 꾹 누르기 삭제 (모바일) ──
