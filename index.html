@@ -1549,11 +1549,11 @@
       <label class="form-label">내용 *</label>
       <textarea class="memo-edit-textarea" id="memo-content" placeholder="메모를 입력하세요..."></textarea>
     </div>
-    <div class="form-row" style="margin-bottom:0;display:flex;justify-content:flex-end;">
-      <button type="button" class="btn memo-ticker-toggle-btn" id="memo-hide-ticker-btn" onclick="toggleMemoHideTicker()" title="켜두면 헤더 뉴스바에 표시되지 않습니다">&#128276; 뉴스바 제외</button>
-    </div>
     <div class="modal-footer">
-      <button class="btn btn-danger" id="memoDeleteBtn" onclick="deleteMemoFromModal()" style="display:none;margin-right:auto">&#10005; 삭제</button>
+      <div style="display:flex;align-items:center;gap:8px;margin-right:auto;">
+        <button class="btn btn-danger" id="memoDeleteBtn" onclick="deleteMemoFromModal()" style="display:none">&#10005; 삭제</button>
+        <button type="button" class="btn memo-ticker-toggle-btn" id="memo-hide-ticker-btn" onclick="toggleMemoHideTicker()" title="켜두면 헤더 뉴스바에 표시되지 않습니다">&#128276; 뉴스바 제외</button>
+      </div>
       <button class="btn" onclick="closeMemoEditModal()">취소</button>
       <button class="btn btn-primary" onclick="saveMemoFromModal()">&#10003; 저장</button>
     </div>
