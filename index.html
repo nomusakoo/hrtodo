@@ -910,6 +910,11 @@
   .memo-card-btn:hover{background:rgba(0,0,0,0.22);color:rgba(0,0,0,0.8);}
   /* 댓글 뱃지 */
   .memo-comment-badge{position:absolute;top:-8px;right:-8px;background:#3b5998;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:20px;display:flex;align-items:center;gap:2px;box-shadow:0 2px 6px rgba(0,0,0,0.18);pointer-events:none;white-space:nowrap;line-height:1.4;}
+  /* 뉴스바 제외 뱃지 */
+  .memo-hide-badge{position:absolute;top:-8px;left:-8px;background:#6b7280;color:#fff;font-size:10px;font-weight:700;padding:2px 6px;border-radius:20px;box-shadow:0 2px 6px rgba(0,0,0,0.18);pointer-events:none;white-space:nowrap;line-height:1.4;}
+  /* 메모 편집 모달 - 뉴스바 제외 토글 */
+  .memo-ticker-toggle-btn{margin-top:2px;}
+  .memo-ticker-toggle-btn.active{background:var(--gray-700);border-color:var(--gray-700);color:#fff;}
   /* 메모 컬럼 헤더 — 이름 클릭 가능 */
   .memo-col-name-btn{background:none;border:none;cursor:pointer;font-size:14px;font-weight:600;padding:0;font-family:var(--font);transition:opacity 0.15s;}
   .memo-col-name-btn:hover{opacity:0.75;}
@@ -1543,6 +1548,9 @@
     <div class="form-row">
       <label class="form-label">내용 *</label>
       <textarea class="memo-edit-textarea" id="memo-content" placeholder="메모를 입력하세요..."></textarea>
+    </div>
+    <div class="form-row" style="margin-bottom:0;display:flex;justify-content:flex-end;">
+      <button type="button" class="btn memo-ticker-toggle-btn" id="memo-hide-ticker-btn" onclick="toggleMemoHideTicker()" title="켜두면 헤더 뉴스바에 표시되지 않습니다">&#128276; 뉴스바 제외</button>
     </div>
     <div class="modal-footer">
       <button class="btn btn-danger" id="memoDeleteBtn" onclick="deleteMemoFromModal()" style="display:none;margin-right:auto">&#10005; 삭제</button>
@@ -2219,6 +2227,7 @@ const memoExpandState = {};
 // ── 데이터 ──
 let notes        = [];
 let memoEditId   = null;
+let memoHideTicker = false;
 let policies     = [];
 let policyEditId = null;
 let activePolicyCat = null;
@@ -5738,10 +5747,20 @@ async function loadNotes() {
   return notesLocalLoad();
 }
 
+// hr_notes 테이블에 hide_ticker 컬럼이 아직 없는 환경(Supabase 마이그레이션 전)을 위한 폴백 감지
+function isMissingHideTickerErr(error) {
+  const msg = (error && error.message) || '';
+  return /hide_ticker/i.test(msg);
+}
+
 async function noteInsert(n) {
-  const row = { member:n.member, content:n.content };
+  const row = { member:n.member, content:n.content, hide_ticker: !!n.hide_ticker };
   if (!useLocal && sbClient) {
-    const { data, error } = await sbClient.from('hr_notes').insert(row).select();
+    let { data, error } = await sbClient.from('hr_notes').insert(row).select();
+    if (error && isMissingHideTickerErr(error)) {
+      console.warn('[notes] hr_notes.hide_ticker 컬럼이 없어 해당 값 없이 저장합니다. Supabase에서 다음 SQL을 실행해주세요: ALTER TABLE hr_notes ADD COLUMN hide_ticker boolean DEFAULT false;');
+      ({ data, error } = await sbClient.from('hr_notes').insert({ member:n.member, content:n.content }).select());
+    }
     if (error) { showToast('메모 저장 오류: '+(error.message||''), 'error'); return null; }
     const nr = data && data[0];
     if (nr) notes.unshift(nr);
@@ -5752,12 +5771,16 @@ async function noteInsert(n) {
   notes.unshift(nr); notesLocalSave(); return nr;
 }
 
-async function noteUpdate(id, content) {
+async function noteUpdate(id, content, hideTicker) {
   if (!useLocal && sbClient) {
-    const { error } = await sbClient.from('hr_notes').update({ content }).eq('id', id);
+    let { error } = await sbClient.from('hr_notes').update({ content, hide_ticker: !!hideTicker }).eq('id', id);
+    if (error && isMissingHideTickerErr(error)) {
+      console.warn('[notes] hr_notes.hide_ticker 컬럼이 없어 해당 값 없이 수정합니다. Supabase에서 다음 SQL을 실행해주세요: ALTER TABLE hr_notes ADD COLUMN hide_ticker boolean DEFAULT false;');
+      ({ error } = await sbClient.from('hr_notes').update({ content }).eq('id', id));
+    }
     if (error) { showToast('메모 수정 오류: '+(error.message||''), 'error'); return false; }
   }
-  const n = notes.find(n => n.id === id); if (n) n.content = content;
+  const n = notes.find(n => n.id === id); if (n) { n.content = content; n.hide_ticker = !!hideTicker; }
   if (useLocal || !sbClient) notesLocalSave();
   return true;
 }
@@ -5786,7 +5809,7 @@ function renderMemoTicker() {
   const el = document.getElementById('memoTicker');
   if (!el) return;
   clearInterval(memoTickerTimer);
-  memoTickerList = notes.filter(n => (n.content||'').trim());
+  memoTickerList = notes.filter(n => (n.content||'').trim() && !n.hide_ticker);
 
   if (!memoTickerList.length) { el.innerHTML = ''; return; }
   if (memoTickerIndex >= memoTickerList.length) memoTickerIndex = 0;
@@ -5940,6 +5963,9 @@ function renderMemoCard(n, bg, col) {
   const badge = commentCount > 0
     ? `<div class="memo-comment-badge">💬 ${commentCount}</div>`
     : '';
+  const hideBadge = n.hide_ticker
+    ? `<div class="memo-hide-badge" title="헤더 뉴스바에 표시되지 않음">🔕</div>`
+    : '';
   return `<div class="memo-card" id="memo-card-${n.id}"
       style="background:${bg};transform:rotate(${rot}deg);"
       onclick="openMemoEditModal(${n.id})"
@@ -5948,6 +5974,7 @@ function renderMemoCard(n, bg, col) {
       ontouchmove="memoLongPressCancel()"
       oncontextmenu="event.preventDefault();deleteMemoCard(${n.id})">
     ${badge}
+    ${hideBadge}
     <div class="memo-card-body">${escHtml(n.content)}</div>
     <div class="memo-card-footer">
       <span class="memo-card-date">${dateStr}</span>
@@ -5973,10 +6000,13 @@ function openMemoEditModal(id, prefillMember) {
     const n = notes.find(n => n.id === id);
     if (n) { sel.value = n.member; document.getElementById('memo-content').value = n.content || ''; }
     document.getElementById('memoDeleteBtn').style.display = '';
+    memoHideTicker = !!(n && n.hide_ticker);
   } else {
     document.getElementById('memo-content').value = '';
     document.getElementById('memoDeleteBtn').style.display = 'none';
+    memoHideTicker = false;
   }
+  updateMemoHideTickerBtn();
 
   // 댓글 섹션 렌더
   const commentArea = document.getElementById('memoCommentArea');
@@ -5994,6 +6024,18 @@ function closeMemoEditModal() {
   memoEditId = null;
 }
 
+function toggleMemoHideTicker() {
+  memoHideTicker = !memoHideTicker;
+  updateMemoHideTickerBtn();
+}
+
+function updateMemoHideTickerBtn() {
+  const btn = document.getElementById('memo-hide-ticker-btn');
+  if (!btn) return;
+  btn.classList.toggle('active', memoHideTicker);
+  btn.innerHTML = memoHideTicker ? '&#128277; 뉴스바 제외됨' : '&#128276; 뉴스바 제외';
+}
+
 async function saveMemoFromModal() {
   const member  = document.getElementById('memo-member').value;
   const content = document.getElementById('memo-content').value.trim();
@@ -6001,10 +6043,10 @@ async function saveMemoFromModal() {
   if (!member)  { showToast('담당자를 선택하세요.', 'error'); return; }
 
   if (memoEditId !== null) {
-    const ok = await noteUpdate(memoEditId, content);
+    const ok = await noteUpdate(memoEditId, content, memoHideTicker);
     if (ok) { closeMemoEditModal(); renderMemoTab(); showToast('메모를 수정했습니다.'); }
   } else {
-    const nr = await noteInsert({ member, content });
+    const nr = await noteInsert({ member, content, hide_ticker: memoHideTicker });
     if (nr) { closeMemoEditModal(); renderMemoTab(); showToast('메모를 추가했습니다.'); }
   }
 }
