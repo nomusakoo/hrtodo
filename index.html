@@ -1552,7 +1552,7 @@
     <div class="modal-footer">
       <div style="display:flex;align-items:center;gap:8px;margin-right:auto;">
         <button class="btn btn-danger" id="memoDeleteBtn" onclick="deleteMemoFromModal()" style="display:none">&#10005; 삭제</button>
-        <button type="button" class="btn memo-ticker-toggle-btn" id="memo-hide-ticker-btn" onclick="toggleMemoHideTicker()" title="켜두면 헤더 뉴스바에 표시되지 않습니다">&#128276; 뉴스바 제외</button>
+        <button type="button" class="btn memo-ticker-toggle-btn" id="memo-show-ticker-btn" onclick="toggleMemoShowTicker()" title="기본은 뉴스바에 표시되지 않으며, 켜면 헤더 뉴스바에 표시됩니다">&#128277; 뉴스바 미노출</button>
       </div>
       <button class="btn" onclick="closeMemoEditModal()">취소</button>
       <button class="btn btn-primary" onclick="saveMemoFromModal()">&#10003; 저장</button>
@@ -2227,7 +2227,7 @@ const memoExpandState = {};
 // ── 데이터 ──
 let notes        = [];
 let memoEditId   = null;
-let memoHideTicker = false;
+let memoShowTicker = false; // 뉴스바 노출 여부 — 기본값 false(미노출), 켜면 true(노출)
 let policies     = [];
 let policyEditId = null;
 let activePolicyCat = null;
@@ -6009,13 +6009,13 @@ function openMemoEditModal(id, prefillMember) {
     const n = notes.find(n => n.id === id);
     if (n) { sel.value = n.member; document.getElementById('memo-content').value = n.content || ''; }
     document.getElementById('memoDeleteBtn').style.display = '';
-    memoHideTicker = !!(n && n.hide_ticker);
+    memoShowTicker = !(n && n.hide_ticker);
   } else {
     document.getElementById('memo-content').value = '';
     document.getElementById('memoDeleteBtn').style.display = 'none';
-    memoHideTicker = false;
+    memoShowTicker = false; // 새 메모 기본값: 뉴스바 미노출(필요할 때만 노출 켜기)
   }
-  updateMemoHideTickerBtn();
+  updateMemoTickerBtn();
 
   // 댓글 섹션 렌더
   const commentArea = document.getElementById('memoCommentArea');
@@ -6033,16 +6033,16 @@ function closeMemoEditModal() {
   memoEditId = null;
 }
 
-function toggleMemoHideTicker() {
-  memoHideTicker = !memoHideTicker;
-  updateMemoHideTickerBtn();
+function toggleMemoShowTicker() {
+  memoShowTicker = !memoShowTicker;
+  updateMemoTickerBtn();
 }
 
-function updateMemoHideTickerBtn() {
-  const btn = document.getElementById('memo-hide-ticker-btn');
+function updateMemoTickerBtn() {
+  const btn = document.getElementById('memo-show-ticker-btn');
   if (!btn) return;
-  btn.classList.toggle('active', memoHideTicker);
-  btn.innerHTML = memoHideTicker ? '&#128277; 뉴스바 제외됨' : '&#128276; 뉴스바 제외';
+  btn.classList.toggle('active', memoShowTicker);
+  btn.innerHTML = memoShowTicker ? '&#128276; 뉴스바에 표시' : '&#128277; 뉴스바 미노출';
 }
 
 async function saveMemoFromModal() {
@@ -6052,10 +6052,10 @@ async function saveMemoFromModal() {
   if (!member)  { showToast('담당자를 선택하세요.', 'error'); return; }
 
   if (memoEditId !== null) {
-    const ok = await noteUpdate(memoEditId, content, memoHideTicker);
+    const ok = await noteUpdate(memoEditId, content, !memoShowTicker);
     if (ok) { closeMemoEditModal(); renderMemoTab(); showToast('메모를 수정했습니다.'); }
   } else {
-    const nr = await noteInsert({ member, content, hide_ticker: memoHideTicker });
+    const nr = await noteInsert({ member, content, hide_ticker: !memoShowTicker });
     if (nr) { closeMemoEditModal(); renderMemoTab(); showToast('메모를 추가했습니다.'); }
   }
 }
