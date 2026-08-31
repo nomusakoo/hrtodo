@@ -2694,7 +2694,7 @@ function switchTab(tab, animate = true) {
 
   if (tab === 'dashboard') renderDash();
   if (tab === 'weekly')    renderWeekly();
-  if (tab === 'exec')      renderExecDash();
+  if (tab === 'exec')      { renderExecDash(); setTimeout(scrollExecTodayIntoView, 70); }
   if (tab === 'memo')      renderMemoTab();
   if (tab === 'policy')    renderPolicyTab();
   if (tab === 'tasks') {
@@ -5100,6 +5100,13 @@ function goExecToday() { execMonthOffset = 0; renderExecDash(); }
 function setExecViewMode(mode) {
   execViewMode = mode;
   renderExecDash();
+}
+
+// 모바일에서 임원 대시보드 진입 시 오늘 날짜가 먼저 보이도록 스크롤
+function scrollExecTodayIntoView() {
+  if (!isMobileView()) return;
+  const target = document.querySelector(execViewMode === 'agenda' ? '.exec-agenda-today' : '.cal-cell.cal-today');
+  if (target) target.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
 function renderExecDash() {
