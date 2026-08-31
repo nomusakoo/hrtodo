@@ -5095,17 +5095,26 @@ function getExecYM() {
   return { year:d.getFullYear(), month:d.getMonth() };
 }
 function shiftExecMonth(dir) { execMonthOffset += dir; renderExecDash(); }
-function goExecToday() { execMonthOffset = 0; renderExecDash(); }
+function goExecToday() { execMonthOffset = 0; renderExecDash(); setTimeout(scrollExecTodayIntoView, 70); }
 
 function setExecViewMode(mode) {
   execViewMode = mode;
   renderExecDash();
+  setTimeout(scrollExecTodayIntoView, 70);
 }
 
-// 모바일에서 임원 대시보드 진입 시 오늘 날짜가 먼저 보이도록 스크롤
+// 임원 대시보드 진입 시 오늘(없으면 오늘 이후 가장 가까운 일정)이 먼저 보이도록 스크롤
 function scrollExecTodayIntoView() {
-  if (!isMobileView()) return;
-  const target = document.querySelector(execViewMode === 'agenda' ? '.exec-agenda-today' : '.cal-cell.cal-today');
+  if (execViewMode === 'month') {
+    const target = document.querySelector('.cal-cell.cal-today');
+    if (target) target.scrollIntoView({ behavior:'smooth', block:'start' });
+    return;
+  }
+  const groups = [...document.querySelectorAll('.exec-agenda-group[data-date]')];
+  if (!groups.length) return;
+  const now = new Date(); now.setHours(0,0,0,0);
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const target = groups.find(g => (g.dataset.date||'') >= todayStr) || groups[groups.length-1];
   if (target) target.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
@@ -5161,7 +5170,7 @@ function renderExecAgenda(year, month) {
         <span class="exec-agenda-title">${e.deadline?'⚑ ':''}${escHtml(e.title)}</span>
         ${e.desc ? `<span class="exec-agenda-desc">${escHtml(e.desc)}</span>` : ''}
       </div>`).join('');
-    return `<div class="exec-agenda-group${isToday?' exec-agenda-today':''}">
+    return `<div class="exec-agenda-group${isToday?' exec-agenda-today':''}" data-date="${dateStr}">
       <div class="exec-agenda-date ${dowClass}">${d.getMonth()+1}월 ${d.getDate()}일 (${wkNames[dow]})${isToday?' <span class="exec-agenda-today-badge">오늘</span>':''}</div>
       <div class="exec-agenda-items">${items}</div>
     </div>`;
