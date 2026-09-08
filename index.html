@@ -398,6 +398,9 @@
   .ix-detail-memo { flex:1; min-width:0; }
   .ix-detail-del { flex-shrink:0; background:none; border:none; color:var(--gray-300); cursor:pointer; font-size:12px; padding:6px; border-radius:4px; }
   .ix-detail-del:hover { background:var(--danger-bg); color:var(--danger); }
+  #ixDetailAddArea { flex:1; min-width:0; }
+  .ix-detail-add-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; width:100%; }
+  .ix-detail-add-member { width:100px; flex-shrink:0; }
   @media(max-width:600px) {
     .ix-detail-row { flex-wrap:wrap; }
     .ix-detail-date { width:118px; }
@@ -1743,7 +1746,7 @@
     <div class="ix-detail-summary" id="ixDetailSummary"></div>
     <div class="ix-detail-list" id="ixDetailList"></div>
     <div class="modal-footer">
-      <button class="btn btn-green btn-sm" style="margin-right:auto" onclick="openInteractionModalForDetailTeam()">+ 이 팀에 기록 추가</button>
+      <div id="ixDetailAddArea" style="margin-right:auto"></div>
       <button class="btn" onclick="closeIxTeamDetailModal()">닫기</button>
     </div>
   </div>
@@ -6696,9 +6699,11 @@ async function deleteInteractionItem(id) {
 
 // ── 팀 상세 정보 팝업 (네트워크형·순위보기 공용) ──
 let ixDetailTeam = null;
+let ixDetailAddOpen = false;
 
 function openIxTeamDetailModal(team) {
   ixDetailTeam = team;
+  ixDetailAddOpen = false;
   document.getElementById('ixTeamDetailModal').classList.add('open');
   renderIxTeamDetailModal();
 }
@@ -6706,12 +6711,24 @@ function openIxTeamDetailModal(team) {
 function closeIxTeamDetailModal() {
   document.getElementById('ixTeamDetailModal').classList.remove('open');
   ixDetailTeam = null;
+  ixDetailAddOpen = false;
 }
 
-function openInteractionModalForDetailTeam() {
-  const team = ixDetailTeam;
-  closeIxTeamDetailModal();
-  openInteractionModal(team);
+function toggleIxDetailAddRow() {
+  ixDetailAddOpen = !ixDetailAddOpen;
+  renderIxTeamDetailModal();
+}
+
+async function saveIxDetailNewRecord() {
+  const member = document.getElementById('ix-detail-new-member').value;
+  const date   = document.getElementById('ix-detail-new-date').value;
+  const person = document.getElementById('ix-detail-new-person').value.trim();
+  const memo   = document.getElementById('ix-detail-new-memo').value.trim();
+  if (!member) { showToast('담당자를 선택하세요.', 'error'); return; }
+  if (!date)   { showToast('날짜를 선택하세요.', 'error'); return; }
+
+  const nr = await interactionInsert({ member, team: ixDetailTeam, person, memo, interaction_date: date });
+  if (nr) { ixDetailAddOpen = false; renderInteractionTab(); showToast('상호작용을 기록했습니다.'); }
 }
 
 function renderIxTeamDetailModal() {
@@ -6730,6 +6747,26 @@ function renderIxTeamDetailModal() {
       <input type="text" class="form-input ix-detail-memo" value="${escHtml(ix.memo||'')}" placeholder="메모" onchange="updateInteractionField(${ix.id},'memo',this.value)">
       <button class="ix-detail-del" onclick="deleteInteractionItem(${ix.id})" title="삭제">&#10005;</button>
     </div>`).join('') : `<div class="memo-empty">조회 기간 내 기록이 없습니다.</div>`;
+
+  const addArea = document.getElementById('ixDetailAddArea');
+  if (!ixDetailAddOpen) {
+    addArea.innerHTML = `<button class="btn btn-green btn-sm" onclick="toggleIxDetailAddRow()">+ 이 팀에 기록 추가</button>`;
+    return;
+  }
+  const defaultMember = (myTaskOnly && myMember) ? myMember
+    : (currentUserName && MEMBERS.includes(currentUserName) ? currentUserName : (MEMBERS[0] || ''));
+  addArea.innerHTML = `
+    <div class="ix-detail-add-row">
+      <select class="form-select ix-detail-add-member" id="ix-detail-new-member">${
+        MEMBERS.map(m => `<option value="${escHtml(m)}" ${m===defaultMember?'selected':''}>${escHtml(m)}</option>`).join('')
+      }</select>
+      <input type="date" class="form-input ix-detail-date" id="ix-detail-new-date" value="${new Date().toISOString().slice(0,10)}">
+      <input type="text" class="form-input ix-detail-person" id="ix-detail-new-person" placeholder="구성원">
+      <input type="text" class="form-input ix-detail-memo" id="ix-detail-new-memo" placeholder="메모">
+      <button class="btn btn-sm" onclick="toggleIxDetailAddRow()">취소</button>
+      <button class="btn btn-primary btn-sm" onclick="saveIxDetailNewRecord()">&#10003; 저장</button>
+    </div>`;
+  setTimeout(() => document.getElementById('ix-detail-new-person')?.focus(), 30);
 }
 
 // ── 탭 렌더 ──
@@ -6893,8 +6930,8 @@ let ixExpandedTeam = null;
 let ixHoverId = null;
 let ixNodePos = {};       // id -> {x,y} 캐시 (재렌더 시 위치 유지)
 let ixNodeRScale = null;  // 최근 렌더의 반지름 스케일 (호버 확대에 사용)
-// 절제된 톤의 커스텀 팔레트 (기본 d3 팔레트보다 차분하고 앱 톤(--accent)과 어울리도록)
-const IX_PALETTE = ['#4a6fa5','#4f9d8f','#d3a24a','#c17a6f','#8b7fb0','#6fa8c9','#79a568','#c98a6b','#7f8ea3'];
+// 채도/명도를 통일한 선명한(원색 느낌) 팔레트 — 그라디언트+그림자로 입체감은 유지
+const IX_PALETTE = ['#357dd4','#35d4c7','#5d35d4','#d4359f','#35d485','#d47735','#ac35d4','#35acd4','#d4356a'];
 let ixTeamColor = d3.scaleOrdinal(IX_PALETTE); // 팀명 -> 색상 (렌더마다 새로 만들면 카운트 변동에 따라 색이 바뀌므로 고정 유지)
 let ixDefs = null; // svg <defs> 선택 캐시 (그라디언트/필터 정의)
 
