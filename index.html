@@ -390,6 +390,20 @@
     .ix-layout { flex-direction:column; }
     .ix-recent-card { width:auto; max-height:320px; }
   }
+  .ix-detail-summary { font-size:12.5px; color:var(--gray-500); margin-bottom:12px; }
+  .ix-detail-list { display:flex; flex-direction:column; gap:6px; max-height:400px; overflow-y:auto; margin-bottom:4px; }
+  .ix-detail-row { display:flex; align-items:center; gap:6px; }
+  .ix-detail-date { width:132px; flex-shrink:0; }
+  .ix-detail-person { width:110px; flex-shrink:0; }
+  .ix-detail-memo { flex:1; min-width:0; }
+  .ix-detail-del { flex-shrink:0; background:none; border:none; color:var(--gray-300); cursor:pointer; font-size:12px; padding:6px; border-radius:4px; }
+  .ix-detail-del:hover { background:var(--danger-bg); color:var(--danger); }
+  @media(max-width:600px) {
+    .ix-detail-row { flex-wrap:wrap; }
+    .ix-detail-date { width:118px; }
+    .ix-detail-person { width:90px; }
+    .ix-detail-memo { flex-basis:100%; order:3; }
+  }
   /* 더보기 팝업 리스트 */
   .cal-more-item { display:flex; align-items:center; gap:8px; padding:8px 16px; border-bottom:1px solid var(--gray-100); cursor:pointer; transition:background 0.1s; }
   .cal-more-item:last-child { border-bottom:none; }
@@ -1715,6 +1729,22 @@
     <div class="modal-footer">
       <button class="btn" onclick="closeInteractionModal()">취소</button>
       <button class="btn btn-primary" onclick="saveInteraction()">&#10003; 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 상호작용 팀 상세 팝업 (네트워크형·순위보기 공용) -->
+<div class="modal-overlay" id="ixTeamDetailModal">
+  <div class="memo-edit-modal" style="width:600px;max-width:92vw;">
+    <div class="modal-header" style="margin-bottom:4px;">
+      <div class="modal-title" id="ixDetailModalTitle">&#128279; 팀 상세</div>
+      <button class="modal-close" onclick="closeIxTeamDetailModal()">&#10005;</button>
+    </div>
+    <div class="ix-detail-summary" id="ixDetailSummary"></div>
+    <div class="ix-detail-list" id="ixDetailList"></div>
+    <div class="modal-footer">
+      <button class="btn btn-green btn-sm" style="margin-right:auto" onclick="openInteractionModalForDetailTeam()">+ 이 팀에 기록 추가</button>
+      <button class="btn" onclick="closeIxTeamDetailModal()">닫기</button>
     </div>
   </div>
 </div>
@@ -6600,8 +6630,25 @@ async function interactionDelete(id) {
   return true;
 }
 
+async function interactionUpdate(id, patch) {
+  if (!useLocal && sbClient) {
+    const { error } = await sbClient.from('hr_interactions').update(patch).eq('id', id);
+    if (error) { showToast('상호작용 기록 수정 오류: '+(error.message||''), 'error'); return false; }
+  }
+  const ix = interactions.find(i => i.id === id);
+  if (ix) Object.assign(ix, patch);
+  if (useLocal || !sbClient) interactionsLocalSave();
+  return true;
+}
+
+async function updateInteractionField(id, field, value) {
+  const patch = {}; patch[field] = value;
+  const ok = await interactionUpdate(id, patch);
+  if (ok) { renderInteractionTab(); showToast('수정했습니다.'); }
+}
+
 // ── 모달 ──
-function openInteractionModal() {
+function openInteractionModal(prefillTeam) {
   const sel = document.getElementById('ix-member');
   const defaultMember = (myTaskOnly && myMember) ? myMember
     : (currentUserName && MEMBERS.includes(currentUserName) ? currentUserName : (MEMBERS[0] || ''));
@@ -6612,16 +6659,16 @@ function openInteractionModal() {
   document.getElementById('ix-memo').value   = '';
 
   const teamSel = document.getElementById('ix-team');
-  teamSel.innerHTML = '<option value="" disabled selected>상대 팀을 선택하세요</option>' +
+  teamSel.innerHTML = '<option value="" disabled' + (prefillTeam?'':' selected') + '>상대 팀을 선택하세요</option>' +
     NH_TEAM_GROUPS.map(g => `<optgroup label="${escHtml(g.label)}">${
-      g.teams.map(t => `<option value="${escHtml(t)}">${escHtml(t)}</option>`).join('')
+      g.teams.map(t => `<option value="${escHtml(t)}" ${t===prefillTeam?'selected':''}>${escHtml(t)}</option>`).join('')
     }</optgroup>`).join('');
 
   const persons = [...new Set(interactions.map(i=>i.person).filter(Boolean))].sort();
   document.getElementById('ix-person-datalist').innerHTML = persons.map(p=>`<option value="${escHtml(p)}">`).join('');
 
   document.getElementById('interactionModal').classList.add('open');
-  setTimeout(() => teamSel.focus(), 50);
+  setTimeout(() => (prefillTeam ? document.getElementById('ix-person') : teamSel).focus(), 50);
 }
 
 function closeInteractionModal() {
@@ -6647,6 +6694,44 @@ async function deleteInteractionItem(id) {
   await interactionDelete(id);
 }
 
+// ── 팀 상세 정보 팝업 (네트워크형·순위보기 공용) ──
+let ixDetailTeam = null;
+
+function openIxTeamDetailModal(team) {
+  ixDetailTeam = team;
+  document.getElementById('ixTeamDetailModal').classList.add('open');
+  renderIxTeamDetailModal();
+}
+
+function closeIxTeamDetailModal() {
+  document.getElementById('ixTeamDetailModal').classList.remove('open');
+  ixDetailTeam = null;
+}
+
+function openInteractionModalForDetailTeam() {
+  const team = ixDetailTeam;
+  closeIxTeamDetailModal();
+  openInteractionModal(team);
+}
+
+function renderIxTeamDetailModal() {
+  const modal = document.getElementById('ixTeamDetailModal');
+  if (!modal || !modal.classList.contains('open') || !ixDetailTeam) return;
+  const team = ixDetailTeam;
+  const records = getFilteredInteractions().filter(i => (i.team||'').trim() === team)
+    .sort((a,b) => (b.interaction_date||'').localeCompare(a.interaction_date||'') || (b.id||0)-(a.id||0));
+
+  document.getElementById('ixDetailModalTitle').innerHTML = `&#128279; ${escHtml(team)}`;
+  document.getElementById('ixDetailSummary').textContent = `${ixRangeLabelText()} · 상호작용 ${records.length}건`;
+  document.getElementById('ixDetailList').innerHTML = records.length ? records.map(ix => `
+    <div class="ix-detail-row">
+      <input type="date" class="form-input ix-detail-date" value="${ix.interaction_date||''}" onchange="updateInteractionField(${ix.id},'interaction_date',this.value)">
+      <input type="text" class="form-input ix-detail-person" value="${escHtml(ix.person||'')}" placeholder="구성원" onchange="updateInteractionField(${ix.id},'person',this.value)">
+      <input type="text" class="form-input ix-detail-memo" value="${escHtml(ix.memo||'')}" placeholder="메모" onchange="updateInteractionField(${ix.id},'memo',this.value)">
+      <button class="ix-detail-del" onclick="deleteInteractionItem(${ix.id})" title="삭제">&#10005;</button>
+    </div>`).join('') : `<div class="memo-empty">조회 기간 내 기록이 없습니다.</div>`;
+}
+
 // ── 탭 렌더 ──
 function renderInteractionTab() {
   const filtered = getFilteredInteractions();
@@ -6655,6 +6740,7 @@ function renderInteractionTab() {
   renderInteractionRecentList();
   if (ixViewMode === 'rank') renderInteractionRankChart();
   else renderInteractionGraph();
+  renderIxTeamDetailModal();
 }
 
 function renderInteractionRecentList() {
@@ -6707,7 +6793,7 @@ function renderInteractionRankChart() {
     const topPersons = [...info.persons.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3)
       .map(([p,c])=>`${p} ${c}건`).join(', ');
     return `<div class="ix-rank-bar-col"
-        onclick="focusInteractionTeam('${escHtml(team)}')"
+        onclick="openIxTeamDetailModal('${escHtml(team)}')"
         onmouseenter="showIxRankTooltip(event,'${escHtml(team)}',${info.count},'${escHtml(topPersons)}')"
         onmouseleave="hideIxTooltip()">
       <div class="ix-rank-bar-value">${info.count}건</div>
@@ -6972,7 +7058,7 @@ function renderInteractionGraph() {
           .call(ixDragBehavior(ixSim))
           .on('mouseenter', (event,d) => onIxNodeHover(event, d, true))
           .on('mouseleave', (event,d) => onIxNodeHover(event, d, false))
-          .on('click', (event,d) => { if (d.kind === 'team') focusInteractionTeam(d.label); });
+          .on('click', (event,d) => { if (d.kind === 'team') { focusInteractionTeam(d.label); openIxTeamDetailModal(d.label); } });
         g.filter(d => d.kind === 'root').append('circle')
           .attr('class', 'ix-root-pulse')
           .attr('r', 44);
@@ -7832,11 +7918,13 @@ function isEditingOpen() {
   const mm = document.getElementById('memoEditModal');
   const pm = document.getElementById('policyEditModal');
   const im = document.getElementById('interactionModal');
+  const idm = document.getElementById('ixTeamDetailModal');
   return (tm && tm.classList.contains('open'))
       || (em && em.classList.contains('open'))
       || (mm && mm.classList.contains('open'))
       || (pm && pm.classList.contains('open'))
       || (im && im.classList.contains('open'))
+      || (idm && idm.classList.contains('open'))
       || document.querySelector('.master-inline-form.open') !== null;
 }
 
