@@ -1664,8 +1664,7 @@
     </div>
     <div class="form-row">
       <label class="form-label">상대 팀 *</label>
-      <input type="text" class="form-input" id="ix-team" list="ix-team-datalist" placeholder="예: 총무팀, 재무팀, 영업1팀...">
-      <datalist id="ix-team-datalist"></datalist>
+      <select class="form-select" id="ix-team"></select>
     </div>
     <div class="form-row">
       <label class="form-label">상대 구성원 (선택)</label>
@@ -6488,6 +6487,26 @@ function openLeaveEditModal(id) {
 // ══════════════════════════════════════════════
 //  INTERACTIONS (인사노무팀 ↔ 타 팀/구성원 상호작용 기록)
 // ══════════════════════════════════════════════
+
+// NH농우바이오 조직도 — '상대 팀' 선택 목록 (표시용 그룹핑, 인사노무팀 자신은 제외)
+const NH_TEAM_GROUPS = [
+  { label:'임원/위원회', teams:['임원실','코칭위원회'] },
+  { label:'감사실', teams:['감사실','감사실 감사팀'] },
+  { label:'기획조정실', teams:['기획조정실','기획조정실 기획팀','기획조정실 전략팀','기획조정실 재무회계팀'] },
+  { label:'경영지원본부', teams:['경영지원본부','경영지원본부 경영지원팀','경영지원본부 IT관리팀'] },
+  { label:'SM부문', teams:['SM부문'] },
+  { label:'국내사업본부', teams:['국내사업본부','국내사업본부 영업팀','국내사업본부 경기지점','국내사업본부 경남지점','국내사업본부 대구지점','국내사업본부 충남지점','국내사업본부 충북지점','국내사업본부 전남지점','국내사업본부 전북지점','국내사업본부 강원지점','국내사업본부 안동지점','국내사업본부 제주지점','국내사업본부 영업지원팀'] },
+  { label:'마케팅본부', teams:['마케팅본부','마케팅본부 홍보파트','마케팅본부 대외마케팅팀','마케팅본부 PM1팀','마케팅본부 PM2팀'] },
+  { label:'해외사업본부', teams:['해외사업본부','해외사업본부 해외영업1팀','해외사업본부 해외영업2팀','해외사업본부 해외영업지원팀'] },
+  { label:'자재사업본부', teams:['자재사업본부','자재사업본부 자재사업지원단','자재사업본부 자재사업지원단 상토생산관리팀','자재사업본부 자재사업지원단 자재팀'] },
+  { label:'SC부문', teams:['SC부문'] },
+  { label:'QA본부', teams:['QA본부','QA본부 종자관리기획팀','QA본부 포장관리팀','QA본부 품질보증팀','QA본부 종자기술팀','QA본부 품질관리팀'] },
+  { label:'생산관리본부', teams:['생산관리본부','생산관리본부 해외위탁생산팀','생산관리본부 직영생산지원팀','생산관리본부 생산자원관리센터','생산관리본부 생산자원관리센터 자원관리팀','생산관리본부 생산자원관리센터 증식팀'] },
+  { label:'R&D본부', teams:['R&D본부','R&D본부 연구지원팀','연구지원팀 김제연구지원파트','연구지원팀 남부연구지원파트','연구지원팀 안성연구지원파트','R&D본부 여주연구소','R&D본부 고추연구1팀','R&D본부 고추연구2팀','R&D본부 무연구팀','R&D본부 배추연구팀','R&D본부 양배추연구팀','R&D본부 토마토연구팀','R&D본부 남부육종연구소','R&D본부 남부육종연구소 수박연구팀','R&D본부 남부육종연구소 참외연구팀','R&D본부 남부육종연구소 오이연구팀','R&D본부 남부육종연구소 양파연구팀','R&D본부 생명공학연구소','R&D본부 생명공학연구소 대외병리파트','R&D본부 생명공학연구소 병리연구팀','R&D본부 생명공학연구소 분석연구팀','R&D본부 생명공학연구소 형질연구팀','R&D본부 생명공학연구소 순도검정팀'] },
+  { label:'해외법인', teams:['세농종묘 유한공사 현지법인','KOREANA SEED INDONESIA 현지법인','NONGWOO SEED AMERICA 현지법인','NONGWOO SEED INDIA PVT.LTD','NONGWOO SEED MYANMAR','NONGWOO SEED TURKEY'] },
+  { label:'기타', teams:['농우바이오 노동조합','농협경제지주'] },
+];
+
 const INTERACTIONS_KEY = 'hr_interactions_v1';
 
 function interactionsLocalLoad() {
@@ -6552,17 +6571,20 @@ function openInteractionModal() {
   sel.innerHTML = MEMBERS.map(m => `<option value="${escHtml(m)}" ${m===defaultMember?'selected':''}>${m}</option>`).join('');
 
   document.getElementById('ix-date').value   = new Date().toISOString().slice(0,10);
-  document.getElementById('ix-team').value   = '';
   document.getElementById('ix-person').value = '';
   document.getElementById('ix-memo').value   = '';
 
-  const teams = [...new Set(interactions.map(i=>i.team).filter(Boolean))].sort();
-  document.getElementById('ix-team-datalist').innerHTML = teams.map(t=>`<option value="${escHtml(t)}">`).join('');
+  const teamSel = document.getElementById('ix-team');
+  teamSel.innerHTML = '<option value="" disabled selected>상대 팀을 선택하세요</option>' +
+    NH_TEAM_GROUPS.map(g => `<optgroup label="${escHtml(g.label)}">${
+      g.teams.map(t => `<option value="${escHtml(t)}">${escHtml(t)}</option>`).join('')
+    }</optgroup>`).join('');
+
   const persons = [...new Set(interactions.map(i=>i.person).filter(Boolean))].sort();
   document.getElementById('ix-person-datalist').innerHTML = persons.map(p=>`<option value="${escHtml(p)}">`).join('');
 
   document.getElementById('interactionModal').classList.add('open');
-  setTimeout(() => document.getElementById('ix-team').focus(), 50);
+  setTimeout(() => teamSel.focus(), 50);
 }
 
 function closeInteractionModal() {
