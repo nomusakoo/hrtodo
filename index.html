@@ -398,8 +398,7 @@
   .ix-detail-memo { flex:1; min-width:0; }
   .ix-detail-del { flex-shrink:0; background:none; border:none; color:var(--gray-300); cursor:pointer; font-size:12px; padding:6px; border-radius:4px; }
   .ix-detail-del:hover { background:var(--danger-bg); color:var(--danger); }
-  #ixDetailAddArea { flex:1; min-width:0; }
-  .ix-detail-add-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; width:100%; }
+  .ix-detail-add-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; width:100%; margin-top:8px; padding-top:8px; border-top:1px solid var(--gray-100); }
   .ix-detail-add-member { width:100px; flex-shrink:0; }
   @media(max-width:600px) {
     .ix-detail-row { flex-wrap:wrap; }
@@ -1745,8 +1744,9 @@
     </div>
     <div class="ix-detail-summary" id="ixDetailSummary"></div>
     <div class="ix-detail-list" id="ixDetailList"></div>
+    <div id="ixDetailAddFields"></div>
     <div class="modal-footer">
-      <div id="ixDetailAddArea" style="margin-right:auto"></div>
+      <div id="ixDetailFooterActions" style="display:flex;gap:8px;margin-right:auto"></div>
       <button class="btn" onclick="closeIxTeamDetailModal()">닫기</button>
     </div>
   </div>
@@ -6748,14 +6748,16 @@ function renderIxTeamDetailModal() {
       <button class="ix-detail-del" onclick="deleteInteractionItem(${ix.id})" title="삭제">&#10005;</button>
     </div>`).join('') : `<div class="memo-empty">조회 기간 내 기록이 없습니다.</div>`;
 
-  const addArea = document.getElementById('ixDetailAddArea');
+  const fieldsArea = document.getElementById('ixDetailAddFields');
+  const actionsArea = document.getElementById('ixDetailFooterActions');
   if (!ixDetailAddOpen) {
-    addArea.innerHTML = `<button class="btn btn-green btn-sm" onclick="toggleIxDetailAddRow()">+ 이 팀에 기록 추가</button>`;
+    fieldsArea.innerHTML = '';
+    actionsArea.innerHTML = `<button class="btn btn-green btn-sm" onclick="toggleIxDetailAddRow()">+ 이 팀에 기록 추가</button>`;
     return;
   }
   const defaultMember = (myTaskOnly && myMember) ? myMember
     : (currentUserName && MEMBERS.includes(currentUserName) ? currentUserName : (MEMBERS[0] || ''));
-  addArea.innerHTML = `
+  fieldsArea.innerHTML = `
     <div class="ix-detail-add-row">
       <select class="form-select ix-detail-add-member" id="ix-detail-new-member">${
         MEMBERS.map(m => `<option value="${escHtml(m)}" ${m===defaultMember?'selected':''}>${escHtml(m)}</option>`).join('')
@@ -6763,9 +6765,10 @@ function renderIxTeamDetailModal() {
       <input type="date" class="form-input ix-detail-date" id="ix-detail-new-date" value="${new Date().toISOString().slice(0,10)}">
       <input type="text" class="form-input ix-detail-person" id="ix-detail-new-person" placeholder="구성원">
       <input type="text" class="form-input ix-detail-memo" id="ix-detail-new-memo" placeholder="메모">
-      <button class="btn btn-sm" onclick="toggleIxDetailAddRow()">취소</button>
-      <button class="btn btn-primary btn-sm" onclick="saveIxDetailNewRecord()">&#10003; 저장</button>
     </div>`;
+  actionsArea.innerHTML = `
+    <button class="btn btn-sm" onclick="toggleIxDetailAddRow()">취소</button>
+    <button class="btn btn-primary btn-sm" onclick="saveIxDetailNewRecord()">&#10003; 저장</button>`;
   setTimeout(() => document.getElementById('ix-detail-new-person')?.focus(), 30);
 }
 
