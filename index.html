@@ -954,8 +954,7 @@
     45% { transform: scale(1.07); }
     60% { transform: scale(1); }
   }
-  .cal-chip.task-important { animation: taskHeartbeat 1.2s ease-in-out infinite; box-shadow: 0 0 0 1px rgba(220,38,38,0.4); }
-  .cal-multiday-bar.task-important { animation: taskHeartbeat 1.2s ease-in-out infinite; box-shadow: 0 0 0 1px rgba(220,38,38,0.4); }
+  .cal-chip.task-important, .cal-multiday-bar.task-important { animation: taskHeartbeat 1.2s ease-in-out infinite; box-shadow: 0 0 0 1px rgba(0,0,0,0.3); }
   /* 멀티데이 슬롯 spacer (높이 확보용 투명 칩) */
   .cal-chip-spacer {
     height: 22px; margin-bottom: 2px; visibility: hidden; pointer-events: none;
@@ -1861,9 +1860,9 @@
         <label class="form-label">비고</label>
         <textarea class="form-textarea" id="f-note" placeholder="추가 메모 (선택)"></textarea>
       </div>
-      <div class="form-row" style="margin-top:14px;display:flex;align-items:center;gap:8px;">
+      <div class="form-row" style="margin-top:14px;padding-left:14px;display:flex;align-items:center;gap:8px;">
         <input type="checkbox" id="f-important">
-        <label for="f-important" style="font-size:13px;font-weight:600;color:var(--gray-700);cursor:pointer">❤️ 중요 업무 (월별 대시보드에서 강조 표시되고, '내 업무만 보기'와 무관하게 모두에게 보입니다)</label>
+        <label for="f-important" style="font-size:13px;font-weight:600;color:var(--gray-700);cursor:pointer">&#11088; 중요 업무</label>
       </div>
       <!-- 반복 설정 -->
       <div id="repeatSection" style="margin-top:14px;padding:12px 14px;background:var(--gray-50);border-radius:var(--radius);border:1px solid var(--border);">
@@ -2460,6 +2459,10 @@ let leaves       = [];
 let leaveEditId  = null;
 let noteComments = [];
 let interactions = [];
+
+// 중요 업무 강조색 — 담당자 색과 무관하게 항상 이 색으로 표시
+const IMPORTANT_BG = '#eaff00';
+const IMPORTANT_TX = '#111';
 
 // 내 업무만 보기 ON이면 myMember만, 아니면 전체 tasks 반환
 function activeTasks() {
@@ -4918,12 +4921,13 @@ function renderCalendar(year, month) {
       const isDone = t.status === '완료';
       const lightBg = memberBg(t.member);
       const tx = memberTx(t.member);
+      const impActive = t.important && !isDone;
       return `<div class="cal-chip ${isDone?'is-done':''} ${t.important?'task-important':''}"
-        style="background:${isDone?'var(--gray-100)':lightBg};color:${isDone?'var(--gray-400)':tx};border-left:3px solid ${isDone?'var(--gray-300)':bg};"
+        style="background:${isDone?'var(--gray-100)':(impActive?IMPORTANT_BG:lightBg)};color:${isDone?'var(--gray-400)':(impActive?IMPORTANT_TX:tx)};border-left:3px solid ${isDone?'var(--gray-300)':(impActive?IMPORTANT_TX:bg)};"
         draggable="true" data-task-id="${t.id}"
         onclick="event.stopPropagation();openEditModal(${t.id})"
-        title="${t.important?'❤️ 중요 업무 ':''}${escHtml(t.title)}">
-        <span class="cal-chip-title">${t.important?'❤️ ':''}${escHtml(t.title)}</span>
+        title="${t.important?'⭐ 중요 업무 ':''}${escHtml(t.title)}">
+        <span class="cal-chip-title">${t.important?'⭐ ':''}${escHtml(t.title)}</span>
       </div>`;
     }).join('');
 
@@ -4978,9 +4982,10 @@ function _drawMultiDayOverlays(year, month, placements, cellDates) {
     const width  = (endCellEl.offsetLeft + endCellEl.offsetWidth - cellEl.offsetLeft) - 4;
 
     const isDone   = t.status === '완료';
-    const bg       = memberColor(t.member);
-    const lightBg  = isDone ? 'var(--gray-100)' : memberBg(t.member);
-    const tx       = isDone ? 'var(--gray-400)' : memberTx(t.member);
+    const impActive = t.important && !isDone;
+    const bg       = impActive ? IMPORTANT_TX : memberColor(t.member);
+    const lightBg  = isDone ? 'var(--gray-100)' : (impActive ? IMPORTANT_BG : memberBg(t.member));
+    const tx       = isDone ? 'var(--gray-400)' : (impActive ? IMPORTANT_TX : memberTx(t.member));
     const isVisStart = t.date >= cellDates[rowIdx*7] && t.date <= cellDates[rowIdx*7+6]
       ? t.date === (cellDates[rowIdx*7+colStart] ? `${cellDates[rowIdx*7+colStart].getFullYear()}-${String(cellDates[rowIdx*7+colStart].getMonth()+1).padStart(2,'0')}-${String(cellDates[rowIdx*7+colStart].getDate()).padStart(2,'0')}` : '') : false;
     const trueStart = t.date;
@@ -5001,9 +5006,9 @@ function _drawMultiDayOverlays(year, month, placements, cellDates) {
       `border-radius:${trueStart===visStartStr?'4px':'0'} ${trueEnd===`${cellDates[rowIdx*7+colEnd].getFullYear()}-${String(cellDates[rowIdx*7+colEnd].getMonth()+1).padStart(2,'0')}-${String(cellDates[rowIdx*7+colEnd].getDate()).padStart(2,'0')}`?'4px':'0'} ${trueEnd===`${cellDates[rowIdx*7+colEnd].getFullYear()}-${String(cellDates[rowIdx*7+colEnd].getMonth()+1).padStart(2,'0')}-${String(cellDates[rowIdx*7+colEnd].getDate()).padStart(2,'0')}`?'4px':'0'} ${trueStart===visStartStr?'4px':'0'}`,
     ].join(';');
     bar.setAttribute('data-task-id', t.id);
-    bar.setAttribute('title', `${t.important?'❤️ 중요 업무 ':''}${escHtml(t.title)} (${fmtDate(trueStart)}~${fmtDate(trueEnd)})`);
+    bar.setAttribute('title', `${t.important?'⭐ 중요 업무 ':''}${escHtml(t.title)} (${fmtDate(trueStart)}~${fmtDate(trueEnd)})`);
     bar.innerHTML = showText
-      ? `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;font-weight:500;padding:0 4px;line-height:${CHIP_H}px;">${t.important?'❤️ ':''}${escHtml(t.title)}</span>`
+      ? `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;font-weight:500;padding:0 4px;line-height:${CHIP_H}px;">${t.important?'⭐ ':''}${escHtml(t.title)}</span>`
       : '';
     bar.addEventListener('click', e => { e.stopPropagation(); openEditModal(t.id); });
     grid.appendChild(bar);
