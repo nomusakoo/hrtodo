@@ -344,11 +344,16 @@
   .ix-svg { display:block; }
   .ix-node { transition:opacity 0.25s ease; }
   .ix-node.ix-dim { opacity:0.15; }
-  .ix-node.ix-hover circle { filter:drop-shadow(0 0 6px rgba(74,111,165,0.55)); }
-  .ix-node circle { stroke:#fff; stroke-width:2px; }
-  .ix-node.ix-node-team circle { cursor:pointer; }
-  .ix-node.ix-node-team.ix-expanded circle { stroke:var(--accent); stroke-width:3px; }
-  .ix-node-label { font-size:11.5px; font-weight:600; fill:var(--gray-700); paint-order:stroke; stroke:#fbfcfe; stroke-width:3px; pointer-events:none; user-select:none; }
+  .ix-node-circle { stroke:rgba(255,255,255,0.85); stroke-width:1.5px; filter:url(#ix-shadow); }
+  .ix-node.ix-node-team .ix-node-circle { cursor:pointer; }
+  .ix-node.ix-node-team.ix-expanded .ix-node-circle { stroke:var(--accent); stroke-width:3px; }
+  .ix-node.ix-hover .ix-node-circle { filter:url(#ix-shadow) drop-shadow(0 0 7px rgba(74,111,165,0.6)); }
+  .ix-root-pulse { fill:none; stroke:var(--accent); stroke-width:2px; transform-origin:center; animation:ixRootPulse 2.6s ease-out infinite; }
+  @keyframes ixRootPulse {
+    0%   { r:44px; stroke-opacity:0.55; }
+    100% { r:64px; stroke-opacity:0; }
+  }
+  .ix-node-label { font-size:11.5px; font-weight:600; fill:var(--gray-700); paint-order:stroke; stroke:#fbfcfe; stroke-width:2px; pointer-events:none; user-select:none; }
   .ix-node-root .ix-node-label { font-size:13px; font-weight:700; fill:#fff; stroke:none; paint-order:normal; }
   .ix-node-count { font-size:9.5px; font-weight:700; fill:#fff; pointer-events:none; user-select:none; }
   .ix-node.ix-node-team .ix-node-count, .ix-node.ix-node-person .ix-node-count { fill:#fff; }
@@ -384,6 +389,20 @@
   @media(max-width:900px) {
     .ix-layout { flex-direction:column; }
     .ix-recent-card { width:auto; max-height:320px; }
+  }
+  .ix-detail-summary { font-size:12.5px; color:var(--gray-500); margin-bottom:12px; }
+  .ix-detail-list { display:flex; flex-direction:column; gap:6px; max-height:400px; overflow-y:auto; margin-bottom:4px; }
+  .ix-detail-row { display:flex; align-items:center; gap:6px; }
+  .ix-detail-date { width:132px; flex-shrink:0; }
+  .ix-detail-person { width:110px; flex-shrink:0; }
+  .ix-detail-memo { flex:1; min-width:0; }
+  .ix-detail-del { flex-shrink:0; background:none; border:none; color:var(--gray-300); cursor:pointer; font-size:12px; padding:6px; border-radius:4px; }
+  .ix-detail-del:hover { background:var(--danger-bg); color:var(--danger); }
+  @media(max-width:600px) {
+    .ix-detail-row { flex-wrap:wrap; }
+    .ix-detail-date { width:118px; }
+    .ix-detail-person { width:90px; }
+    .ix-detail-memo { flex-basis:100%; order:3; }
   }
   /* 더보기 팝업 리스트 */
   .cal-more-item { display:flex; align-items:center; gap:8px; padding:8px 16px; border-bottom:1px solid var(--gray-100); cursor:pointer; transition:background 0.1s; }
@@ -1710,6 +1729,22 @@
     <div class="modal-footer">
       <button class="btn" onclick="closeInteractionModal()">취소</button>
       <button class="btn btn-primary" onclick="saveInteraction()">&#10003; 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- 상호작용 팀 상세 팝업 (네트워크형·순위보기 공용) -->
+<div class="modal-overlay" id="ixTeamDetailModal">
+  <div class="memo-edit-modal" style="width:600px;max-width:92vw;">
+    <div class="modal-header" style="margin-bottom:4px;">
+      <div class="modal-title" id="ixDetailModalTitle">&#128279; 팀 상세</div>
+      <button class="modal-close" onclick="closeIxTeamDetailModal()">&#10005;</button>
+    </div>
+    <div class="ix-detail-summary" id="ixDetailSummary"></div>
+    <div class="ix-detail-list" id="ixDetailList"></div>
+    <div class="modal-footer">
+      <button class="btn btn-green btn-sm" style="margin-right:auto" onclick="openInteractionModalForDetailTeam()">+ 이 팀에 기록 추가</button>
+      <button class="btn" onclick="closeIxTeamDetailModal()">닫기</button>
     </div>
   </div>
 </div>
@@ -6595,8 +6630,25 @@ async function interactionDelete(id) {
   return true;
 }
 
+async function interactionUpdate(id, patch) {
+  if (!useLocal && sbClient) {
+    const { error } = await sbClient.from('hr_interactions').update(patch).eq('id', id);
+    if (error) { showToast('상호작용 기록 수정 오류: '+(error.message||''), 'error'); return false; }
+  }
+  const ix = interactions.find(i => i.id === id);
+  if (ix) Object.assign(ix, patch);
+  if (useLocal || !sbClient) interactionsLocalSave();
+  return true;
+}
+
+async function updateInteractionField(id, field, value) {
+  const patch = {}; patch[field] = value;
+  const ok = await interactionUpdate(id, patch);
+  if (ok) { renderInteractionTab(); showToast('수정했습니다.'); }
+}
+
 // ── 모달 ──
-function openInteractionModal() {
+function openInteractionModal(prefillTeam) {
   const sel = document.getElementById('ix-member');
   const defaultMember = (myTaskOnly && myMember) ? myMember
     : (currentUserName && MEMBERS.includes(currentUserName) ? currentUserName : (MEMBERS[0] || ''));
@@ -6607,16 +6659,16 @@ function openInteractionModal() {
   document.getElementById('ix-memo').value   = '';
 
   const teamSel = document.getElementById('ix-team');
-  teamSel.innerHTML = '<option value="" disabled selected>상대 팀을 선택하세요</option>' +
+  teamSel.innerHTML = '<option value="" disabled' + (prefillTeam?'':' selected') + '>상대 팀을 선택하세요</option>' +
     NH_TEAM_GROUPS.map(g => `<optgroup label="${escHtml(g.label)}">${
-      g.teams.map(t => `<option value="${escHtml(t)}">${escHtml(t)}</option>`).join('')
+      g.teams.map(t => `<option value="${escHtml(t)}" ${t===prefillTeam?'selected':''}>${escHtml(t)}</option>`).join('')
     }</optgroup>`).join('');
 
   const persons = [...new Set(interactions.map(i=>i.person).filter(Boolean))].sort();
   document.getElementById('ix-person-datalist').innerHTML = persons.map(p=>`<option value="${escHtml(p)}">`).join('');
 
   document.getElementById('interactionModal').classList.add('open');
-  setTimeout(() => teamSel.focus(), 50);
+  setTimeout(() => (prefillTeam ? document.getElementById('ix-person') : teamSel).focus(), 50);
 }
 
 function closeInteractionModal() {
@@ -6642,6 +6694,44 @@ async function deleteInteractionItem(id) {
   await interactionDelete(id);
 }
 
+// ── 팀 상세 정보 팝업 (네트워크형·순위보기 공용) ──
+let ixDetailTeam = null;
+
+function openIxTeamDetailModal(team) {
+  ixDetailTeam = team;
+  document.getElementById('ixTeamDetailModal').classList.add('open');
+  renderIxTeamDetailModal();
+}
+
+function closeIxTeamDetailModal() {
+  document.getElementById('ixTeamDetailModal').classList.remove('open');
+  ixDetailTeam = null;
+}
+
+function openInteractionModalForDetailTeam() {
+  const team = ixDetailTeam;
+  closeIxTeamDetailModal();
+  openInteractionModal(team);
+}
+
+function renderIxTeamDetailModal() {
+  const modal = document.getElementById('ixTeamDetailModal');
+  if (!modal || !modal.classList.contains('open') || !ixDetailTeam) return;
+  const team = ixDetailTeam;
+  const records = getFilteredInteractions().filter(i => (i.team||'').trim() === team)
+    .sort((a,b) => (b.interaction_date||'').localeCompare(a.interaction_date||'') || (b.id||0)-(a.id||0));
+
+  document.getElementById('ixDetailModalTitle').innerHTML = `&#128279; ${escHtml(team)}`;
+  document.getElementById('ixDetailSummary').textContent = `${ixRangeLabelText()} · 상호작용 ${records.length}건`;
+  document.getElementById('ixDetailList').innerHTML = records.length ? records.map(ix => `
+    <div class="ix-detail-row">
+      <input type="date" class="form-input ix-detail-date" value="${ix.interaction_date||''}" onchange="updateInteractionField(${ix.id},'interaction_date',this.value)">
+      <input type="text" class="form-input ix-detail-person" value="${escHtml(ix.person||'')}" placeholder="구성원" onchange="updateInteractionField(${ix.id},'person',this.value)">
+      <input type="text" class="form-input ix-detail-memo" value="${escHtml(ix.memo||'')}" placeholder="메모" onchange="updateInteractionField(${ix.id},'memo',this.value)">
+      <button class="ix-detail-del" onclick="deleteInteractionItem(${ix.id})" title="삭제">&#10005;</button>
+    </div>`).join('') : `<div class="memo-empty">조회 기간 내 기록이 없습니다.</div>`;
+}
+
 // ── 탭 렌더 ──
 function renderInteractionTab() {
   const filtered = getFilteredInteractions();
@@ -6650,6 +6740,7 @@ function renderInteractionTab() {
   renderInteractionRecentList();
   if (ixViewMode === 'rank') renderInteractionRankChart();
   else renderInteractionGraph();
+  renderIxTeamDetailModal();
 }
 
 function renderInteractionRecentList() {
@@ -6702,7 +6793,7 @@ function renderInteractionRankChart() {
     const topPersons = [...info.persons.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3)
       .map(([p,c])=>`${p} ${c}건`).join(', ');
     return `<div class="ix-rank-bar-col"
-        onclick="focusInteractionTeam('${escHtml(team)}')"
+        onclick="openIxTeamDetailModal('${escHtml(team)}')"
         onmouseenter="showIxRankTooltip(event,'${escHtml(team)}',${info.count},'${escHtml(topPersons)}')"
         onmouseleave="hideIxTooltip()">
       <div class="ix-rank-bar-value">${info.count}건</div>
@@ -6802,7 +6893,23 @@ let ixExpandedTeam = null;
 let ixHoverId = null;
 let ixNodePos = {};       // id -> {x,y} 캐시 (재렌더 시 위치 유지)
 let ixNodeRScale = null;  // 최근 렌더의 반지름 스케일 (호버 확대에 사용)
-let ixTeamColor = d3.scaleOrdinal(d3.schemeTableau10); // 팀명 -> 색상 (렌더마다 새로 만들면 카운트 변동에 따라 색이 바뀌므로 고정 유지)
+// 절제된 톤의 커스텀 팔레트 (기본 d3 팔레트보다 차분하고 앱 톤(--accent)과 어울리도록)
+const IX_PALETTE = ['#4a6fa5','#4f9d8f','#d3a24a','#c17a6f','#8b7fb0','#6fa8c9','#79a568','#c98a6b','#7f8ea3'];
+let ixTeamColor = d3.scaleOrdinal(IX_PALETTE); // 팀명 -> 색상 (렌더마다 새로 만들면 카운트 변동에 따라 색이 바뀌므로 고정 유지)
+let ixDefs = null; // svg <defs> 선택 캐시 (그라디언트/필터 정의)
+
+function ixEnsureNodeGradient(color) {
+  const id = 'ix-grad-' + color.replace('#','');
+  if (ixDefs && ixDefs.select('#'+id).empty()) {
+    const c = d3.hsl(color);
+    const light = c.brighter(1.1).formatHex();
+    const dark  = c.darker(0.9).formatHex();
+    const grad = ixDefs.append('radialGradient').attr('id', id).attr('cx','32%').attr('cy','28%').attr('r','75%');
+    grad.append('stop').attr('offset','0%').attr('stop-color', light);
+    grad.append('stop').attr('offset','100%').attr('stop-color', dark);
+  }
+  return `url(#${id})`;
+}
 
 function buildInteractionGraphData() {
   const scoped = getFilteredInteractions();
@@ -6823,19 +6930,27 @@ function buildInteractionGraphData() {
 
   [...teamMap.entries()].sort((a,b)=>b[1].count-a[1].count).forEach(([team, info]) => {
     const teamId = 'team:' + team;
-    nodes.push({ id:teamId, kind:'team', label:team, count:info.count, color:ixTeamColor(team) });
-    links.push({ source:'__root__', target:teamId, value:info.count });
+    const col = ixTeamColor(team);
+    nodes.push({ id:teamId, kind:'team', label:team, count:info.count, color:col });
+    links.push({ source:'__root__', target:teamId, value:info.count, color:col });
 
     if (ixExpandedTeam === team) {
       [...info.persons.entries()].sort((a,b)=>b[1]-a[1]).forEach(([person, cnt]) => {
         const personId = teamId + '|person:' + person;
-        nodes.push({ id:personId, kind:'person', label:person, count:cnt, color:ixTeamColor(team), team });
-        links.push({ source:teamId, target:personId, value:cnt });
+        nodes.push({ id:personId, kind:'person', label:person, count:cnt, color:col, team });
+        links.push({ source:teamId, target:personId, value:cnt, color:col });
       });
     }
   });
 
   return { nodes, links };
+}
+
+// 살짝 곡선으로 휘어지는 링크 경로 (완전 직선보다 부드러운 인상)
+function ixLinkPath(d) {
+  const dx = d.target.x - d.source.x, dy = d.target.y - d.source.y;
+  const dr = Math.sqrt(dx*dx + dy*dy) * 1.5;
+  return `M${d.source.x},${d.source.y}A${dr},${dr} 0 0,1 ${d.target.x},${d.target.y}`;
 }
 
 function ixDragBehavior(sim) {
@@ -6881,12 +6996,20 @@ function renderInteractionGraph() {
       .attr('class', 'ix-svg')
       .attr('viewBox', `0 0 ${width} ${height}`)
       .attr('width', '100%').attr('height', height);
+    ixDefs = svg.append('defs');
+    ixDefs.append('filter').attr('id','ix-shadow').attr('x','-60%').attr('y','-60%').attr('width','220%').attr('height','220%')
+      .append('feDropShadow').attr('dx',0).attr('dy',2).attr('stdDeviation',3.2)
+      .attr('flood-color','#1f2f47').attr('flood-opacity',0.28);
+    const rootGrad = ixDefs.append('radialGradient').attr('id','ix-grad-root').attr('cx','32%').attr('cy','28%').attr('r','75%');
+    rootGrad.append('stop').attr('offset','0%').attr('stop-color', d3.hsl('#4a6fa5').brighter(0.9).formatHex());
+    rootGrad.append('stop').attr('offset','100%').attr('stop-color', d3.hsl('#4a6fa5').darker(0.7).formatHex());
     svg.append('g').attr('class', 'ix-links-layer');
     svg.append('g').attr('class', 'ix-nodes-layer');
     wrap.addEventListener('mouseenter', () => { if (ixSim) ixSim.alphaTarget(0.025).restart(); });
     wrap.addEventListener('mouseleave', () => { if (ixSim) ixSim.alphaTarget(0); hideIxTooltip(); });
   } else {
     svg.attr('viewBox', `0 0 ${width} ${height}`).attr('height', height);
+    ixDefs = svg.select('defs');
   }
 
   if (!ixSim) {
@@ -6897,9 +7020,7 @@ function renderInteractionGraph() {
       .force('collide', d3.forceCollide())
       .force('radial', d3.forceRadial(0, cx, cy).strength(d => d.kind==='team' ? 0.85 : 0))
       .on('tick', () => {
-        if (ixLinkSel) ixLinkSel
-          .attr('x1', d=>d.source.x).attr('y1', d=>d.source.y)
-          .attr('x2', d=>d.target.x).attr('y2', d=>d.target.y);
+        if (ixLinkSel) ixLinkSel.attr('d', ixLinkPath);
         if (ixNodeSel) ixNodeSel.attr('transform', d => `translate(${d.x},${d.y})`);
         ixSim.nodes().forEach(n => { ixNodePos[n.id] = { x:n.x, y:n.y }; });
       });
@@ -6908,17 +7029,21 @@ function renderInteractionGraph() {
   ixSim.force('collide').radius(d => (d.kind==='root'?52:(d.kind==='team'?nodeR(d.count)+30:nodeR(d.count)+16)));
 
   const linkKey = l => (l.source.id || l.source) + '->' + (l.target.id || l.target);
-  ixLinkSel = svg.select('.ix-links-layer').selectAll('line.ix-link')
+  ixLinkSel = svg.select('.ix-links-layer').selectAll('path.ix-link')
     .data(links, linkKey)
     .join(
-      enter => enter.append('line')
+      enter => enter.append('path')
         .attr('class', 'ix-link')
-        .attr('stroke', '#aab4c2')
+        .attr('fill', 'none')
+        .attr('stroke-linecap', 'round')
+        .attr('stroke', d => d.color || '#aab4c2')
         .attr('stroke-opacity', 0)
         .attr('stroke-width', d => linkW(d.value))
-        .attr('x1', d=>cx).attr('y1', d=>cy).attr('x2', d=>cx).attr('y2', d=>cy)
-        .call(sel => sel.transition().duration(350).attr('stroke-opacity', 0.5)),
-      update => update.call(sel => sel.transition().duration(300).attr('stroke-width', d => linkW(d.value))),
+        .attr('d', `M${cx},${cy}A0,0 0 0,1 ${cx},${cy}`)
+        .call(sel => sel.transition().duration(350).attr('stroke-opacity', 0.42)),
+      update => update.call(sel => sel.transition().duration(300)
+        .attr('stroke', d => d.color || '#aab4c2')
+        .attr('stroke-width', d => linkW(d.value))),
       exit => exit.transition().duration(200).attr('stroke-opacity', 0).remove()
     );
 
@@ -6933,10 +7058,14 @@ function renderInteractionGraph() {
           .call(ixDragBehavior(ixSim))
           .on('mouseenter', (event,d) => onIxNodeHover(event, d, true))
           .on('mouseleave', (event,d) => onIxNodeHover(event, d, false))
-          .on('click', (event,d) => { if (d.kind === 'team') focusInteractionTeam(d.label); });
+          .on('click', (event,d) => { if (d.kind === 'team') { focusInteractionTeam(d.label); openIxTeamDetailModal(d.label); } });
+        g.filter(d => d.kind === 'root').append('circle')
+          .attr('class', 'ix-root-pulse')
+          .attr('r', 44);
         g.append('circle')
+          .attr('class', 'ix-node-circle')
           .attr('r', d => d.kind==='root' ? 48 : nodeR(d.count))
-          .attr('fill', d => d.kind==='root' ? 'var(--accent)' : d.color);
+          .attr('fill', d => d.kind==='root' ? 'url(#ix-grad-root)' : ixEnsureNodeGradient(d.color));
         g.append('text').attr('class', 'ix-node-count')
           .attr('text-anchor', 'middle').attr('dy', 4)
           .text(d => d.kind==='root' ? '' : `${d.count}건`);
@@ -6948,7 +7077,7 @@ function renderInteractionGraph() {
         return g;
       },
       update => {
-        update.select('circle').transition().duration(300).attr('r', d => d.kind==='root' ? 48 : nodeR(d.count));
+        update.select('.ix-node-circle').transition().duration(300).attr('r', d => d.kind==='root' ? 48 : nodeR(d.count));
         update.select('.ix-node-count').text(d => d.kind==='root' ? '' : `${d.count}건`);
         update.select('.ix-node-label').attr('dy', d => d.kind==='root' ? 5 : nodeR(d.count) + 15);
         update.classed('ix-expanded', d => d.kind === 'team' && d.label === ixExpandedTeam);
@@ -6967,7 +7096,7 @@ function onIxNodeHover(event, d, entering) {
   ixHoverId = entering ? d.id : null;
   updateIxHighlight();
   const baseR = d.kind === 'root' ? 48 : (ixNodeRScale ? ixNodeRScale(d.count) : 20);
-  d3.select(event.currentTarget).select('circle')
+  d3.select(event.currentTarget).select('.ix-node-circle')
     .transition().duration(180).attr('r', entering ? baseR * 1.16 : baseR);
   if (entering) {
     if (ixSim) ixSim.alpha(Math.min((ixSim.alpha()||0) + 0.18, 0.8)).restart();
@@ -7789,11 +7918,13 @@ function isEditingOpen() {
   const mm = document.getElementById('memoEditModal');
   const pm = document.getElementById('policyEditModal');
   const im = document.getElementById('interactionModal');
+  const idm = document.getElementById('ixTeamDetailModal');
   return (tm && tm.classList.contains('open'))
       || (em && em.classList.contains('open'))
       || (mm && mm.classList.contains('open'))
       || (pm && pm.classList.contains('open'))
       || (im && im.classList.contains('open'))
+      || (idm && idm.classList.contains('open'))
       || document.querySelector('.master-inline-form.open') !== null;
 }
 
