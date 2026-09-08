@@ -946,6 +946,16 @@
   }
   .cal-multiday-bar:hover { filter: brightness(0.9); }
   .cal-multiday-bar.is-done { opacity: 0.6; text-decoration: line-through; }
+  /* 중요 업무 — 심장 박동처럼 두근두근 */
+  @keyframes taskHeartbeat {
+    0%, 100% { transform: scale(1); }
+    15% { transform: scale(1.07); }
+    30% { transform: scale(1); }
+    45% { transform: scale(1.07); }
+    60% { transform: scale(1); }
+  }
+  .cal-chip.task-important { animation: taskHeartbeat 1.2s ease-in-out infinite; box-shadow: 0 0 0 1px rgba(220,38,38,0.4); }
+  .cal-multiday-bar.task-important { animation: taskHeartbeat 1.2s ease-in-out infinite; box-shadow: 0 0 0 1px rgba(220,38,38,0.4); }
   /* 멀티데이 슬롯 spacer (높이 확보용 투명 칩) */
   .cal-chip-spacer {
     height: 22px; margin-bottom: 2px; visibility: hidden; pointer-events: none;
@@ -1851,6 +1861,10 @@
         <label class="form-label">비고</label>
         <textarea class="form-textarea" id="f-note" placeholder="추가 메모 (선택)"></textarea>
       </div>
+      <div class="form-row" style="margin-top:14px;display:flex;align-items:center;gap:8px;">
+        <input type="checkbox" id="f-important">
+        <label for="f-important" style="font-size:13px;font-weight:600;color:var(--gray-700);cursor:pointer">❤️ 중요 업무 (월별 대시보드에서 강조 표시되고, '내 업무만 보기'와 무관하게 모두에게 보입니다)</label>
+      </div>
       <!-- 반복 설정 -->
       <div id="repeatSection" style="margin-top:14px;padding:12px 14px;background:var(--gray-50);border-radius:var(--radius);border:1px solid var(--border);">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
@@ -2296,8 +2310,14 @@ async function dbLoad() {
   return data || [];
 }
 
+// hr_tasks에 아직 없는 컬럼(예: important) 관련 오류인지 감지 — 없어도 앱이 멈추지 않도록 폴백
+function isMissingColumnErr(error, key) {
+  const msg = (error && error.message) || '';
+  return /column/i.test(msg) && new RegExp(key, 'i').test(msg);
+}
+
 async function dbInsert(task) {
-  const row = { title:task.title, member:task.member, cat:task.cat, date:task.date, status:task.status, note:task.note||'', time:task.time||'' };
+  const row = { title:task.title, member:task.member, cat:task.cat, date:task.date, status:task.status, note:task.note||'', time:task.time||'', important: !!task.important };
   if (task.end_date) row.end_date = task.end_date;
   if (task.repeat_id) row.repeat_id = task.repeat_id;
   if (useLocal || !sbClient) {
@@ -2305,7 +2325,12 @@ async function dbInsert(task) {
     const newId = arr.length ? Math.max(...arr.map(t=>t.id)) + 1 : 1;
     const nr = { id:newId, ...row }; arr.push(nr); localSave(arr); return nr;
   }
-  const { data, error } = await sbClient.from('hr_tasks').insert(row).select();
+  let { data, error } = await sbClient.from('hr_tasks').insert(row).select();
+  if (error && isMissingColumnErr(error, 'important')) {
+    console.warn('[tasks] hr_tasks.important 컬럼이 없어 해당 값 없이 저장합니다. Supabase에서 다음 SQL을 실행해주세요: ALTER TABLE hr_tasks ADD COLUMN important boolean DEFAULT false;');
+    const { important, ...fallbackRow } = row;
+    ({ data, error } = await sbClient.from('hr_tasks').insert(fallbackRow).select());
+  }
   if (error) { showToast('저장 오류: '+(error.message||''), 'error'); return null; }
   return (data && data[0]) || null;
 }
@@ -2316,7 +2341,12 @@ async function dbUpdate(id, fields) {
     if (idx===-1) return null;
     Object.assign(arr[idx], fields); localSave(arr); return arr[idx];
   }
-  const { data, error } = await sbClient.from('hr_tasks').update(fields).eq('id', id).select();
+  let { data, error } = await sbClient.from('hr_tasks').update(fields).eq('id', id).select();
+  if (error && 'important' in fields && isMissingColumnErr(error, 'important')) {
+    console.warn('[tasks] hr_tasks.important 컬럼이 없어 해당 값 없이 수정합니다. Supabase에서 다음 SQL을 실행해주세요: ALTER TABLE hr_tasks ADD COLUMN important boolean DEFAULT false;');
+    const { important, ...fallbackFields } = fields;
+    ({ data, error } = await sbClient.from('hr_tasks').update(fallbackFields).eq('id', id).select());
+  }
   if (error) { showToast('수정 오류: '+(error.message||''), 'error'); return null; }
   return (data && data[0]) || { id, ...fields };
 }
@@ -2433,7 +2463,8 @@ let interactions = [];
 
 // 내 업무만 보기 ON이면 myMember만, 아니면 전체 tasks 반환
 function activeTasks() {
-  return (myTaskOnly && myMember) ? tasks.filter(t => t.member === myMember) : tasks;
+  // 중요 업무는 '내 업무만 보기'가 켜져 있어도 항상 모두에게 보이도록 예외 처리
+  return (myTaskOnly && myMember) ? tasks.filter(t => t.member === myMember || t.important) : tasks;
 }
 let filterStatusVal = '';
 let currentWeekOffset = 0;
@@ -3335,6 +3366,7 @@ function openAddModal(prefillDate) {
   document.getElementById('f-time').value='';
   document.getElementById('f-status').value='todo';
   document.getElementById('f-note').value='';
+  document.getElementById('f-important').checked=false;
   document.getElementById('modalDeleteBtn').style.display='none';
   document.getElementById('leaveDeleteBtn').style.display='none';
   document.getElementById('f-repeat').checked=false;
@@ -3375,6 +3407,7 @@ function openEditModal(id) {
   document.getElementById('f-time').value=t.time||'';
   document.getElementById('f-status').value=t.status;
   document.getElementById('f-note').value=t.note||'';
+  document.getElementById('f-important').checked=!!t.important;
   document.getElementById('leaveDeleteBtn').style.display='none';
   document.getElementById('taskModalTabBar').style.display='none';
   switchTaskModalTab('task');
@@ -3402,6 +3435,7 @@ async function saveTask() {
   const time=document.getElementById('f-time').value||'';
   const status=document.getElementById('f-status').value;
   const note=document.getElementById('f-note').value.trim();
+  const important=document.getElementById('f-important').checked;
   if (!title)  { alert('업무명을 입력하세요.'); return; }
   if (!member) { alert('담당자를 선택하세요.'); return; }
   if (!date)   { alert('날짜를 선택하세요.'); return; }
@@ -3411,7 +3445,7 @@ async function saveTask() {
   const isOnWeekly = document.getElementById('view-weekly').style.display    !== 'none';
 
   if (editId) {
-    const fields={title,member,cat,date,end_date:endDate||null,time,status,note};
+    const fields={title,member,cat,date,end_date:endDate||null,time,status,note,important};
     const updated=await dbUpdate(editId,fields);
     if (updated) {
       const t=tasks.find(t=>t.id===editId); if(t) Object.assign(t,fields);
@@ -3439,14 +3473,14 @@ async function saveTask() {
       });
       let added = 0;
       for (const d of dates) {
-        const newTask = await dbInsert({title, member, cat, date:d, time, status, note, repeat_id:repeatId});
+        const newTask = await dbInsert({title, member, cat, date:d, time, status, note, important, repeat_id:repeatId});
         if (newTask) { tasks.push(newTask); added++; }
       }
       closeModal();
       if (isOnDash) renderDash(); else if (isOnWeekly) { renderWeekly(); renderTable(); } else renderTable();
       showToast(`반복 업무 ${added}건을 추가했습니다.`);
     } else {
-      const newTask=await dbInsert({title,member,cat,date,end_date:endDate||null,time,status,note});
+      const newTask=await dbInsert({title,member,cat,date,end_date:endDate||null,time,status,note,important});
       if (newTask) {
         tasks.push(newTask);
         closeModal();
@@ -4884,12 +4918,12 @@ function renderCalendar(year, month) {
       const isDone = t.status === '완료';
       const lightBg = memberBg(t.member);
       const tx = memberTx(t.member);
-      return `<div class="cal-chip ${isDone?'is-done':''}"
+      return `<div class="cal-chip ${isDone?'is-done':''} ${t.important?'task-important':''}"
         style="background:${isDone?'var(--gray-100)':lightBg};color:${isDone?'var(--gray-400)':tx};border-left:3px solid ${isDone?'var(--gray-300)':bg};"
         draggable="true" data-task-id="${t.id}"
         onclick="event.stopPropagation();openEditModal(${t.id})"
-        title="${escHtml(t.title)}">
-        <span class="cal-chip-title">${escHtml(t.title)}</span>
+        title="${t.important?'❤️ 중요 업무 ':''}${escHtml(t.title)}">
+        <span class="cal-chip-title">${t.important?'❤️ ':''}${escHtml(t.title)}</span>
       </div>`;
     }).join('');
 
@@ -4955,7 +4989,7 @@ function _drawMultiDayOverlays(year, month, placements, cellDates) {
     const showText  = trueStart === visStartStr; // 이 행에서 업무의 실제 시작일인 경우만 제목 표시
 
     const bar = document.createElement('div');
-    bar.className = `cal-multiday-bar${isDone?' is-done':''}`;
+    bar.className = `cal-multiday-bar${isDone?' is-done':''}${t.important?' task-important':''}`;
     bar.style.cssText = [
       `left:${left}px`,
       `top:${top}px`,
@@ -4967,9 +5001,9 @@ function _drawMultiDayOverlays(year, month, placements, cellDates) {
       `border-radius:${trueStart===visStartStr?'4px':'0'} ${trueEnd===`${cellDates[rowIdx*7+colEnd].getFullYear()}-${String(cellDates[rowIdx*7+colEnd].getMonth()+1).padStart(2,'0')}-${String(cellDates[rowIdx*7+colEnd].getDate()).padStart(2,'0')}`?'4px':'0'} ${trueEnd===`${cellDates[rowIdx*7+colEnd].getFullYear()}-${String(cellDates[rowIdx*7+colEnd].getMonth()+1).padStart(2,'0')}-${String(cellDates[rowIdx*7+colEnd].getDate()).padStart(2,'0')}`?'4px':'0'} ${trueStart===visStartStr?'4px':'0'}`,
     ].join(';');
     bar.setAttribute('data-task-id', t.id);
-    bar.setAttribute('title', `${escHtml(t.title)} (${fmtDate(trueStart)}~${fmtDate(trueEnd)})`);
+    bar.setAttribute('title', `${t.important?'❤️ 중요 업무 ':''}${escHtml(t.title)} (${fmtDate(trueStart)}~${fmtDate(trueEnd)})`);
     bar.innerHTML = showText
-      ? `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;font-weight:500;padding:0 4px;line-height:${CHIP_H}px;">${escHtml(t.title)}</span>`
+      ? `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;font-weight:500;padding:0 4px;line-height:${CHIP_H}px;">${t.important?'❤️ ':''}${escHtml(t.title)}</span>`
       : '';
     bar.addEventListener('click', e => { e.stopPropagation(); openEditModal(t.id); });
     grid.appendChild(bar);
