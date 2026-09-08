@@ -6893,8 +6893,8 @@ let ixExpandedTeam = null;
 let ixHoverId = null;
 let ixNodePos = {};       // id -> {x,y} 캐시 (재렌더 시 위치 유지)
 let ixNodeRScale = null;  // 최근 렌더의 반지름 스케일 (호버 확대에 사용)
-// 절제된 톤의 커스텀 팔레트 (기본 d3 팔레트보다 차분하고 앱 톤(--accent)과 어울리도록)
-const IX_PALETTE = ['#4a6fa5','#4f9d8f','#d3a24a','#c17a6f','#8b7fb0','#6fa8c9','#79a568','#c98a6b','#7f8ea3'];
+// 절제된 톤의 커스텀 팔레트 — 채도/명도를 맞춘 쿨톤 위주 구성으로 촌스러운 원색·황토색 계열 배제
+const IX_PALETTE = ['#4a6fa5','#4a9caf','#7a6fbf','#b56fa0','#5aab7d','#4a86c2','#9a7fd9','#c4885f','#6f9ab5'];
 let ixTeamColor = d3.scaleOrdinal(IX_PALETTE); // 팀명 -> 색상 (렌더마다 새로 만들면 카운트 변동에 따라 색이 바뀌므로 고정 유지)
 let ixDefs = null; // svg <defs> 선택 캐시 (그라디언트/필터 정의)
 
