@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <style>
   :root {
     --primary: #1a1a2e; --primary-mid: #2d2d4e;
@@ -334,6 +335,42 @@
   .exec-agenda-title { font-size:13.5px; color:var(--gray-800); font-weight:500; }
   .exec-agenda-desc { font-size:12px; color:var(--gray-400); margin-left:auto; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:40%; }
   @media(max-width:700px){ .exec-agenda-desc{ display:none; } }
+
+  /* ── 상호작용 네트워크 탭 ── */
+  .ix-layout { display:flex; gap:16px; align-items:flex-start; }
+  .ix-graph-card { flex:1; min-width:0; background:#fff; border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow-sm); padding:16px; }
+  .ix-graph-hint { font-size:12px; color:var(--gray-400); margin-bottom:10px; }
+  .ix-graph-wrap { width:100%; border-radius:var(--radius); background:radial-gradient(circle at 50% 40%, #fbfcfe 0%, #f3f5f9 100%); overflow:hidden; }
+  .ix-svg { display:block; }
+  .ix-node { transition:opacity 0.25s ease; }
+  .ix-node.ix-dim { opacity:0.15; }
+  .ix-node.ix-hover circle { filter:drop-shadow(0 0 6px rgba(74,111,165,0.55)); }
+  .ix-node circle { stroke:#fff; stroke-width:2px; }
+  .ix-node.ix-node-team circle { cursor:pointer; }
+  .ix-node.ix-node-team.ix-expanded circle { stroke:var(--accent); stroke-width:3px; }
+  .ix-node-label { font-size:11.5px; font-weight:600; fill:var(--gray-700); paint-order:stroke; stroke:#fbfcfe; stroke-width:3px; pointer-events:none; user-select:none; }
+  .ix-node-root .ix-node-label { font-size:13px; fill:#fff; }
+  .ix-node-count { font-size:9.5px; font-weight:700; fill:#fff; pointer-events:none; user-select:none; }
+  .ix-node.ix-node-team .ix-node-count, .ix-node.ix-node-person .ix-node-count { fill:#fff; }
+  .ix-link { transition:opacity 0.25s ease; }
+  .ix-link.ix-dim { opacity:0.12; }
+  .ix-link.ix-hover { stroke:var(--accent) !important; }
+  .ix-empty-hint { position:absolute; font-size:12.5px; color:var(--gray-400); text-align:center; }
+  .ix-recent-card { width:300px; flex-shrink:0; background:#fff; border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow-sm); padding:14px; max-height:520px; overflow-y:auto; }
+  .ix-recent-title { font-size:13px; font-weight:700; color:var(--gray-700); margin-bottom:10px; }
+  .ix-recent-item { position:relative; padding:9px 26px 9px 10px; border-radius:8px; cursor:pointer; transition:background 0.12s; margin-bottom:4px; }
+  .ix-recent-item:hover { background:var(--accent-bg); }
+  .ix-recent-main { display:flex; align-items:baseline; gap:6px; flex-wrap:wrap; }
+  .ix-recent-date { font-size:10.5px; font-family:var(--font-mono); color:var(--gray-400); }
+  .ix-recent-team { font-size:12.5px; font-weight:600; color:var(--gray-800); }
+  .ix-recent-person { font-size:11.5px; color:var(--accent); }
+  .ix-recent-memo { font-size:11px; color:var(--gray-400); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ix-recent-del { position:absolute; top:6px; right:4px; background:none; border:none; color:var(--gray-300); cursor:pointer; font-size:11px; padding:4px; border-radius:4px; }
+  .ix-recent-del:hover { background:var(--danger-bg); color:var(--danger); }
+  @media(max-width:900px) {
+    .ix-layout { flex-direction:column; }
+    .ix-recent-card { width:auto; max-height:320px; }
+  }
   /* 더보기 팝업 리스트 */
   .cal-more-item { display:flex; align-items:center; gap:8px; padding:8px 16px; border-bottom:1px solid var(--gray-100); cursor:pointer; transition:background 0.1s; }
   .cal-more-item:last-child { border-bottom:none; }
@@ -1475,6 +1512,24 @@
       </div>
     </div>
 
+    <!-- INTERACTION NETWORK TAB (상호작용) -->
+    <div id="view-network" style="display:none">
+      <div class="page-header">
+        <div class="page-title">상호작용<span id="ixCountLabel"></span></div>
+        <button class="btn btn-green" onclick="openInteractionModal()">+ 상호작용 기록</button>
+      </div>
+      <div class="ix-layout">
+        <div class="ix-graph-card">
+          <div class="ix-graph-hint">팀 노드를 클릭하면 상호작용한 구성원이 펼쳐집니다. 선이 굵을수록 상호작용이 많다는 뜻이에요.</div>
+          <div class="ix-graph-wrap" id="ixGraphWrap"></div>
+        </div>
+        <div class="ix-recent-card">
+          <div class="ix-recent-title">최근 기록</div>
+          <div class="ix-recent-list" id="ixRecentList"></div>
+        </div>
+      </div>
+    </div><!-- /view-network -->
+
     <!-- EXEC DASHBOARD TAB (임원 대시보드) -->
     <div id="view-exec" style="display:none">
       <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
@@ -1588,7 +1643,46 @@
     </div>
     <div id="memoCommentArea" style="display:none"></div>
   </div>
-</div> (제도 항목 추가/수정) -->
+</div>
+
+<!-- 상호작용 기록 추가 모달 -->
+<div class="modal-overlay" id="interactionModal">
+  <div class="memo-edit-modal">
+    <div class="modal-header" style="margin-bottom:16px;">
+      <div class="modal-title">&#128279; 상호작용 기록 추가</div>
+      <button class="modal-close" onclick="closeInteractionModal()">&#10005;</button>
+    </div>
+    <div class="form-row-2">
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">담당자 *</label>
+        <select class="form-select" id="ix-member"></select>
+      </div>
+      <div class="form-row" style="margin-bottom:0">
+        <label class="form-label">날짜 *</label>
+        <input type="date" class="form-input" id="ix-date">
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="form-label">상대 팀 *</label>
+      <select class="form-select" id="ix-team"></select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">상대 구성원 (선택)</label>
+      <input type="text" class="form-input" id="ix-person" list="ix-person-datalist" placeholder="예: 김철수">
+      <datalist id="ix-person-datalist"></datalist>
+    </div>
+    <div class="form-row">
+      <label class="form-label">메모 (선택)</label>
+      <input type="text" class="form-input" id="ix-memo" placeholder="용건, 내용 등">
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeInteractionModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveInteraction()">&#10003; 저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- POLICY EDIT MODAL (제도 항목 추가/수정) -->
 <div class="modal-overlay" id="policyEditModal">
   <div class="policy-edit-modal">
     <div class="modal-header" style="margin-bottom:18px;">
@@ -2238,6 +2332,7 @@ const TAB_META = [
   { id:'exec',      label:'임원 대시보드', icon:'💼' },
   { id:'memo',      label:'메모',          icon:'🗒' },
   { id:'policy',    label:'제도',          icon:'📚' },
+  { id:'network',   label:'상호작용',      icon:'🕸' },
 ];
 const TAB_ORDER_KEY = 'hr_tab_order_v1';
 function loadTabConfig() {
@@ -2263,6 +2358,7 @@ let activePolicyCat = null;
 let leaves       = [];
 let leaveEditId  = null;
 let noteComments = [];
+let interactions = [];
 
 // 내 업무만 보기 ON이면 myMember만, 아니면 전체 tasks 반환
 function activeTasks() {
@@ -2466,6 +2562,7 @@ async function startApp() {
             policies      = await loadPoliciesSafe();
             leaves        = await loadLeavesSafe();
             noteComments  = await loadCommentsSafe();
+            interactions  = await loadInteractionsSafe();
             await migrateLegacyExecEvents();
             showLoading(false);
             renderAll();
@@ -2495,6 +2592,7 @@ async function startApp() {
     policies      = await loadPoliciesSafe();
     leaves        = await loadLeavesSafe();
     noteComments  = await loadCommentsSafe();
+    interactions  = await loadInteractionsSafe();
     await migrateLegacyExecEvents();
     if (useLocal || !sbClient) setDbStatus(false, '로컬 저장소');
     showLoading(false);
@@ -2525,6 +2623,10 @@ async function loadNotesSafe() {
 async function loadPoliciesSafe() {
   try { return await loadPolicies(); }
   catch (e) { console.warn('[policies] 테이블 없음, 빈 배열로 진행:', e.message||e); return []; }
+}
+async function loadInteractionsSafe() {
+  try { return await loadInteractions(); }
+  catch (e) { console.warn('[interactions] 테이블 없음, 빈 배열로 진행:', e.message||e); return []; }
 }
 
 function renderAll() {
@@ -2614,7 +2716,8 @@ function renderTabBar() {
     weekly:    '🗓 주간 보기',
     exec:      '💼 임원 대시보드',
     memo:      '🗒 메모',
-    policy:    '📚 제도'
+    policy:    '📚 제도',
+    network:   '🕸 상호작용'
   };
   bar.innerHTML = visible.map(t => {
     const m = TAB_META.find(x => x.id === t.id);
@@ -2628,8 +2731,8 @@ function renderMobileNav() {
   const nav = document.getElementById('mobileNavBtns');
   if (!nav) return;
   const visible = tabConfig.filter(t => t.visible);
-  const icons  = {tasks:'📋',dashboard:'📅',weekly:'🗓',exec:'💼',memo:'🗒',policy:'📚'};
-  const labels = {tasks:'할 일',dashboard:'대시보드',weekly:'주간',exec:'임원',memo:'메모',policy:'제도'};
+  const icons  = {tasks:'📋',dashboard:'📅',weekly:'🗓',exec:'💼',memo:'🗒',policy:'📚',network:'🕸'};
+  const labels = {tasks:'할 일',dashboard:'대시보드',weekly:'주간',exec:'임원',memo:'메모',policy:'제도',network:'상호작용'};
   nav.innerHTML = visible.map(t =>
     `<button class="mobile-nav-btn" id="mnav-${t.id}" onclick="switchTab('${t.id}')">
       <span class="nav-icon">${icons[t.id]||'■'}</span>${labels[t.id]||t.id}
@@ -2697,6 +2800,7 @@ function switchTab(tab, animate = true) {
   if (tab === 'exec')      { renderExecDash(); setTimeout(scrollExecTodayIntoView, 70); }
   if (tab === 'memo')      renderMemoTab();
   if (tab === 'policy')    renderPolicyTab();
+  if (tab === 'network')   renderInteractionTab();
   if (tab === 'tasks') {
     renderTable(true);
     setTimeout(scrollTasksToToday, 70);
@@ -3459,7 +3563,7 @@ function renderTabOrderList() {
   _renderTabOrderList();
 }
 function _renderTabOrderList() {
-  const icons = {tasks:'📋',dashboard:'📅',weekly:'🗓',exec:'💼',memo:'🗒',policy:'📚'};
+  const icons = {tasks:'📋',dashboard:'📅',weekly:'🗓',exec:'💼',memo:'🗒',policy:'📚',network:'🕸'};
   document.getElementById('tabOrderList').innerHTML = tempTabConfig.map((t,i) => {
     const m = TAB_META.find(x => x.id === t.id);
     if (!m) return '';
@@ -6381,6 +6485,392 @@ function openLeaveEditModal(id) {
 }
 
 // ══════════════════════════════════════════════
+//  INTERACTIONS (인사노무팀 ↔ 타 팀/구성원 상호작용 기록)
+// ══════════════════════════════════════════════
+
+// NH농우바이오 조직도 — '상대 팀' 선택 목록 (표시용 그룹핑, 인사노무팀 자신은 제외)
+const NH_TEAM_GROUPS = [
+  { label:'임원/위원회', teams:['임원실','코칭위원회'] },
+  { label:'감사실', teams:['감사실','감사실 감사팀'] },
+  { label:'기획조정실', teams:['기획조정실','기획조정실 기획팀','기획조정실 전략팀','기획조정실 재무회계팀'] },
+  { label:'경영지원본부', teams:['경영지원본부','경영지원본부 경영지원팀','경영지원본부 IT관리팀'] },
+  { label:'SM부문', teams:['SM부문'] },
+  { label:'국내사업본부', teams:['국내사업본부','국내사업본부 영업팀','국내사업본부 경기지점','국내사업본부 경남지점','국내사업본부 대구지점','국내사업본부 충남지점','국내사업본부 충북지점','국내사업본부 전남지점','국내사업본부 전북지점','국내사업본부 강원지점','국내사업본부 안동지점','국내사업본부 제주지점','국내사업본부 영업지원팀'] },
+  { label:'마케팅본부', teams:['마케팅본부','마케팅본부 홍보파트','마케팅본부 대외마케팅팀','마케팅본부 PM1팀','마케팅본부 PM2팀'] },
+  { label:'해외사업본부', teams:['해외사업본부','해외사업본부 해외영업1팀','해외사업본부 해외영업2팀','해외사업본부 해외영업지원팀'] },
+  { label:'자재사업본부', teams:['자재사업본부','자재사업본부 자재사업지원단','자재사업본부 자재사업지원단 상토생산관리팀','자재사업본부 자재사업지원단 자재팀'] },
+  { label:'SC부문', teams:['SC부문'] },
+  { label:'QA본부', teams:['QA본부','QA본부 종자관리기획팀','QA본부 포장관리팀','QA본부 품질보증팀','QA본부 종자기술팀','QA본부 품질관리팀'] },
+  { label:'생산관리본부', teams:['생산관리본부','생산관리본부 해외위탁생산팀','생산관리본부 직영생산지원팀','생산관리본부 생산자원관리센터','생산관리본부 생산자원관리센터 자원관리팀','생산관리본부 생산자원관리센터 증식팀'] },
+  { label:'R&D본부', teams:['R&D본부','R&D본부 연구지원팀','연구지원팀 김제연구지원파트','연구지원팀 남부연구지원파트','연구지원팀 안성연구지원파트','R&D본부 여주연구소','R&D본부 고추연구1팀','R&D본부 고추연구2팀','R&D본부 무연구팀','R&D본부 배추연구팀','R&D본부 양배추연구팀','R&D본부 토마토연구팀','R&D본부 남부육종연구소','R&D본부 남부육종연구소 수박연구팀','R&D본부 남부육종연구소 참외연구팀','R&D본부 남부육종연구소 오이연구팀','R&D본부 남부육종연구소 양파연구팀','R&D본부 생명공학연구소','R&D본부 생명공학연구소 대외병리파트','R&D본부 생명공학연구소 병리연구팀','R&D본부 생명공학연구소 분석연구팀','R&D본부 생명공학연구소 형질연구팀','R&D본부 생명공학연구소 순도검정팀'] },
+  { label:'해외법인', teams:['세농종묘 유한공사 현지법인','KOREANA SEED INDONESIA 현지법인','NONGWOO SEED AMERICA 현지법인','NONGWOO SEED INDIA PVT.LTD','NONGWOO SEED MYANMAR','NONGWOO SEED TURKEY'] },
+  { label:'기타', teams:['농우바이오 노동조합','농협경제지주'] },
+];
+
+const INTERACTIONS_KEY = 'hr_interactions_v1';
+
+function interactionsLocalLoad() {
+  try { const d = JSON.parse(localStorage.getItem(INTERACTIONS_KEY)); return Array.isArray(d) ? d : []; }
+  catch { return []; }
+}
+function interactionsLocalSave() { localStorage.setItem(INTERACTIONS_KEY, JSON.stringify(interactions)); }
+
+async function loadInteractions() {
+  if (!useLocal && sbClient) {
+    const { data, error } = await sbClient.from('hr_interactions').select('*').order('interaction_date', { ascending:false });
+    if (!error && Array.isArray(data)) return data;
+    if (error) throw error;
+  }
+  return interactionsLocalLoad();
+}
+
+async function interactionInsert(ix) {
+  const row = {
+    member: ix.member,
+    team: ix.team,
+    person: ix.person || '',
+    memo: ix.memo || '',
+    interaction_date: ix.interaction_date
+  };
+  if (!useLocal && sbClient) {
+    const { data, error } = await sbClient.from('hr_interactions').insert(row).select();
+    if (error) { showToast('상호작용 기록 저장 오류: '+(error.message||''), 'error'); return null; }
+    const nr = data && data[0];
+    if (nr) interactions.unshift(nr);
+    return nr;
+  }
+  const newId = interactions.length ? Math.max(...interactions.map(i=>i.id||0)) + 1 : 1;
+  const nr = { id:newId, ...row, created_at: new Date().toISOString() };
+  interactions.unshift(nr); interactionsLocalSave(); return nr;
+}
+
+async function interactionDelete(id) {
+  const idx = interactions.findIndex(i => i.id === id);
+  const removed = idx !== -1 ? interactions[idx] : null;
+  if (idx !== -1) interactions.splice(idx, 1);
+  renderInteractionTab(); // 낙관적 업데이트 — 서버 응답 기다리지 않고 즉시 반영
+
+  if (!useLocal && sbClient) {
+    const { error } = await sbClient.from('hr_interactions').delete().eq('id', id);
+    if (error) {
+      if (removed) { interactions.splice(idx, 0, removed); renderInteractionTab(); }
+      showToast('상호작용 기록 삭제 오류: '+(error.message||''), 'error');
+      return false;
+    }
+  } else {
+    interactionsLocalSave();
+  }
+  return true;
+}
+
+// ── 모달 ──
+function openInteractionModal() {
+  const sel = document.getElementById('ix-member');
+  const defaultMember = (myTaskOnly && myMember) ? myMember
+    : (currentUserName && MEMBERS.includes(currentUserName) ? currentUserName : (MEMBERS[0] || ''));
+  sel.innerHTML = MEMBERS.map(m => `<option value="${escHtml(m)}" ${m===defaultMember?'selected':''}>${m}</option>`).join('');
+
+  document.getElementById('ix-date').value   = new Date().toISOString().slice(0,10);
+  document.getElementById('ix-person').value = '';
+  document.getElementById('ix-memo').value   = '';
+
+  const teamSel = document.getElementById('ix-team');
+  teamSel.innerHTML = '<option value="" disabled selected>상대 팀을 선택하세요</option>' +
+    NH_TEAM_GROUPS.map(g => `<optgroup label="${escHtml(g.label)}">${
+      g.teams.map(t => `<option value="${escHtml(t)}">${escHtml(t)}</option>`).join('')
+    }</optgroup>`).join('');
+
+  const persons = [...new Set(interactions.map(i=>i.person).filter(Boolean))].sort();
+  document.getElementById('ix-person-datalist').innerHTML = persons.map(p=>`<option value="${escHtml(p)}">`).join('');
+
+  document.getElementById('interactionModal').classList.add('open');
+  setTimeout(() => teamSel.focus(), 50);
+}
+
+function closeInteractionModal() {
+  document.getElementById('interactionModal').classList.remove('open');
+}
+
+async function saveInteraction() {
+  const member = document.getElementById('ix-member').value;
+  const date   = document.getElementById('ix-date').value;
+  const team   = document.getElementById('ix-team').value.trim();
+  const person = document.getElementById('ix-person').value.trim();
+  const memo   = document.getElementById('ix-memo').value.trim();
+  if (!member) { showToast('담당자를 선택하세요.', 'error'); return; }
+  if (!team)   { showToast('상대 팀을 입력하세요.', 'error'); return; }
+  if (!date)   { showToast('날짜를 선택하세요.', 'error'); return; }
+
+  const nr = await interactionInsert({ member, team, person, memo, interaction_date: date });
+  if (nr) { closeInteractionModal(); renderInteractionTab(); showToast('상호작용을 기록했습니다.'); }
+}
+
+async function deleteInteractionItem(id) {
+  if (!confirm('이 상호작용 기록을 삭제하시겠습니까?')) return;
+  await interactionDelete(id);
+}
+
+// ── 탭 렌더 ──
+function renderInteractionTab() {
+  const lbl = document.getElementById('ixCountLabel');
+  if (lbl) lbl.textContent = ` · 총 ${interactions.length}건`;
+  renderInteractionRecentList();
+  renderInteractionGraph();
+}
+
+function renderInteractionRecentList() {
+  const list = document.getElementById('ixRecentList');
+  if (!list) return;
+  const sorted = interactions.slice().sort((a,b) =>
+    (b.interaction_date||'').localeCompare(a.interaction_date||'') || (b.id||0)-(a.id||0));
+  const recent = sorted.slice(0, 40);
+  list.innerHTML = recent.length ? recent.map(ix => `
+    <div class="ix-recent-item" onclick="focusInteractionTeam('${escHtml(ix.team)}')">
+      <div class="ix-recent-main">
+        <span class="ix-recent-date">${fmtDate(ix.interaction_date)}</span>
+        <span class="ix-recent-team">${escHtml(ix.team)}</span>
+        ${ix.person ? `<span class="ix-recent-person">${escHtml(ix.person)}</span>` : ''}
+      </div>
+      ${ix.memo ? `<div class="ix-recent-memo">${escHtml(ix.memo)}</div>` : ''}
+      <button class="ix-recent-del" onclick="event.stopPropagation();deleteInteractionItem(${ix.id})" title="삭제">&#10005;</button>
+    </div>`).join('') : `<div class="memo-empty">아직 기록된 상호작용이 없습니다.<br>+ 버튼으로 첫 기록을 추가해보세요.</div>`;
+}
+
+function focusInteractionTeam(team) {
+  ixExpandedTeam = (ixExpandedTeam === team) ? null : team;
+  renderInteractionGraph();
+}
+
+// ── 네트워크 그래프 (D3 force) ──
+let ixSim = null;
+let ixLinkSel = null;
+let ixNodeSel = null;
+let ixExpandedTeam = null;
+let ixHoverId = null;
+let ixNodePos = {};       // id -> {x,y} 캐시 (재렌더 시 위치 유지)
+let ixNodeRScale = null;  // 최근 렌더의 반지름 스케일 (호버 확대에 사용)
+let ixTeamColor = d3.scaleOrdinal(d3.schemeTableau10); // 팀명 -> 색상 (렌더마다 새로 만들면 카운트 변동에 따라 색이 바뀌므로 고정 유지)
+
+function buildInteractionGraphData() {
+  const root = { id:'__root__', kind:'root', label:'인사노무팀', count:interactions.length };
+  const teamMap = new Map();
+  interactions.forEach(ix => {
+    const team = (ix.team||'').trim();
+    if (!team) return;
+    if (!teamMap.has(team)) teamMap.set(team, { count:0, persons:new Map() });
+    const t = teamMap.get(team);
+    t.count++;
+    const person = (ix.person||'').trim();
+    if (person) t.persons.set(person, (t.persons.get(person)||0) + 1);
+  });
+
+  const nodes = [root];
+  const links = [];
+
+  [...teamMap.entries()].sort((a,b)=>b[1].count-a[1].count).forEach(([team, info]) => {
+    const teamId = 'team:' + team;
+    nodes.push({ id:teamId, kind:'team', label:team, count:info.count, color:ixTeamColor(team) });
+    links.push({ source:'__root__', target:teamId, value:info.count });
+
+    if (ixExpandedTeam === team) {
+      [...info.persons.entries()].sort((a,b)=>b[1]-a[1]).forEach(([person, cnt]) => {
+        const personId = teamId + '|person:' + person;
+        nodes.push({ id:personId, kind:'person', label:person, count:cnt, color:ixTeamColor(team), team });
+        links.push({ source:teamId, target:personId, value:cnt });
+      });
+    }
+  });
+
+  return { nodes, links };
+}
+
+function ixDragBehavior(sim) {
+  function started(event, d) {
+    if (!event.active) sim.alphaTarget(0.15).restart();
+    d.fx = d.x; d.fy = d.y;
+  }
+  function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
+  function ended(event, d) {
+    if (!event.active) sim.alphaTarget(0);
+    if (d.kind !== 'root') { d.fx = null; d.fy = null; }
+  }
+  return d3.drag().on('start', started).on('drag', dragged).on('end', ended);
+}
+
+function renderInteractionGraph() {
+  const wrap = document.getElementById('ixGraphWrap');
+  if (!wrap || typeof d3 === 'undefined') return;
+
+  const width  = wrap.clientWidth || 600;
+  const height = isMobileView() ? 340 : 460;
+  const cx = width/2, cy = height/2;
+
+  const { nodes, links } = buildInteractionGraphData();
+  nodes.forEach(n => {
+    const prev = ixNodePos[n.id];
+    if (prev) { n.x = prev.x; n.y = prev.y; }
+    else if (n.kind === 'root') { n.x = cx; n.y = cy; }
+    else { n.x = cx + (Math.random()-0.5)*40; n.y = cy + (Math.random()-0.5)*40; }
+  });
+  const root = nodes.find(n => n.kind === 'root');
+  root.fx = cx; root.fy = cy;
+
+  const maxLinkVal = Math.max(1, d3.max(links, l=>l.value) || 1);
+  const maxNodeCnt = Math.max(1, d3.max(nodes.filter(n=>n.kind!=='root'), n=>n.count) || 1);
+  const linkW  = d3.scaleSqrt().domain([1, maxLinkVal]).range([2, 13]).clamp(true);
+  const nodeR  = d3.scaleSqrt().domain([0, maxNodeCnt]).range([15, 38]).clamp(true);
+  ixNodeRScale = nodeR;
+
+  let svg = d3.select(wrap).select('svg.ix-svg');
+  if (svg.empty()) {
+    svg = d3.select(wrap).append('svg')
+      .attr('class', 'ix-svg')
+      .attr('viewBox', `0 0 ${width} ${height}`)
+      .attr('width', '100%').attr('height', height);
+    svg.append('g').attr('class', 'ix-links-layer');
+    svg.append('g').attr('class', 'ix-nodes-layer');
+    wrap.addEventListener('mouseenter', () => { if (ixSim) ixSim.alphaTarget(0.025).restart(); });
+    wrap.addEventListener('mouseleave', () => { if (ixSim) ixSim.alphaTarget(0); hideIxTooltip(); });
+  } else {
+    svg.attr('viewBox', `0 0 ${width} ${height}`).attr('height', height);
+  }
+
+  if (!ixSim) {
+    ixSim = d3.forceSimulation()
+      .alphaDecay(0.02)
+      .force('link', d3.forceLink().id(d=>d.id).distance(d => d.target.kind==='person' ? 62 : 150).strength(0.7))
+      .force('charge', d3.forceManyBody().strength(d => d.kind==='root' ? 0 : d.kind==='team' ? -240 : -80))
+      .force('collide', d3.forceCollide())
+      .force('radial', d3.forceRadial(0, cx, cy).strength(d => d.kind==='team' ? 0.85 : 0))
+      .on('tick', () => {
+        if (ixLinkSel) ixLinkSel
+          .attr('x1', d=>d.source.x).attr('y1', d=>d.source.y)
+          .attr('x2', d=>d.target.x).attr('y2', d=>d.target.y);
+        if (ixNodeSel) ixNodeSel.attr('transform', d => `translate(${d.x},${d.y})`);
+        ixSim.nodes().forEach(n => { ixNodePos[n.id] = { x:n.x, y:n.y }; });
+      });
+  }
+  ixSim.force('radial').radius(Math.min(width,height)/2 - 76).x(cx).y(cy);
+  ixSim.force('collide').radius(d => (d.kind==='root'?52:(d.kind==='team'?nodeR(d.count)+30:nodeR(d.count)+16)));
+
+  const linkKey = l => (l.source.id || l.source) + '->' + (l.target.id || l.target);
+  ixLinkSel = svg.select('.ix-links-layer').selectAll('line.ix-link')
+    .data(links, linkKey)
+    .join(
+      enter => enter.append('line')
+        .attr('class', 'ix-link')
+        .attr('stroke', '#aab4c2')
+        .attr('stroke-opacity', 0)
+        .attr('stroke-width', d => linkW(d.value))
+        .attr('x1', d=>cx).attr('y1', d=>cy).attr('x2', d=>cx).attr('y2', d=>cy)
+        .call(sel => sel.transition().duration(350).attr('stroke-opacity', 0.5)),
+      update => update.call(sel => sel.transition().duration(300).attr('stroke-width', d => linkW(d.value))),
+      exit => exit.transition().duration(200).attr('stroke-opacity', 0).remove()
+    );
+
+  ixNodeSel = svg.select('.ix-nodes-layer').selectAll('g.ix-node')
+    .data(nodes, d => d.id)
+    .join(
+      enter => {
+        const g = enter.append('g')
+          .attr('class', d => `ix-node ix-node-${d.kind}`)
+          .attr('transform', d => `translate(${d.x},${d.y})`)
+          .style('opacity', 0)
+          .call(ixDragBehavior(ixSim))
+          .on('mouseenter', (event,d) => onIxNodeHover(event, d, true))
+          .on('mouseleave', (event,d) => onIxNodeHover(event, d, false))
+          .on('click', (event,d) => { if (d.kind === 'team') focusInteractionTeam(d.label); });
+        g.append('circle')
+          .attr('r', d => d.kind==='root' ? 48 : nodeR(d.count))
+          .attr('fill', d => d.kind==='root' ? 'var(--accent)' : d.color);
+        g.append('text').attr('class', 'ix-node-count')
+          .attr('text-anchor', 'middle').attr('dy', 4)
+          .text(d => d.kind==='root' ? '' : `${d.count}건`);
+        g.append('text').attr('class', 'ix-node-label')
+          .attr('text-anchor', 'middle')
+          .attr('dy', d => d.kind==='root' ? 5 : nodeR(d.count) + 15)
+          .text(d => d.kind==='root' ? d.label : d.label);
+        g.transition().duration(300).style('opacity', 1);
+        return g;
+      },
+      update => {
+        update.select('circle').transition().duration(300).attr('r', d => d.kind==='root' ? 48 : nodeR(d.count));
+        update.select('.ix-node-count').text(d => d.kind==='root' ? '' : `${d.count}건`);
+        update.select('.ix-node-label').attr('dy', d => d.kind==='root' ? 5 : nodeR(d.count) + 15);
+        update.classed('ix-expanded', d => d.kind === 'team' && d.label === ixExpandedTeam);
+        return update;
+      },
+      exit => exit.transition().duration(200).style('opacity', 0).attr('transform', d => `translate(${cx},${cy})`).remove()
+    );
+  ixNodeSel.classed('ix-expanded', d => d.kind === 'team' && d.label === ixExpandedTeam);
+
+  ixSim.nodes(nodes);
+  ixSim.force('link').links(links);
+  ixSim.alpha(0.7).restart();
+}
+
+function onIxNodeHover(event, d, entering) {
+  ixHoverId = entering ? d.id : null;
+  updateIxHighlight();
+  const baseR = d.kind === 'root' ? 48 : (ixNodeRScale ? ixNodeRScale(d.count) : 20);
+  d3.select(event.currentTarget).select('circle')
+    .transition().duration(180).attr('r', entering ? baseR * 1.16 : baseR);
+  if (entering) {
+    if (ixSim) ixSim.alpha(Math.min((ixSim.alpha()||0) + 0.18, 0.8)).restart();
+    showIxTooltip(event, d);
+  } else {
+    hideIxTooltip();
+  }
+}
+
+function updateIxHighlight() {
+  if (!ixNodeSel || !ixLinkSel) return;
+  const hoverId = ixHoverId;
+  if (!hoverId) {
+    ixNodeSel.classed('ix-dim', false).classed('ix-hover', false);
+    ixLinkSel.classed('ix-dim', false).classed('ix-hover', false);
+    return;
+  }
+  const connected = new Set([hoverId]);
+  ixSim.force('link').links().forEach(l => {
+    if (l.source.id === hoverId) connected.add(l.target.id);
+    if (l.target.id === hoverId) connected.add(l.source.id);
+  });
+  ixNodeSel.classed('ix-dim', d => !connected.has(d.id)).classed('ix-hover', d => d.id === hoverId);
+  ixLinkSel
+    .classed('ix-dim', l => !(connected.has(l.source.id) && connected.has(l.target.id)))
+    .classed('ix-hover', l => l.source.id === hoverId || l.target.id === hoverId);
+}
+
+function showIxTooltip(event, d) {
+  const popup = document.getElementById('leaveTooltipPopup');
+  if (!popup) return;
+  const title = d.kind === 'root' ? '인사노무팀' : d.label;
+  const sub   = d.kind === 'root' ? `전체 상호작용 ${d.count}건`
+    : d.kind === 'team' ? `상호작용 ${d.count}건 · 클릭하여 구성원 보기`
+    : `${d.team} · ${d.count}건`;
+  popup.innerHTML = `<div class="ltp-type">🔗 ${escHtml(title)}</div><div class="ltp-date">${escHtml(sub)}</div>`;
+  popup.style.display = 'block';
+  const pw = popup.offsetWidth || 200, ph = popup.offsetHeight || 60;
+  let left = event.clientX + 14, top = event.clientY + 14;
+  if (left + pw > window.innerWidth - 8) left = event.clientX - pw - 14;
+  if (top + ph > window.innerHeight - 8) top = event.clientY - ph - 14;
+  popup.style.left = left + 'px';
+  popup.style.top  = top + 'px';
+}
+
+function hideIxTooltip() {
+  const popup = document.getElementById('leaveTooltipPopup');
+  if (popup) popup.style.display = 'none';
+}
+
+window.addEventListener('resize', () => {
+  if (document.getElementById('view-network') && document.getElementById('view-network').style.display !== 'none') {
+    renderInteractionGraph();
+  }
+});
+
+// ══════════════════════════════════════════════
 //  NOTE COMMENTS (메모 댓글)
 // ══════════════════════════════════════════════
 const COMMENTS_KEY = 'hr_note_comments_v1';
@@ -7144,10 +7634,12 @@ function isEditingOpen() {
   const em = document.getElementById('execEventModal');
   const mm = document.getElementById('memoEditModal');
   const pm = document.getElementById('policyEditModal');
+  const im = document.getElementById('interactionModal');
   return (tm && tm.classList.contains('open'))
       || (em && em.classList.contains('open'))
       || (mm && mm.classList.contains('open'))
       || (pm && pm.classList.contains('open'))
+      || (im && im.classList.contains('open'))
       || document.querySelector('.master-inline-form.open') !== null;
 }
 
@@ -7163,6 +7655,7 @@ function subscribeRealtime() {
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_policies' },       scheduleRemoteRefresh)
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_leaves' },         scheduleRemoteRefresh)
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_note_comments' },  scheduleRemoteRefresh)
+      .on('postgres_changes', { event:'*', schema:'public', table:'hr_interactions' },   scheduleRemoteRefresh)
       .subscribe();
   } catch (err) { console.warn('[realtime] 구독 실패:', err); }
 }
@@ -7175,10 +7668,10 @@ function scheduleRemoteRefresh() {
 async function remoteRefresh() {
   if (useLocal || !sbClient) return;
   try {
-    const [t, ex, me, nt, pl, lv, cm] = await Promise.all([
-      dbLoad(), loadExecEvents(), loadMasterEvents(), loadNotes(), loadPolicies(), loadLeaves(), loadComments()
+    const [t, ex, me, nt, pl, lv, cm, ix] = await Promise.all([
+      dbLoad(), loadExecEvents(), loadMasterEvents(), loadNotes(), loadPolicies(), loadLeaves(), loadComments(), loadInteractionsSafe()
     ]);
-    tasks = t; execEvents = ex; masterEvents = me; notes = nt; policies = pl; leaves = lv; noteComments = cm;
+    tasks = t; execEvents = ex; masterEvents = me; notes = nt; policies = pl; leaves = lv; noteComments = cm; interactions = ix;
     rerenderCurrentView();
   } catch (err) { console.warn('[realtime] 갱신 실패:', err); }
 }
@@ -7193,6 +7686,7 @@ function rerenderCurrentView() {
   if (visible('view-exec')) renderExecDash();
   if (visible('view-memo')) renderMemoTab();
   if (visible('view-policy')) renderPolicyTab();
+  if (visible('view-network')) renderInteractionTab();
   const mc = document.getElementById('masterCalModal');
   if (mc && mc.style.display !== 'none') renderMasterCalPage();
   updateCounts();
