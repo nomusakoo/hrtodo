@@ -7145,7 +7145,7 @@ function renderInteractionGraph() {
   ixSim.alpha(0.7).restart();
 }
 
-const IX_HOVER_EXPAND_MS = 1500;
+const IX_HOVER_EXPAND_MS = 800;
 const IX_HOVER_COLLAPSE_MS = 400;
 let ixHoverExpandTimer = null;
 let ixCollapseTimer = null;
@@ -7191,7 +7191,7 @@ function onIxNodeHover(event, d, entering) {
   }
 }
 
-// 팀 노드 호버 시 1.5초 동안 채워지는 로딩 링 — 다 채워지면 구성원이 펼쳐짐
+// 팀 노드 호버 시 IX_HOVER_EXPAND_MS 동안 채워지는 로딩 링 — 다 채워지면 구성원이 펼쳐짐
 function startIxHoverProgress(nodeEl) {
   const circle = d3.select(nodeEl).select('.ix-hover-progress');
   if (circle.empty()) return;
