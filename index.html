@@ -349,6 +349,7 @@
   .ix-node.ix-node-team.ix-expanded .ix-node-circle { stroke:var(--accent); stroke-width:3px; }
   .ix-node.ix-hover .ix-node-circle { filter:url(#ix-shadow) drop-shadow(0 0 7px rgba(74,111,165,0.6)); }
   .ix-root-pulse { fill:none; stroke:var(--accent); stroke-width:2px; transform-origin:center; animation:ixRootPulse 2.6s ease-out infinite; }
+  .ix-hover-progress { fill:none; stroke:#fff; stroke-width:3px; stroke-linecap:round; opacity:0; pointer-events:none; }
   @keyframes ixRootPulse {
     0%   { r:44px; stroke-opacity:0.55; }
     100% { r:64px; stroke-opacity:0; }
@@ -398,8 +399,7 @@
   .ix-detail-memo { flex:1; min-width:0; }
   .ix-detail-del { flex-shrink:0; background:none; border:none; color:var(--gray-300); cursor:pointer; font-size:12px; padding:6px; border-radius:4px; }
   .ix-detail-del:hover { background:var(--danger-bg); color:var(--danger); }
-  #ixDetailAddArea { flex:1; min-width:0; }
-  .ix-detail-add-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; width:100%; }
+  .ix-detail-add-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; width:100%; margin-top:8px; padding-top:8px; border-top:1px solid var(--gray-100); }
   .ix-detail-add-member { width:100px; flex-shrink:0; }
   @media(max-width:600px) {
     .ix-detail-row { flex-wrap:wrap; }
@@ -1573,7 +1573,7 @@
       </div>
       <div class="ix-layout">
         <div class="ix-graph-card">
-          <div class="ix-graph-hint" id="ixGraphHint">팀 노드를 클릭하면 상호작용한 구성원이 펼쳐집니다. 선이 굵을수록 상호작용이 많다는 뜻이에요.</div>
+          <div class="ix-graph-hint" id="ixGraphHint">팀 노드에 마우스를 잠시 올려두면 구성원이 펼쳐지고, 클릭하면 상세 정보를 볼 수 있어요. 선이 굵을수록 상호작용이 많다는 뜻이에요.</div>
           <div class="ix-graph-wrap" id="ixGraphWrap"></div>
           <div class="ix-rank-wrap" id="ixRankWrap" style="display:none"></div>
         </div>
@@ -1745,8 +1745,9 @@
     </div>
     <div class="ix-detail-summary" id="ixDetailSummary"></div>
     <div class="ix-detail-list" id="ixDetailList"></div>
+    <div id="ixDetailAddFields"></div>
     <div class="modal-footer">
-      <div id="ixDetailAddArea" style="margin-right:auto"></div>
+      <div id="ixDetailFooterActions" style="display:flex;gap:8px;margin-right:auto"></div>
       <button class="btn" onclick="closeIxTeamDetailModal()">닫기</button>
     </div>
   </div>
@@ -6748,14 +6749,16 @@ function renderIxTeamDetailModal() {
       <button class="ix-detail-del" onclick="deleteInteractionItem(${ix.id})" title="삭제">&#10005;</button>
     </div>`).join('') : `<div class="memo-empty">조회 기간 내 기록이 없습니다.</div>`;
 
-  const addArea = document.getElementById('ixDetailAddArea');
+  const fieldsArea = document.getElementById('ixDetailAddFields');
+  const actionsArea = document.getElementById('ixDetailFooterActions');
   if (!ixDetailAddOpen) {
-    addArea.innerHTML = `<button class="btn btn-green btn-sm" onclick="toggleIxDetailAddRow()">+ 이 팀에 기록 추가</button>`;
+    fieldsArea.innerHTML = '';
+    actionsArea.innerHTML = `<button class="btn btn-green btn-sm" onclick="toggleIxDetailAddRow()">+ 이 팀에 기록 추가</button>`;
     return;
   }
   const defaultMember = (myTaskOnly && myMember) ? myMember
     : (currentUserName && MEMBERS.includes(currentUserName) ? currentUserName : (MEMBERS[0] || ''));
-  addArea.innerHTML = `
+  fieldsArea.innerHTML = `
     <div class="ix-detail-add-row">
       <select class="form-select ix-detail-add-member" id="ix-detail-new-member">${
         MEMBERS.map(m => `<option value="${escHtml(m)}" ${m===defaultMember?'selected':''}>${escHtml(m)}</option>`).join('')
@@ -6763,9 +6766,10 @@ function renderIxTeamDetailModal() {
       <input type="date" class="form-input ix-detail-date" id="ix-detail-new-date" value="${new Date().toISOString().slice(0,10)}">
       <input type="text" class="form-input ix-detail-person" id="ix-detail-new-person" placeholder="구성원">
       <input type="text" class="form-input ix-detail-memo" id="ix-detail-new-memo" placeholder="메모">
-      <button class="btn btn-sm" onclick="toggleIxDetailAddRow()">취소</button>
-      <button class="btn btn-primary btn-sm" onclick="saveIxDetailNewRecord()">&#10003; 저장</button>
     </div>`;
+  actionsArea.innerHTML = `
+    <button class="btn btn-sm" onclick="toggleIxDetailAddRow()">취소</button>
+    <button class="btn btn-primary btn-sm" onclick="saveIxDetailNewRecord()">&#10003; 저장</button>`;
   setTimeout(() => document.getElementById('ix-detail-new-person')?.focus(), 30);
 }
 
@@ -6917,7 +6921,7 @@ function setIxViewMode(mode) {
   document.getElementById('ixGraphWrap').style.display = mode==='network' ? '' : 'none';
   document.getElementById('ixRankWrap').style.display   = mode==='rank' ? '' : 'none';
   document.getElementById('ixGraphHint').textContent = mode==='network'
-    ? '팀 노드를 클릭하면 상호작용한 구성원이 펼쳐집니다. 선이 굵을수록 상호작용이 많다는 뜻이에요.'
+    ? '팀 노드에 마우스를 잠시 올려두면 구성원이 펼쳐지고, 클릭하면 상세 정보를 볼 수 있어요. 선이 굵을수록 상호작용이 많다는 뜻이에요.'
     : '상호작용이 많은 팀일수록 왼쪽에, 막대가 높을수록 상호작용이 많다는 뜻이에요.';
   renderInteractionTab();
 }
@@ -7000,7 +7004,9 @@ function ixDragBehavior(sim) {
     if (!event.active) sim.alphaTarget(0);
     if (d.kind !== 'root') { d.fx = null; d.fy = null; }
   }
-  return d3.drag().on('start', started).on('drag', dragged).on('end', ended);
+  // clickDistance를 넉넉히 잡아, 클릭 시 발생하는 미세한 포인터 흔들림이
+  // 드래그로 오인되어 뒤따르는 click 이벤트가 억제되지 않도록 함
+  return d3.drag().clickDistance(6).on('start', started).on('drag', dragged).on('end', ended);
 }
 
 function renderInteractionGraph() {
@@ -7095,7 +7101,7 @@ function renderInteractionGraph() {
           .call(ixDragBehavior(ixSim))
           .on('mouseenter', (event,d) => onIxNodeHover(event, d, true))
           .on('mouseleave', (event,d) => onIxNodeHover(event, d, false))
-          .on('click', (event,d) => { if (d.kind === 'team') { focusInteractionTeam(d.label); openIxTeamDetailModal(d.label); } });
+          .on('click', (event,d) => { if (d.kind === 'team') openIxTeamDetailModal(d.label); });
         g.filter(d => d.kind === 'root').append('circle')
           .attr('class', 'ix-root-pulse')
           .attr('r', 44);
@@ -7103,6 +7109,12 @@ function renderInteractionGraph() {
           .attr('class', 'ix-node-circle')
           .attr('r', d => d.kind==='root' ? 48 : nodeR(d.count))
           .attr('fill', d => d.kind==='root' ? 'url(#ix-grad-root)' : ixEnsureNodeGradient(d.color));
+        g.filter(d => d.kind === 'team').append('circle')
+          .attr('class', 'ix-hover-progress')
+          .attr('r', d => nodeR(d.count) + 6)
+          .attr('data-circumference', d => 2 * Math.PI * (nodeR(d.count) + 6))
+          .attr('stroke-dasharray', d => 2 * Math.PI * (nodeR(d.count) + 6))
+          .attr('stroke-dashoffset', d => 2 * Math.PI * (nodeR(d.count) + 6));
         g.append('text').attr('class', 'ix-node-count')
           .attr('text-anchor', 'middle').attr('dy', 4)
           .text(d => d.kind==='root' ? '' : `${d.count}건`);
@@ -7117,6 +7129,10 @@ function renderInteractionGraph() {
         update.select('.ix-node-circle').transition().duration(300).attr('r', d => d.kind==='root' ? 48 : nodeR(d.count));
         update.select('.ix-node-count').text(d => d.kind==='root' ? '' : `${d.count}건`);
         update.select('.ix-node-label').attr('dy', d => d.kind==='root' ? 5 : nodeR(d.count) + 15);
+        update.select('.ix-hover-progress')
+          .attr('r', d => nodeR(d.count) + 6)
+          .attr('data-circumference', d => 2 * Math.PI * (nodeR(d.count) + 6))
+          .attr('stroke-dasharray', d => 2 * Math.PI * (nodeR(d.count) + 6));
         update.classed('ix-expanded', d => d.kind === 'team' && d.label === ixExpandedTeam);
         return update;
       },
@@ -7128,6 +7144,11 @@ function renderInteractionGraph() {
   ixSim.force('link').links(links);
   ixSim.alpha(0.7).restart();
 }
+
+const IX_HOVER_EXPAND_MS = 1500;
+const IX_HOVER_COLLAPSE_MS = 400;
+let ixHoverExpandTimer = null;
+let ixCollapseTimer = null;
 
 function onIxNodeHover(event, d, entering) {
   ixHoverId = entering ? d.id : null;
@@ -7141,6 +7162,56 @@ function onIxNodeHover(event, d, entering) {
   } else {
     hideIxTooltip();
   }
+
+  if (d.kind === 'team') {
+    if (entering) {
+      clearTimeout(ixCollapseTimer);
+      if (ixExpandedTeam !== d.label) {
+        startIxHoverProgress(event.currentTarget);
+        clearTimeout(ixHoverExpandTimer);
+        ixHoverExpandTimer = setTimeout(() => {
+          ixExpandedTeam = d.label;
+          renderInteractionGraph();
+        }, IX_HOVER_EXPAND_MS);
+      }
+    } else {
+      clearTimeout(ixHoverExpandTimer);
+      cancelIxHoverProgress(event.currentTarget);
+      if (ixExpandedTeam === d.label) {
+        clearTimeout(ixCollapseTimer);
+        ixCollapseTimer = setTimeout(() => { ixExpandedTeam = null; renderInteractionGraph(); }, IX_HOVER_COLLAPSE_MS);
+      }
+    }
+  } else if (d.kind === 'person') {
+    if (entering) clearTimeout(ixCollapseTimer);
+    else if (ixExpandedTeam === d.team) {
+      clearTimeout(ixCollapseTimer);
+      ixCollapseTimer = setTimeout(() => { ixExpandedTeam = null; renderInteractionGraph(); }, IX_HOVER_COLLAPSE_MS);
+    }
+  }
+}
+
+// 팀 노드 호버 시 1.5초 동안 채워지는 로딩 링 — 다 채워지면 구성원이 펼쳐짐
+function startIxHoverProgress(nodeEl) {
+  const circle = d3.select(nodeEl).select('.ix-hover-progress');
+  if (circle.empty()) return;
+  const c = +circle.attr('data-circumference');
+  circle.interrupt()
+    .style('opacity', 1)
+    .attr('stroke-dashoffset', c)
+    .transition().duration(IX_HOVER_EXPAND_MS).ease(d3.easeLinear)
+    .attr('stroke-dashoffset', 0)
+    .on('end', function() { d3.select(this).style('opacity', 0); });
+}
+
+function cancelIxHoverProgress(nodeEl) {
+  const circle = d3.select(nodeEl).select('.ix-hover-progress');
+  if (circle.empty()) return;
+  const c = +circle.attr('data-circumference');
+  circle.interrupt()
+    .transition().duration(150)
+    .attr('stroke-dashoffset', c)
+    .style('opacity', 0);
 }
 
 function updateIxHighlight() {
@@ -7167,7 +7238,7 @@ function showIxTooltip(event, d) {
   if (!popup) return;
   const title = d.kind === 'root' ? '인사노무팀' : d.label;
   const sub   = d.kind === 'root' ? `전체 상호작용 ${d.count}건`
-    : d.kind === 'team' ? `상호작용 ${d.count}건 · 클릭하여 구성원 보기`
+    : d.kind === 'team' ? `상호작용 ${d.count}건 · 클릭: 상세보기 / 잠시 대기: 구성원 펼치기`
     : `${d.team} · ${d.count}건`;
   popup.innerHTML = `<div class="ltp-type">🔗 ${escHtml(title)}</div><div class="ltp-date">${escHtml(sub)}</div>`;
   popup.style.display = 'block';
