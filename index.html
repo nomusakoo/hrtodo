@@ -356,6 +356,20 @@
   .ix-link.ix-dim { opacity:0.12; }
   .ix-link.ix-hover { stroke:var(--accent) !important; }
   .ix-empty-hint { position:absolute; font-size:12.5px; color:var(--gray-400); text-align:center; }
+  .ix-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:12px; }
+  .ix-toolbar-group { display:flex; align-items:center; gap:6px; }
+  .ix-toolbar-group input[type="date"] { padding:6px 8px; font-size:12px; width:132px; }
+  .ix-range-btn.active, .ix-view-btn.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+  .ix-rank-wrap { padding:14px 4px 4px; }
+  .ix-rank-bars { display:flex; align-items:flex-end; gap:14px; height:380px; overflow-x:auto; padding:0 10px 8px; }
+  .ix-rank-bar-col { display:flex; flex-direction:column; align-items:center; justify-content:flex-end; flex:0 0 66px; height:100%; cursor:pointer; }
+  .ix-rank-bar-value { font-size:11.5px; font-weight:700; color:var(--gray-600); margin-bottom:4px; }
+  .ix-rank-bar { width:40px; border-radius:6px 6px 2px 2px; transition:height 0.4s cubic-bezier(.22,1,.36,1), filter 0.15s; }
+  .ix-rank-bar-col:hover .ix-rank-bar { filter:brightness(1.1); transform:scaleX(1.08); }
+  .ix-rank-bar-rank { font-size:10px; font-weight:700; color:#fff; background:var(--gray-400); border-radius:50%; width:17px; height:17px; display:flex; align-items:center; justify-content:center; margin-top:6px; flex-shrink:0; }
+  .ix-rank-bar-rank.ix-rank-first { background:#eab308; }
+  .ix-rank-bar-label { font-size:11px; color:var(--gray-700); margin-top:4px; text-align:center; max-width:74px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  @media(max-width:700px) { .ix-toolbar-group input[type="date"] { width:112px; } }
   .ix-recent-card { width:300px; flex-shrink:0; background:#fff; border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--shadow-sm); padding:14px; max-height:520px; overflow-y:auto; }
   .ix-recent-title { font-size:13px; font-weight:700; color:var(--gray-700); margin-bottom:10px; }
   .ix-recent-item { position:relative; padding:9px 26px 9px 10px; border-radius:8px; cursor:pointer; transition:background 0.12s; margin-bottom:4px; }
@@ -1518,10 +1532,28 @@
         <div class="page-title">상호작용<span id="ixCountLabel"></span></div>
         <button class="btn btn-green" onclick="openInteractionModal()">+ 상호작용 기록</button>
       </div>
+      <div class="ix-toolbar">
+        <div class="ix-toolbar-group">
+          <button class="btn btn-sm ix-range-btn" data-range="3m" onclick="setIxQuickRange('3m')">최근 3개월</button>
+          <button class="btn btn-sm ix-range-btn" data-range="6m" onclick="setIxQuickRange('6m')">최근 6개월</button>
+          <button class="btn btn-sm ix-range-btn" data-range="1y" onclick="setIxQuickRange('1y')">최근 1년</button>
+          <button class="btn btn-sm ix-range-btn active" data-range="all" onclick="setIxQuickRange('all')">전체</button>
+        </div>
+        <div class="ix-toolbar-group">
+          <input type="date" class="form-input" id="ix-range-from" onchange="setIxCustomRange()">
+          <span style="color:var(--gray-400);font-size:12px">~</span>
+          <input type="date" class="form-input" id="ix-range-to" onchange="setIxCustomRange()">
+        </div>
+        <div class="ix-toolbar-group" style="margin-left:auto">
+          <button class="btn btn-sm ix-view-btn active" id="ixViewBtnNetwork" onclick="setIxViewMode('network')">&#128376; 네트워크형</button>
+          <button class="btn btn-sm ix-view-btn" id="ixViewBtnRank" onclick="setIxViewMode('rank')">&#128202; 순위보기</button>
+        </div>
+      </div>
       <div class="ix-layout">
         <div class="ix-graph-card">
-          <div class="ix-graph-hint">팀 노드를 클릭하면 상호작용한 구성원이 펼쳐집니다. 선이 굵을수록 상호작용이 많다는 뜻이에요.</div>
+          <div class="ix-graph-hint" id="ixGraphHint">팀 노드를 클릭하면 상호작용한 구성원이 펼쳐집니다. 선이 굵을수록 상호작용이 많다는 뜻이에요.</div>
           <div class="ix-graph-wrap" id="ixGraphWrap"></div>
+          <div class="ix-rank-wrap" id="ixRankWrap" style="display:none"></div>
         </div>
         <div class="ix-recent-card">
           <div class="ix-recent-title">최근 기록</div>
@@ -6612,16 +6644,18 @@ async function deleteInteractionItem(id) {
 
 // ── 탭 렌더 ──
 function renderInteractionTab() {
+  const filtered = getFilteredInteractions();
   const lbl = document.getElementById('ixCountLabel');
-  if (lbl) lbl.textContent = ` · 총 ${interactions.length}건`;
+  if (lbl) lbl.textContent = ` · ${ixRangeLabelText()} ${filtered.length}건`;
   renderInteractionRecentList();
-  renderInteractionGraph();
+  if (ixViewMode === 'rank') renderInteractionRankChart();
+  else renderInteractionGraph();
 }
 
 function renderInteractionRecentList() {
   const list = document.getElementById('ixRecentList');
   if (!list) return;
-  const sorted = interactions.slice().sort((a,b) =>
+  const sorted = getFilteredInteractions().slice().sort((a,b) =>
     (b.interaction_date||'').localeCompare(a.interaction_date||'') || (b.id||0)-(a.id||0));
   const recent = sorted.slice(0, 40);
   list.innerHTML = recent.length ? recent.map(ix => `
@@ -6633,12 +6667,131 @@ function renderInteractionRecentList() {
       </div>
       ${ix.memo ? `<div class="ix-recent-memo">${escHtml(ix.memo)}</div>` : ''}
       <button class="ix-recent-del" onclick="event.stopPropagation();deleteInteractionItem(${ix.id})" title="삭제">&#10005;</button>
-    </div>`).join('') : `<div class="memo-empty">아직 기록된 상호작용이 없습니다.<br>+ 버튼으로 첫 기록을 추가해보세요.</div>`;
+    </div>`).join('') : `<div class="memo-empty">조회 기간에 해당하는 상호작용 기록이 없습니다.</div>`;
 }
 
 function focusInteractionTeam(team) {
   ixExpandedTeam = (ixExpandedTeam === team) ? null : team;
-  renderInteractionGraph();
+  if (ixViewMode !== 'network') setIxViewMode('network');
+  else renderInteractionGraph();
+}
+
+function renderInteractionRankChart() {
+  const wrap = document.getElementById('ixRankWrap');
+  if (!wrap) return;
+  const teamMap = new Map();
+  getFilteredInteractions().forEach(ix => {
+    const team = (ix.team||'').trim();
+    if (!team) return;
+    if (!teamMap.has(team)) teamMap.set(team, { count:0, persons:new Map() });
+    const t = teamMap.get(team);
+    t.count++;
+    const person = (ix.person||'').trim();
+    if (person) t.persons.set(person, (t.persons.get(person)||0) + 1);
+  });
+  const ranked = [...teamMap.entries()].sort((a,b) => b[1].count - a[1].count);
+
+  if (!ranked.length) {
+    wrap.innerHTML = `<div class="ix-empty-hint" style="position:static;padding:70px 0;">조회 기간에 해당하는 상호작용 기록이 없습니다.</div>`;
+    return;
+  }
+  const maxCount = ranked[0][1].count;
+  wrap.innerHTML = `<div class="ix-rank-bars">` + ranked.map(([team, info], idx) => {
+    const pct = Math.max(6, Math.round((info.count / maxCount) * 100));
+    const col = ixTeamColor(team);
+    const topPersons = [...info.persons.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3)
+      .map(([p,c])=>`${p} ${c}건`).join(', ');
+    return `<div class="ix-rank-bar-col"
+        onclick="focusInteractionTeam('${escHtml(team)}')"
+        onmouseenter="showIxRankTooltip(event,'${escHtml(team)}',${info.count},'${escHtml(topPersons)}')"
+        onmouseleave="hideIxTooltip()">
+      <div class="ix-rank-bar-value">${info.count}건</div>
+      <div class="ix-rank-bar" style="height:${pct}%;background:${col};"></div>
+      <div class="ix-rank-bar-rank${idx===0?' ix-rank-first':''}">${idx+1}</div>
+      <div class="ix-rank-bar-label">${escHtml(team)}</div>
+    </div>`;
+  }).join('') + `</div>`;
+}
+
+function showIxRankTooltip(event, team, count, topPersons) {
+  const popup = document.getElementById('leaveTooltipPopup');
+  if (!popup) return;
+  popup.innerHTML = `<div class="ltp-type">📊 ${escHtml(team)}</div><div class="ltp-date">상호작용 ${count}건</div>${topPersons ? `<div class="ltp-note">${escHtml(topPersons)}</div>` : ''}`;
+  popup.style.display = 'block';
+  const pw = popup.offsetWidth || 200, ph = popup.offsetHeight || 60;
+  let left = event.clientX + 14, top = event.clientY + 14;
+  if (left + pw > window.innerWidth - 8) left = event.clientX - pw - 14;
+  if (top + ph > window.innerHeight - 8) top = event.clientY - ph - 14;
+  popup.style.left = left + 'px';
+  popup.style.top  = top + 'px';
+}
+
+// ── 조회 기간 / 보기 모드 ──
+let ixViewMode = 'network';        // 'network' | 'rank'
+let ixDateRange = { from:null, to:null }; // null,null = 전체 기간
+let ixActiveQuickRange = 'all';    // '3m' | '6m' | '1y' | 'all' | null(커스텀)
+
+function getFilteredInteractions() {
+  if (!ixDateRange.from && !ixDateRange.to) return interactions;
+  return interactions.filter(i => {
+    const d = i.interaction_date || '';
+    if (ixDateRange.from && d < ixDateRange.from) return false;
+    if (ixDateRange.to && d > ixDateRange.to) return false;
+    return true;
+  });
+}
+
+function ixRangeLabelText() {
+  if (ixActiveQuickRange === '3m') return '최근 3개월';
+  if (ixActiveQuickRange === '6m') return '최근 6개월';
+  if (ixActiveQuickRange === '1y') return '최근 1년';
+  if (!ixDateRange.from && !ixDateRange.to) return '전체 기간';
+  return `${ixDateRange.from || '처음'} ~ ${ixDateRange.to || '오늘'}`;
+}
+
+function setIxQuickRange(preset) {
+  const today = new Date();
+  const toStr = today.toISOString().slice(0,10);
+  let fromStr = null;
+  if (preset !== 'all') {
+    const from = new Date(today);
+    const monthsBack = preset === '3m' ? 3 : preset === '6m' ? 6 : 12;
+    from.setMonth(from.getMonth() - monthsBack);
+    fromStr = from.toISOString().slice(0,10);
+  }
+  ixDateRange = { from: fromStr, to: preset === 'all' ? null : toStr };
+  ixActiveQuickRange = preset;
+  document.getElementById('ix-range-from').value = fromStr || '';
+  document.getElementById('ix-range-to').value   = preset === 'all' ? '' : toStr;
+  updateIxRangeButtonsUI();
+  renderInteractionTab();
+}
+
+function setIxCustomRange() {
+  const from = document.getElementById('ix-range-from').value || null;
+  const to   = document.getElementById('ix-range-to').value || null;
+  ixDateRange = { from, to };
+  ixActiveQuickRange = null;
+  updateIxRangeButtonsUI();
+  renderInteractionTab();
+}
+
+function updateIxRangeButtonsUI() {
+  document.querySelectorAll('.ix-range-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.range === ixActiveQuickRange);
+  });
+}
+
+function setIxViewMode(mode) {
+  ixViewMode = mode;
+  document.getElementById('ixViewBtnNetwork').classList.toggle('active', mode==='network');
+  document.getElementById('ixViewBtnRank').classList.toggle('active', mode==='rank');
+  document.getElementById('ixGraphWrap').style.display = mode==='network' ? '' : 'none';
+  document.getElementById('ixRankWrap').style.display   = mode==='rank' ? '' : 'none';
+  document.getElementById('ixGraphHint').textContent = mode==='network'
+    ? '팀 노드를 클릭하면 상호작용한 구성원이 펼쳐집니다. 선이 굵을수록 상호작용이 많다는 뜻이에요.'
+    : '상호작용이 많은 팀일수록 왼쪽에, 막대가 높을수록 상호작용이 많다는 뜻이에요.';
+  renderInteractionTab();
 }
 
 // ── 네트워크 그래프 (D3 force) ──
@@ -6652,9 +6805,10 @@ let ixNodeRScale = null;  // 최근 렌더의 반지름 스케일 (호버 확대
 let ixTeamColor = d3.scaleOrdinal(d3.schemeTableau10); // 팀명 -> 색상 (렌더마다 새로 만들면 카운트 변동에 따라 색이 바뀌므로 고정 유지)
 
 function buildInteractionGraphData() {
-  const root = { id:'__root__', kind:'root', label:'인사노무팀', count:interactions.length };
+  const scoped = getFilteredInteractions();
+  const root = { id:'__root__', kind:'root', label:'인사노무팀', count:scoped.length };
   const teamMap = new Map();
-  interactions.forEach(ix => {
+  scoped.forEach(ix => {
     const team = (ix.team||'').trim();
     if (!team) return;
     if (!teamMap.has(team)) teamMap.set(team, { count:0, persons:new Map() });
