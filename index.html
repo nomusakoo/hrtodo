@@ -4922,7 +4922,7 @@ function renderCalendar(year, month) {
       const lightBg = memberBg(t.member);
       const tx = memberTx(t.member);
       const impActive = t.important && !isDone;
-      return `<div class="cal-chip ${isDone?'is-done':''} ${t.important?'task-important':''}"
+      return `<div class="cal-chip ${isDone?'is-done':''} ${impActive?'task-important':''}"
         style="background:${isDone?'var(--gray-100)':(impActive?IMPORTANT_BG:lightBg)};color:${isDone?'var(--gray-400)':(impActive?IMPORTANT_TX:tx)};border-left:3px solid ${isDone?'var(--gray-300)':(impActive?IMPORTANT_TX:bg)};"
         draggable="true" data-task-id="${t.id}"
         onclick="event.stopPropagation();openEditModal(${t.id})"
@@ -4994,7 +4994,7 @@ function _drawMultiDayOverlays(year, month, placements, cellDates) {
     const showText  = trueStart === visStartStr; // 이 행에서 업무의 실제 시작일인 경우만 제목 표시
 
     const bar = document.createElement('div');
-    bar.className = `cal-multiday-bar${isDone?' is-done':''}${t.important?' task-important':''}`;
+    bar.className = `cal-multiday-bar${isDone?' is-done':''}${impActive?' task-important':''}`;
     bar.style.cssText = [
       `left:${left}px`,
       `top:${top}px`,
