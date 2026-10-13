@@ -1313,8 +1313,10 @@
   .routine-step-row{display:flex;align-items:center;gap:8px;}
   .routine-step-check{flex:0 0 20px;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);background:#fff;cursor:pointer;color:#fff;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;}
   .routine-step-check.checked{background:var(--success);border-color:var(--success);}
-  .routine-step-title{flex:1;min-width:0;font-size:12.5px;color:var(--gray-700);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .routine-step-title{flex:1;min-width:0;font-size:12.5px;color:var(--gray-700);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;}
+  .routine-step-title:hover{color:var(--accent);text-decoration:underline;text-decoration-style:dotted;}
   .routine-step-row.checked .routine-step-title{color:var(--gray-400);text-decoration:line-through;}
+  .routine-step-edit-input{flex:1;min-width:0;padding:3px 6px;border:1px solid var(--accent);border-radius:var(--radius);font-size:12.5px;font-family:var(--font);outline:none;}
   .routine-step-del{background:none;border:none;color:var(--gray-300);cursor:pointer;font-size:11px;padding:2px;}
   .routine-step-del:hover{color:var(--danger);}
   .routine-step-add-row{display:flex;gap:6px;margin-top:2px;}
@@ -7488,6 +7490,7 @@ let routineCollapseTimer = null;
 let routineSteps = [];
 let routineStepChecks = [];
 let routineStepsExpanded = new Set(); // 세부 단계를 펼쳐둔 루틴 id
+let routineEditingStepId = null; // 제목을 수정 중인 세부 단계 id
 
 let routineGroups = [];
 let routineSelectedGroupId = localStorage.getItem('hr_routine_selected_group') || 'all'; // 'all' 또는 그룹 id(문자열)
@@ -7861,6 +7864,23 @@ async function routineStepInsertRow(routineId, title) {
   routineSteps.push(nr); routineStepsLocalSave(); return nr;
 }
 
+async function routineStepUpdateTitle(id, title) {
+  const step = routineSteps.find(s => s.id === id);
+  if (!step) return;
+  const prev = step.title;
+  step.title = title;
+  renderRoutinePanel();
+  if (!useLocal && sbClient && !routineDbUnavailable) {
+    const { error } = await sbClient.from('hr_routine_steps').update({ title }).eq('id', id);
+    if (error && !isMissingTableErr(error)) {
+      step.title = prev; renderRoutinePanel();
+      showToast('단계 수정 오류: '+(error.message||''), 'error');
+      return;
+    }
+  }
+  routineStepsLocalSave();
+}
+
 async function routineStepDeleteRow(id) {
   const idx = routineSteps.findIndex(s => s.id === id);
   const removed = idx !== -1 ? routineSteps[idx] : null;
@@ -7992,6 +8012,30 @@ function addRoutineStepFromInput(routineId) {
 function deleteRoutineStepItem(id) {
   if (!confirm('이 단계를 삭제하시겠습니까?')) return;
   routineStepDeleteRow(id);
+}
+
+function startEditRoutineStep(id) {
+  routineEditingStepId = id;
+  renderRoutinePanel();
+  setTimeout(() => {
+    const el = document.getElementById(`routineStepEditInput-${id}`);
+    if (el) { el.focus(); el.select(); }
+  }, 0);
+}
+let routineStepEditJustCancelled = false; // Escape로 취소한 직후 뒤따라오는 blur가 값을 저장해버리지 않도록 막는 플래그
+function cancelEditRoutineStep() {
+  routineStepEditJustCancelled = true;
+  routineEditingStepId = null;
+  renderRoutinePanel();
+}
+function saveEditRoutineStep(id) {
+  if (routineStepEditJustCancelled) { routineStepEditJustCancelled = false; return; }
+  const el = document.getElementById(`routineStepEditInput-${id}`);
+  if (!el) return;
+  const title = el.value.trim();
+  routineEditingStepId = null;
+  if (title) routineStepUpdateTitle(id, title);
+  else renderRoutinePanel();
 }
 
 // 씨앗 → 새싹 → 작물로 자라나는 모습을 비율(ratio: 0~1)에 따라 그려줌.
@@ -8142,9 +8186,15 @@ function renderRoutinePanel(justFilledId) {
 
     const stepsListHtml = steps.map((s, i) => {
       const sChecked = routineStepIsCheckedThisPeriod(s, r);
+      const editing = routineEditingStepId === s.id;
+      const titleHtml = editing
+        ? `<input type="text" class="routine-step-edit-input" id="routineStepEditInput-${s.id}" value="${escHtml(s.title)}" maxlength="40"
+             onkeydown="if(event.key==='Enter'){event.preventDefault();saveEditRoutineStep(${s.id});}else if(event.key==='Escape'){cancelEditRoutineStep();}"
+             onblur="saveEditRoutineStep(${s.id})">`
+        : `<span class="routine-step-title" onclick="startEditRoutineStep(${s.id})" title="클릭해서 수정">${i+1}. ${escHtml(s.title)}</span>`;
       return `<div class="routine-step-row ${sChecked?'checked':''}">
         <button class="routine-step-check ${sChecked?'checked':''}" onclick="toggleRoutineStepNow(${s.id})" title="${sChecked?'클릭해서 취소':'체크'}">${sChecked?'✓':''}</button>
-        <span class="routine-step-title">${i+1}. ${escHtml(s.title)}</span>
+        ${titleHtml}
         <button class="routine-step-del" onclick="deleteRoutineStepItem(${s.id})" title="삭제">✕</button>
       </div>`;
     }).join('');
