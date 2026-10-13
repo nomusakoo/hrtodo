@@ -505,6 +505,10 @@
     max-width: 120px;
     padding-right: 16px;
   }
+  /* 루틴 업무 FAB — 모바일에서만 '할 일 추가' 버튼 바로 위에 노출(데스크톱은 오른쪽 호버 바 사용) */
+  .fab-routine-mobile {
+    display: none;
+  }
   @media(max-width:900px) {
     .fab { bottom: 76px; right: 16px; }
     .fab:hover { width: 48px; }
@@ -512,6 +516,36 @@
     .fab-add { bottom: 136px; right: 16px; z-index: 210; }
     .fab-add:hover { width: 48px; background: #2d8a5e; box-shadow: 0 4px 16px rgba(45,138,94,0.30); }
     .fab-add:hover .fab-text { opacity: 0; max-width: 0; padding-right: 0; }
+
+    .fab-routine-mobile {
+      display: flex;
+      position: fixed;
+      bottom: 196px;
+      right: 16px;
+      z-index: 210;
+      align-items: center;
+      gap: 0;
+      background: linear-gradient(135deg, var(--primary), var(--primary-mid));
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      cursor: pointer;
+      overflow: hidden;
+      width: 48px;
+      height: 48px;
+      font-family: var(--font);
+    }
+    .fab-routine-mobile .fab-icon {
+      flex-shrink: 0;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 19px;
+    }
+    .fab-routine-mobile .fab-text { display: none; }
   }
 
   /* MASTER CALENDAR 모바일 최적화 */
@@ -898,7 +932,8 @@
 
   /* 모달 열려있을 때 FAB 버튼 뒤로 */
   body:has(.modal-overlay.open) .fab,
-  body:has(.modal-overlay.open) .fab-add { z-index: 1 !important; }
+  body:has(.modal-overlay.open) .fab-add,
+  body:has(.modal-overlay.open) .fab-routine-mobile { z-index: 1 !important; }
   .paste-tab-bar{display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:14px;}
   .paste-tab{padding:7px 18px;background:none;border:none;cursor:pointer;font-size:13px;font-weight:500;
     color:var(--gray-500);position:relative;bottom:-2px;border-bottom:2px solid transparent;
@@ -1286,8 +1321,44 @@
   .routine-step-input{flex:1;min-width:0;padding:5px 9px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;font-family:var(--font);outline:none;}
   .routine-step-input:focus{border-color:var(--accent);}
   .routine-step-add-btn{padding:5px 10px;border-radius:var(--radius);border:1px solid var(--border);background:#fff;color:var(--gray-600);font-size:12px;cursor:pointer;white-space:nowrap;}
-  @media (max-width:860px){
-    .routine-panel{width:85vw;min-width:0;}
+  .routine-group-assign-row{display:flex;align-items:center;gap:8px;margin-top:4px;}
+  .routine-group-assign-row label{font-size:11px;color:var(--gray-500);}
+  .routine-group-assign-row select{flex:1;min-width:0;padding:4px 8px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;font-family:var(--font);background:#fff;color:var(--gray-700);}
+  .routine-quick-add-btn{width:100%;margin-top:2px;padding:6px;border:1px dashed var(--border);border-radius:var(--radius);background:transparent;color:var(--gray-400);font-size:14px;cursor:pointer;line-height:1;transition:all 0.15s;}
+  .routine-quick-add-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg);}
+
+  /* 루틴 그룹 탭 */
+  .routine-tabs{display:flex;align-items:center;gap:4px;padding:10px 14px 0;flex-wrap:wrap;border-bottom:1px solid var(--border);}
+  .routine-tab{display:flex;align-items:center;gap:5px;padding:6px 10px;border:none;background:none;border-radius:var(--radius) var(--radius) 0 0;font-size:12.5px;font-weight:500;color:var(--gray-500);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+  .routine-tab:hover{color:var(--gray-700);}
+  .routine-tab.active{color:var(--primary);font-weight:700;border-bottom-color:var(--accent);}
+  .routine-tab-count{font-size:10.5px;color:var(--gray-400);background:var(--gray-100);border-radius:999px;padding:0 5px;}
+  .routine-tab.active .routine-tab-count{color:var(--accent);background:var(--accent-bg);}
+  .routine-tab-edit{font-size:10px;color:var(--gray-400);padding:0 2px;}
+  .routine-tab-edit:hover{color:var(--accent);}
+  .routine-tab-add{padding:4px 9px;border:1px dashed var(--border);border-radius:999px;background:none;color:var(--gray-400);font-size:12px;cursor:pointer;margin-bottom:6px;}
+  .routine-tab-add:hover{color:var(--accent);border-color:var(--accent);}
+  .routine-tab-dash{margin-left:auto;}
+
+  /* 루틴 업무 미니 대시보드 */
+  .routine-dash-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px;}
+  .routine-dash-stat{border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px;background:#fafafa;}
+  .rds-label{font-size:11px;color:var(--gray-500);margin-bottom:4px;}
+  .rds-value{font-size:19px;font-weight:700;color:var(--primary);}
+  .routine-dash-stat.rds-busy .rds-value{color:var(--danger);}
+  .routine-dash-stat.rds-normal .rds-value{color:#f59e0b;}
+  .routine-dash-stat.rds-calm .rds-value{color:var(--success);}
+  .routine-dash-section-title{font-size:12.5px;font-weight:700;color:var(--gray-700);margin:16px 0 10px;}
+  .routine-dash-chart{display:flex;align-items:flex-end;gap:10px;height:76px;padding:0 4px;}
+  .routine-dash-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:flex-end;height:100%;}
+  .routine-dash-bar{width:100%;max-width:26px;background:linear-gradient(180deg,var(--accent-light),var(--accent));border-radius:4px 4px 0 0;}
+  .routine-dash-bar-label{font-size:10.5px;color:var(--gray-400);}
+  .routine-dash-gallery{display:flex;flex-wrap:wrap;gap:4px;font-size:18px;line-height:1;}
+  .routine-harvest-pepper{cursor:default;}
+  @media (max-width:900px){
+    .routine-panel{width:85vw;min-width:0;transform:translateX(100%);}
+    .routine-panel.open{transform:translateX(0);}
+    .routine-panel-handle{display:none;}
   }
 </style>
 </head>
@@ -2078,6 +2149,12 @@
 <!-- DRAG GHOST -->
 <div id="calDragGhost" style="position:fixed;pointer-events:none;z-index:9999;display:none;padding:4px 8px;background:var(--accent);color:#fff;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap;opacity:0.9;transform:translate(-50%,-50%)"></div>
 
+<!-- FLOATING BUTTON: 루틴 업무 (모바일 전용) -->
+<button class="fab-routine-mobile" onclick="toggleRoutinePanelMobile()" title="루틴 업무">
+  <span class="fab-icon">🌱</span>
+  <span class="fab-text">루틴 업무</span>
+</button>
+
 <!-- FLOATING BUTTON: 할 일 추가 -->
 <button class="fab-add" onclick="openAddModal()" title="할 일 추가">
   <span class="fab-icon">＋</span>
@@ -2760,6 +2837,7 @@ async function startApp() {
             routineChecks = await loadRoutineChecksSafe();
             routineSteps      = await loadRoutineStepsSafe();
             routineStepChecks = await loadRoutineStepChecksSafe();
+            routineGroups     = await loadRoutineGroupsSafe();
             await migrateLegacyExecEvents();
             showLoading(false);
             renderAll();
@@ -2794,6 +2872,7 @@ async function startApp() {
     routineChecks = await loadRoutineChecksSafe();
     routineSteps      = await loadRoutineStepsSafe();
     routineStepChecks = await loadRoutineStepChecksSafe();
+    routineGroups     = await loadRoutineGroupsSafe();
     await migrateLegacyExecEvents();
     if (useLocal || !sbClient) setDbStatus(false, '로컬 저장소');
     showLoading(false);
@@ -7410,10 +7489,15 @@ let routineSteps = [];
 let routineStepChecks = [];
 let routineStepsExpanded = new Set(); // 세부 단계를 펼쳐둔 루틴 id
 
+let routineGroups = [];
+let routineSelectedGroupId = localStorage.getItem('hr_routine_selected_group') || 'all'; // 'all' 또는 그룹 id(문자열)
+let routineViewMode = 'list'; // 'list' | 'dashboard'
+
 const ROUTINES_KEY = 'hr_routines_v1';
 const ROUTINE_CHECKS_KEY = 'hr_routine_checks_v1';
 const ROUTINE_STEPS_KEY = 'hr_routine_steps_v1';
 const ROUTINE_STEP_CHECKS_KEY = 'hr_routine_step_checks_v1';
+const ROUTINE_GROUPS_KEY = 'hr_routine_groups_v1';
 const ROUTINE_PERIOD_LABEL = { monthly:'매월', quarterly:'분기', half:'반기', yearly:'연간' };
 
 function routinesLocalLoad() {
@@ -7432,6 +7516,10 @@ function routineStepChecksLocalLoad() {
   try { const d = JSON.parse(localStorage.getItem(ROUTINE_STEP_CHECKS_KEY)); return Array.isArray(d) ? d : []; } catch { return []; }
 }
 function routineStepChecksLocalSave() { localStorage.setItem(ROUTINE_STEP_CHECKS_KEY, JSON.stringify(routineStepChecks)); }
+function routineGroupsLocalLoad() {
+  try { const d = JSON.parse(localStorage.getItem(ROUTINE_GROUPS_KEY)); return Array.isArray(d) ? d : []; } catch { return []; }
+}
+function routineGroupsLocalSave() { localStorage.setItem(ROUTINE_GROUPS_KEY, JSON.stringify(routineGroups)); }
 
 async function loadRoutines() {
   if (!useLocal && sbClient) {
@@ -7465,6 +7553,14 @@ async function loadRoutineStepChecks() {
   }
   return routineStepChecksLocalLoad();
 }
+async function loadRoutineGroups() {
+  if (!useLocal && sbClient) {
+    const { data, error } = await sbClient.from('hr_routine_groups').select('*').order('sort_order', { ascending:true });
+    if (!error && Array.isArray(data)) return data;
+    if (error) throw error;
+  }
+  return routineGroupsLocalLoad();
+}
 async function loadRoutinesSafe() {
   try { return await loadRoutines(); }
   catch (e) { console.warn('[routines] 테이블 없음, 빈 배열로 진행:', e.message||e); return []; }
@@ -7472,6 +7568,10 @@ async function loadRoutinesSafe() {
 async function loadRoutineChecksSafe() {
   try { return await loadRoutineChecks(); }
   catch (e) { console.warn('[routine_checks] 테이블 없음, 빈 배열로 진행:', e.message||e); return []; }
+}
+async function loadRoutineGroupsSafe() {
+  try { return await loadRoutineGroups(); }
+  catch (e) { console.warn('[routine_groups] 테이블 없음, 빈 배열로 진행:', e.message||e); return []; }
 }
 async function loadRoutineStepsSafe() {
   try { return await loadRoutineSteps(); }
@@ -7519,10 +7619,16 @@ function warnRoutineTableMissing() {
   showToast('루틴 업무 테이블이 아직 Supabase에 없어 이 기기에만 저장됩니다. (관리자에게 테이블 생성을 요청하세요)', 'error');
 }
 
-async function routineInsertRow(title, period) {
+async function routineInsertRow(title, period, groupId) {
   const row = { member: myMember, title, period };
+  if (groupId) row.group_id = groupId;
   if (!useLocal && sbClient && !routineDbUnavailable) {
-    const { data, error } = await sbClient.from('hr_routines').insert(row).select();
+    let { data, error } = await sbClient.from('hr_routines').insert(row).select();
+    if (error && isMissingColumnErr(error, 'group_id')) {
+      const { group_id, ...fallbackRow } = row;
+      console.warn('[routines] hr_routines.group_id 컬럼이 없어 해당 값 없이 저장합니다. Supabase에서 다음 SQL을 실행해주세요: ALTER TABLE hr_routines ADD COLUMN group_id bigint;');
+      ({ data, error } = await sbClient.from('hr_routines').insert(fallbackRow).select());
+    }
     if (!error) {
       const nr = data && data[0];
       if (nr) routines.push(nr);
@@ -7534,6 +7640,85 @@ async function routineInsertRow(title, period) {
   const newId = routines.length ? Math.max(...routines.map(r=>r.id||0)) + 1 : 1;
   const nr = { id:newId, ...row, created_at:new Date().toISOString() };
   routines.push(nr); routinesLocalSave(); return nr;
+}
+
+async function routineUpdateGroup(id, groupId) {
+  const routine = routines.find(r => r.id === id);
+  if (!routine) return;
+  const prevGroup = routine.group_id || null;
+  routine.group_id = groupId || null;
+  renderRoutinePanel();
+  if (!useLocal && sbClient && !routineDbUnavailable) {
+    const { error } = await sbClient.from('hr_routines').update({ group_id: routine.group_id }).eq('id', id);
+    if (error && !isMissingColumnErr(error, 'group_id') && !isMissingTableErr(error)) {
+      routine.group_id = prevGroup; renderRoutinePanel();
+      showToast('그룹 변경 오류: '+(error.message||''), 'error');
+      return;
+    }
+  }
+  routinesLocalSave();
+}
+
+// ── 루틴 그룹(전체보기/승진/급여 등 사용자 정의 탭) ──
+async function routineGroupInsertRow(name) {
+  const sortOrder = routineGroups.length ? Math.max(...routineGroups.map(g=>g.sort_order||0)) + 1 : 0;
+  const row = { member: myMember, name, sort_order: sortOrder };
+  if (!useLocal && sbClient && !routineDbUnavailable) {
+    const { data, error } = await sbClient.from('hr_routine_groups').insert(row).select();
+    if (!error) {
+      const nr = data && data[0];
+      if (nr) routineGroups.push(nr);
+      return nr;
+    }
+    if (isMissingTableErr(error)) { warnRoutineTableMissing(); }
+    else { showToast('그룹 저장 오류: '+(error.message||''), 'error'); return null; }
+  }
+  const newId = routineGroups.length ? Math.max(...routineGroups.map(g=>g.id||0)) + 1 : 1;
+  const nr = { id:newId, ...row, created_at:new Date().toISOString() };
+  routineGroups.push(nr); routineGroupsLocalSave(); return nr;
+}
+
+async function routineGroupRenameRow(id, name) {
+  const g = routineGroups.find(x => x.id === id);
+  if (!g) return;
+  const prev = g.name;
+  g.name = name;
+  renderRoutinePanel();
+  if (!useLocal && sbClient && !routineDbUnavailable) {
+    const { error } = await sbClient.from('hr_routine_groups').update({ name }).eq('id', id);
+    if (error && !isMissingTableErr(error)) {
+      g.name = prev; renderRoutinePanel();
+      showToast('그룹 이름 변경 오류: '+(error.message||''), 'error');
+      return;
+    }
+  }
+  routineGroupsLocalSave();
+}
+
+async function routineGroupDeleteRow(id) {
+  const idx = routineGroups.findIndex(g => g.id === id);
+  if (idx === -1) return;
+  const removed = routineGroups[idx];
+  routineGroups.splice(idx, 1);
+  routines.forEach(r => { if (r.group_id === id) r.group_id = null; }); // 소속 루틴은 전체보기로
+  if (String(routineSelectedGroupId) === String(id)) {
+    routineSelectedGroupId = 'all';
+    localStorage.setItem('hr_routine_selected_group', 'all');
+  }
+  renderRoutinePanel();
+  if (!useLocal && sbClient && !routineDbUnavailable) {
+    const { error } = await sbClient.from('hr_routine_groups').delete().eq('id', id);
+    if (error && !isMissingTableErr(error)) {
+      routineGroups.splice(idx, 0, removed);
+      renderRoutinePanel();
+      showToast('그룹 삭제 오류: '+(error.message||''), 'error');
+      return;
+    }
+    try { await sbClient.from('hr_routines').update({ group_id: null }).eq('group_id', id); } catch (e) { /* group_id 컬럼 없으면 무시 */ }
+  } else {
+    routinesLocalSave();
+  }
+  routineGroupsLocalSave();
 }
 
 async function routineDeleteRow(id) {
@@ -7807,53 +7992,139 @@ function deleteRoutineStepItem(id) {
 // 세부 단계가 많을수록(ratio 증가폭이 작을수록) 성장이 더 잘게 세분화되어 보임.
 function routinePlantSvg(ratio, grew) {
   ratio = Math.max(0, Math.min(1, ratio));
-  const potTop = 70, stemMaxH = 40;
+  const potTop = 70, stemMaxH = 36;
   const stemH = ratio * stemMaxH;
   const stemTopY = potTop - stemH;
-  const leaf1 = ratio >= 0.18;
-  const leaf2 = ratio >= 0.42;
-  const leafY1 = potTop - stemH * 0.4;
-  const leafY2 = potTop - stemH * 0.75;
+  const leaf1 = ratio >= 0.16;
+  const leaf2 = ratio >= 0.38;
+  const leafY1 = potTop - stemH * 0.45;
+  const leafY2 = potTop - stemH * 0.82;
+  // 잎 하나를 그리는 뾰족한 타원형(포인트가 왼쪽을 향함) — dir=-1이면 왼쪽, 1이면 오른쪽으로 뒤집음
+  const leafPath = (ax, ay, dir, scale) => {
+    const w = 17 * scale, h = 10 * scale;
+    return `<path d="M${ax},${ay} C ${ax+dir*6},${ay-h*0.8} ${ax+dir*w*0.85},${ay-h*0.5} ${ax+dir*w},${ay}
+      C ${ax+dir*w*0.85},${ay+h*0.5} ${ax+dir*6},${ay+h*0.6} ${ax},${ay} Z" fill="${scale>0.85?'#4fa83f':'#5cb84f'}"/>`;
+  };
 
-  // 장미가 줄기 끝에서 점진적으로 피어나는 모습(단계별로 갑자기 나타나지 않도록 비율에 따라 연속적으로 커짐)
-  const bloomStart = 0.4;
-  const bloomRatio = ratio > bloomStart ? Math.min(1, (ratio - bloomStart) / (1 - bloomStart)) : 0;
-  const bloomScale = (0.25 + bloomRatio * 0.85).toFixed(3);
-  const petals = [0,72,144,216,288]
-    .map(deg => `<ellipse cx="0" cy="-5" rx="4.2" ry="6.2" fill="#e0527a" transform="rotate(${deg})"/>`)
-    .join('');
-  const flower = bloomRatio > 0
-    ? `<g transform="translate(30,${stemTopY}) scale(${bloomScale})" opacity="${Math.max(0.35, bloomRatio).toFixed(2)}">${petals}<circle cx="0" cy="0" r="3" fill="#b8325a"/></g>`
-    : `<circle cx="30" cy="${stemTopY}" r="2" fill="#6b9c4a"/>`;
+  // 고추가 줄기 마디에서 짧은 꼭지로 돋아나 점점 길어지고, 다 익으면 초록 -> 빨강으로 변함
+  const fruitStart = 0.4;
+  const growT = ratio > fruitStart ? Math.min(1, (ratio - fruitStart) / (1 - fruitStart)) : 0;
+  const len = growT * 24;
+  const bend = 5 + growT * 3;
+  const nodeX = 30, nodeY = leafY2 + 2;
+  const baseX = nodeX + 7, baseY = nodeY + 1;
+  const tipX = baseX - bend * 0.7, tipY = baseY + len;
+  const ripenT = ratio > 0.78 ? Math.min(1, (ratio - 0.78) / 0.22) : 0;
+  // 초록(hue 115) -> 빨강(hue -5)으로 색상환을 따라 돌려 칙칙한 갈색을 거치지 않고 자연스럽게 익어가도록 함
+  const ripenHue = Math.round((115 - ripenT * 120 + 360) % 360);
+  const fruitColor = `hsl(${ripenHue},62%,44%)`;
+  const highlightColor = ripenT > 0.5 ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.45)';
+  const fruit = growT > 0
+    ? `<line x1="${nodeX}" y1="${nodeY}" x2="${baseX-1}" y2="${baseY-1}" stroke="#3f7d3a" stroke-width="1.6" stroke-linecap="round"/>
+       <path d="M${baseX},${baseY}
+         C ${baseX+bend},${baseY+len*0.3} ${baseX+bend*0.7},${baseY+len*0.78} ${tipX},${tipY}
+         C ${baseX-2.2},${baseY+len*0.7} ${baseX-2},${baseY+len*0.22} ${baseX},${baseY}
+         Z" fill="${fruitColor}" stroke="rgba(0,0,0,0.18)" stroke-width="0.5"/>
+       <path d="M${baseX+0.5},${baseY+len*0.15} C ${baseX+bend*0.6},${baseY+len*0.4} ${baseX+bend*0.3},${baseY+len*0.65} ${baseX-0.5},${baseY+len*0.8}"
+         fill="none" stroke="${highlightColor}" stroke-width="1" stroke-linecap="round"/>
+       <path d="M${baseX-1.4},${baseY-1} q1.6,-2.6 3.2,0" fill="none" stroke="#3f7d3a" stroke-width="1.6" stroke-linecap="round"/>`
+    : '';
 
   return `<svg class="routine-plant-svg ${grew?'grew':''} ${ratio>=1?'mature':''}" viewBox="0 0 60 84" title="성장 중 (${Math.round(ratio*100)}%)">
     <ellipse cx="30" cy="80" rx="16" ry="3" fill="rgba(0,0,0,0.08)"/>
     <path d="M16,80 L20,64 Q30,60 40,64 L44,80 Z" fill="#c77b4a"/>
     <rect x="16" y="77.5" width="28" height="3" rx="1.5" fill="#a8602f"/>
-    ${stemH > 0 ? `<line x1="30" y1="${potTop}" x2="30" y2="${stemTopY}" stroke="#4a9b3e" stroke-width="3" stroke-linecap="round"/>` : ''}
-    ${leaf1 ? `<path d="M30,${leafY1} Q20,${leafY1-6} 18,${leafY1+2} Q24,${leafY1+6} 30,${leafY1}" fill="#5cb84f"/>
-               <path d="M30,${leafY1} Q40,${leafY1-6} 42,${leafY1+2} Q36,${leafY1+6} 30,${leafY1}" fill="#5cb84f"/>` : ''}
-    ${leaf2 ? `<path d="M30,${leafY2} Q21,${leafY2-7} 19,${leafY2+2} Q25,${leafY2+7} 30,${leafY2}" fill="#6bc95a"/>
-               <path d="M30,${leafY2} Q39,${leafY2-7} 41,${leafY2+2} Q35,${leafY2+7} 30,${leafY2}" fill="#6bc95a"/>` : ''}
-    ${stemH > 0 ? flower : ''}
+    ${stemH > 0 ? `<path d="M30,${potTop} Q${28+Math.sin(stemH*0.2)*2},${(potTop+stemTopY)/2} 30,${stemTopY}" stroke="#4a9b3e" stroke-width="3" fill="none" stroke-linecap="round"/>` : ''}
+    ${leaf1 ? leafPath(30, leafY1, -1, 1) + leafPath(30, leafY1, 1, 1) : ''}
+    ${leaf2 ? leafPath(30, leafY2, -1, 0.9) : ''}
+    ${fruit}
   </svg>`;
 }
 
+// ── 루틴 업무 미니 대시보드 ──
+function renderRoutineDashboard() {
+  const el = document.getElementById('routineDashboardView');
+  if (!el) return;
+  const mine = routines.filter(r => myMember && r.member === myMember);
+  if (!myMember) { el.innerHTML = `<div class="routine-empty">팀원을 선택하면<br>대시보드를 볼 수 있어요.</div>`; return; }
+  if (!mine.length) { el.innerHTML = `<div class="routine-empty">아직 등록한 루틴 업무가 없어요.</div>`; return; }
+
+  const mineIds = new Set(mine.map(r => r.id));
+  const checkedCount = mine.filter(r => routineIsCheckedThisPeriod(r)).length;
+  const pendingCount = mine.length - checkedCount;
+  const completionPct = Math.round(checkedCount / mine.length * 100);
+  const totalHarvest = mine.reduce((sum, r) => sum + routineHarvestCount(r.id), 0);
+  const workload = pendingCount === 0 ? { label:'여유', cls:'calm' } : pendingCount <= 3 ? { label:'보통', cls:'normal' } : { label:'바쁨', cls:'busy' };
+
+  const now = new Date();
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({ key:`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`, label:`${d.getMonth()+1}월` });
+  }
+  const counts = months.map(m => routineChecks.filter(c => mineIds.has(c.routine_id) && (c.checked_at||'').slice(0,7) === m.key).length);
+  const maxCount = Math.max(1, ...counts);
+  const chartHtml = months.map((m,i) => `<div class="routine-dash-bar-col">
+      <div class="routine-dash-bar" style="height:${Math.max(2, Math.round(counts[i]/maxCount*56))}px" title="${m.label}: ${counts[i]}회"></div>
+      <div class="routine-dash-bar-label">${m.label}</div>
+    </div>`).join('');
+
+  const harvestRecords = routineChecks.filter(c => mineIds.has(c.routine_id)).sort((a,b) => new Date(b.checked_at) - new Date(a.checked_at));
+  const galleryHtml = harvestRecords.slice(0, 120).map(c => {
+    const r = mine.find(x => x.id === c.routine_id);
+    const dateStr = c.checked_at ? new Date(c.checked_at).toLocaleDateString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit'}) : '';
+    return `<span class="routine-harvest-pepper" title="${escHtml(r?r.title:'')} · ${dateStr}">🌶️</span>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="routine-dash-stats">
+      <div class="routine-dash-stat"><div class="rds-label">등록된 루틴</div><div class="rds-value">${mine.length}</div></div>
+      <div class="routine-dash-stat"><div class="rds-label">이번 주기 완료율</div><div class="rds-value">${completionPct}%</div></div>
+      <div class="routine-dash-stat"><div class="rds-label">누적 수확</div><div class="rds-value">${totalHarvest}회</div></div>
+      <div class="routine-dash-stat rds-${workload.cls}"><div class="rds-label">업무 부담도</div><div class="rds-value">${workload.label}</div></div>
+    </div>
+    <div class="routine-dash-section-title">최근 6개월 수확 추이</div>
+    <div class="routine-dash-chart">${chartHtml}</div>
+    <div class="routine-dash-section-title">수확한 작물 🌶️ (${harvestRecords.length}개)</div>
+    <div class="routine-dash-gallery">${galleryHtml || '<div class="routine-empty">아직 수확한 작물이 없어요.</div>'}</div>
+  `;
+}
+
 function renderRoutinePanel(justFilledId) {
+  renderRoutineTabs();
+
+  const listViewEl = document.getElementById('routineListView');
+  const dashViewEl = document.getElementById('routineDashboardView');
+  if (!listViewEl || !dashViewEl) return;
+
+  if (routineViewMode === 'dashboard') {
+    listViewEl.style.display = 'none';
+    dashViewEl.style.display = '';
+    renderRoutineDashboard();
+    return;
+  }
+  listViewEl.style.display = '';
+  dashViewEl.style.display = 'none';
+
   const listEl = document.getElementById('routineList');
   if (!listEl) return;
-  const mine = routines.filter(r => myMember && r.member === myMember);
+  const myAll = routines.filter(r => myMember && r.member === myMember);
+  const mine = routineSelectedGroupId === 'all'
+    ? myAll
+    : myAll.filter(r => String(r.group_id || '') === String(routineSelectedGroupId));
 
   if (!myMember) {
     listEl.innerHTML = `<div class="routine-empty">팀원을 선택하면<br>나의 루틴 업무를 등록할 수 있어요.</div>`;
     return;
   }
   if (!mine.length) {
-    listEl.innerHTML = `<div class="routine-empty">아직 등록한 루틴 업무가 없어요.<br>자주 반복하는 업무를 등록해보세요 🌱</div>`;
+    listEl.innerHTML = `<div class="routine-empty">${myAll.length ? '이 그룹에는 업무가 없어요.' : '아직 등록한 루틴 업무가 없어요.<br>자주 반복하는 업무를 등록해보세요 🌱'}</div>`;
     return;
   }
 
   listEl.innerHTML = mine.map(r => {
+    const groupOptionsHtml = `<option value="" ${!r.group_id?'selected':''}>미분류</option>` +
+      routineGroups.map(g => `<option value="${g.id}" ${String(r.group_id)===String(g.id)?'selected':''}>${escHtml(g.name)}</option>`).join('');
     const ratio = routineGrowthRatio(r);
     const harvestCount = routineHarvestCount(r.id);
     const grew = r.id === justFilledId;
@@ -7863,11 +8134,11 @@ function renderRoutinePanel(justFilledId) {
     const doneCount = steps.filter(s => routineStepIsCheckedThisPeriod(s, r)).length;
     const expanded = routineStepsExpanded.has(r.id);
 
-    const stepsListHtml = steps.map(s => {
+    const stepsListHtml = steps.map((s, i) => {
       const sChecked = routineStepIsCheckedThisPeriod(s, r);
       return `<div class="routine-step-row ${sChecked?'checked':''}">
         <button class="routine-step-check ${sChecked?'checked':''}" onclick="toggleRoutineStepNow(${s.id})" title="${sChecked?'클릭해서 취소':'체크'}">${sChecked?'✓':''}</button>
-        <span class="routine-step-title">${escHtml(s.title)}</span>
+        <span class="routine-step-title">${i+1}. ${escHtml(s.title)}</span>
         <button class="routine-step-del" onclick="deleteRoutineStepItem(${s.id})" title="삭제">✕</button>
       </div>`;
     }).join('');
@@ -7878,6 +8149,12 @@ function renderRoutinePanel(justFilledId) {
         <input type="text" class="routine-step-input" id="routineStepInput-${r.id}" placeholder="+ 단계 추가" maxlength="40"
           onkeydown="if(event.key==='Enter'){event.preventDefault();addRoutineStepFromInput(${r.id});}">
         <button class="routine-step-add-btn" onclick="addRoutineStepFromInput(${r.id})">추가</button>
+      </div>
+      <div class="routine-group-assign-row">
+        <label>그룹</label>
+        <select onchange="event.stopPropagation();routineUpdateGroup(${r.id}, this.value?Number(this.value):null)" onclick="event.stopPropagation()">
+          ${groupOptionsHtml}
+        </select>
       </div>
     </div>`;
 
@@ -7899,7 +8176,8 @@ function renderRoutinePanel(justFilledId) {
         <span class="routine-expand-indicator">${expanded?'▾':'▸'}</span>
       </div>
       ${expanded ? stepsSectionHtml : ''}
-    </div>`;
+    </div>
+    <button class="routine-quick-add-btn" onclick="openRoutineAddModal()" title="루틴 업무 추가">+</button>`;
   }).join('');
 }
 
@@ -7912,6 +8190,9 @@ function openRoutineAddModal() {
   routineModalLock = true;
   document.getElementById('routineTitleInput').value = '';
   document.getElementById('routinePeriodInput').value = 'monthly';
+  const groupSel = document.getElementById('routineGroupInput');
+  groupSel.innerHTML = `<option value="">미분류</option>` + routineGroups.map(g => `<option value="${g.id}">${escHtml(g.name)}</option>`).join('');
+  if (routineSelectedGroupId !== 'all') groupSel.value = routineSelectedGroupId;
   document.getElementById('routineAddModal').classList.add('open');
   setTimeout(() => document.getElementById('routineTitleInput').focus(), 100);
 }
@@ -7925,10 +8206,57 @@ async function saveRoutineNew() {
   if (!title) { showToast('업무명을 입력해주세요.', 'error'); return; }
   if (!myMember) { showToast('먼저 팀원을 선택해주세요.', 'error'); return; }
   const period = document.getElementById('routinePeriodInput').value;
+  const groupVal = document.getElementById('routineGroupInput').value;
+  const groupId = groupVal ? Number(groupVal) : null;
   closeRoutineAddModal();
-  await routineInsertRow(title, period);
+  await routineInsertRow(title, period, groupId);
   renderRoutinePanel();
   expandRoutinePanel(); // 추가 직후 바로 확인/체크할 수 있도록 패널을 다시 펼쳐둠
+}
+
+// ── 루틴 그룹 탭 ──
+function renderRoutineTabs() {
+  const el = document.getElementById('routineTabs');
+  if (!el) return;
+  const myAll = routines.filter(r => myMember && r.member === myMember);
+  const countAll = myAll.length;
+  const tabs = [`<button class="routine-tab ${routineSelectedGroupId==='all'&&routineViewMode==='list'?'active':''}" onclick="selectRoutineGroup('all')">전체보기<span class="routine-tab-count">${countAll}</span></button>`];
+  routineGroups.forEach(g => {
+    const cnt = myAll.filter(r => String(r.group_id||'') === String(g.id)).length;
+    const active = routineViewMode==='list' && String(routineSelectedGroupId)===String(g.id);
+    tabs.push(`<button class="routine-tab ${active?'active':''}" onclick="selectRoutineGroup(${g.id})">${escHtml(g.name)}<span class="routine-tab-count">${cnt}</span>${active?`
+      <span class="routine-tab-edit" onclick="event.stopPropagation();renameRoutineGroupPrompt(${g.id})" title="이름 변경">✎</span>
+      <span class="routine-tab-edit" onclick="event.stopPropagation();deleteRoutineGroupConfirm(${g.id})" title="그룹 삭제">✕</span>`:''}</button>`);
+  });
+  tabs.push(`<button class="routine-tab-add" onclick="openRoutineGroupAddPrompt()" title="그룹 추가">+</button>`);
+  tabs.push(`<button class="routine-tab routine-tab-dash ${routineViewMode==='dashboard'?'active':''}" onclick="selectRoutineView('dashboard')">📊 대시보드</button>`);
+  el.innerHTML = tabs.join('');
+}
+function selectRoutineGroup(groupId) {
+  routineViewMode = 'list';
+  routineSelectedGroupId = String(groupId);
+  localStorage.setItem('hr_routine_selected_group', routineSelectedGroupId);
+  renderRoutinePanel();
+}
+function selectRoutineView(mode) {
+  routineViewMode = mode;
+  renderRoutinePanel();
+}
+function openRoutineGroupAddPrompt() {
+  const name = prompt('새 그룹 이름을 입력하세요.');
+  if (!name || !name.trim()) return;
+  routineGroupInsertRow(name.trim()).then(() => renderRoutinePanel());
+}
+function renameRoutineGroupPrompt(groupId) {
+  const g = routineGroups.find(x => x.id === groupId);
+  if (!g) return;
+  const name = prompt('그룹 이름을 변경합니다.', g.name);
+  if (!name || !name.trim() || name.trim() === g.name) return;
+  routineGroupRenameRow(groupId, name.trim());
+}
+function deleteRoutineGroupConfirm(groupId) {
+  if (!confirm('이 그룹을 삭제하시겠습니까?\n그룹에 속한 루틴 업무는 전체보기로 이동됩니다.')) return;
+  routineGroupDeleteRow(groupId);
 }
 
 // ── 오른쪽 슬라이드 패널 열기/닫기/고정 ──
@@ -7940,9 +8268,10 @@ function expandRoutinePanel() {
 function scheduleCollapseRoutinePanel() {
   if (routinePinned || routineModalLock) return;
   clearTimeout(routineCollapseTimer);
+  // 마우스가 영역을 벗어나도 바로 접히지 않도록 살짝 여유를 둬서 고급스러운 느낌을 줌
   routineCollapseTimer = setTimeout(() => {
     document.getElementById('routinePanel').classList.remove('open');
-  }, 180);
+  }, 450);
 }
 function pinRoutinePanel() {
   routinePinned = true;
@@ -7957,6 +8286,15 @@ function collapseRoutinePanel() {
   if (pinBtn) pinBtn.classList.remove('pinned');
   clearTimeout(routineCollapseTimer);
   document.getElementById('routinePanel').classList.remove('open');
+}
+// 모바일 전용 — 호버가 없으므로 FAB 탭으로 열고 닫음(열 때는 고정 상태로 열어둠)
+function toggleRoutinePanelMobile() {
+  const panel = document.getElementById('routinePanel');
+  if (panel.classList.contains('open')) {
+    collapseRoutinePanel();
+  } else {
+    pinRoutinePanel();
+  }
 }
 function initRoutinePanel() {
   if (routinePinned) {
@@ -8758,6 +9096,7 @@ function subscribeRealtime() {
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_routine_checks' },      scheduleRemoteRefresh)
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_routine_steps' },       scheduleRemoteRefresh)
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_routine_step_checks' }, scheduleRemoteRefresh)
+      .on('postgres_changes', { event:'*', schema:'public', table:'hr_routine_groups' },      scheduleRemoteRefresh)
       .subscribe();
   } catch (err) { console.warn('[realtime] 구독 실패:', err); }
 }
@@ -8770,10 +9109,10 @@ function scheduleRemoteRefresh() {
 async function remoteRefresh() {
   if (useLocal || !sbClient) return;
   try {
-    const [t, ex, me, nt, pl, lv, cm, ix, rt, rc, rs, rsc] = await Promise.all([
-      dbLoad(), loadExecEvents(), loadMasterEvents(), loadNotes(), loadPolicies(), loadLeaves(), loadComments(), loadInteractionsSafe(), loadRoutinesSafe(), loadRoutineChecksSafe(), loadRoutineStepsSafe(), loadRoutineStepChecksSafe()
+    const [t, ex, me, nt, pl, lv, cm, ix, rt, rc, rs, rsc, rg] = await Promise.all([
+      dbLoad(), loadExecEvents(), loadMasterEvents(), loadNotes(), loadPolicies(), loadLeaves(), loadComments(), loadInteractionsSafe(), loadRoutinesSafe(), loadRoutineChecksSafe(), loadRoutineStepsSafe(), loadRoutineStepChecksSafe(), loadRoutineGroupsSafe()
     ]);
-    tasks = t; execEvents = ex; masterEvents = me; notes = nt; policies = pl; leaves = lv; noteComments = cm; interactions = ix; routines = rt; routineChecks = rc; routineSteps = rs; routineStepChecks = rsc;
+    tasks = t; execEvents = ex; masterEvents = me; notes = nt; policies = pl; leaves = lv; noteComments = cm; interactions = ix; routines = rt; routineChecks = rc; routineSteps = rs; routineStepChecks = rsc; routineGroups = rg;
     rerenderCurrentView();
   } catch (err) { console.warn('[realtime] 갱신 실패:', err); }
 }
@@ -8885,9 +9224,13 @@ window.addEventListener('focus', remoteRefresh);
         <button onclick="collapseRoutinePanel()">✕ 접기</button>
       </div>
     </div>
+    <div class="routine-tabs" id="routineTabs"></div>
     <div class="routine-panel-body">
-      <button class="btn btn-primary routine-add-btn" onclick="openRoutineAddModal()">+ 루틴 업무 추가</button>
-      <div class="routine-list" id="routineList"></div>
+      <div id="routineListView">
+        <button class="btn btn-primary routine-add-btn" onclick="openRoutineAddModal()">+ 루틴 업무 추가</button>
+        <div class="routine-list" id="routineList"></div>
+      </div>
+      <div id="routineDashboardView" style="display:none"></div>
     </div>
   </div>
 </aside>
@@ -8911,6 +9254,12 @@ window.addEventListener('focus', remoteRefresh);
         <option value="quarterly">분기</option>
         <option value="half">반기</option>
         <option value="yearly">연간</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="form-label">그룹</label>
+      <select class="form-select" id="routineGroupInput">
+        <option value="">미분류</option>
       </select>
     </div>
     <div class="modal-footer" style="justify-content:flex-end;">
