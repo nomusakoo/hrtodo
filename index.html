@@ -7807,35 +7807,52 @@ function deleteRoutineStepItem(id) {
 // 세부 단계가 많을수록(ratio 증가폭이 작을수록) 성장이 더 잘게 세분화되어 보임.
 function routinePlantSvg(ratio, grew) {
   ratio = Math.max(0, Math.min(1, ratio));
-  const potTop = 70, stemMaxH = 40;
+  const potTop = 70, stemMaxH = 36;
   const stemH = ratio * stemMaxH;
   const stemTopY = potTop - stemH;
-  const leaf1 = ratio >= 0.18;
-  const leaf2 = ratio >= 0.42;
-  const leafY1 = potTop - stemH * 0.4;
-  const leafY2 = potTop - stemH * 0.75;
+  const leaf1 = ratio >= 0.16;
+  const leaf2 = ratio >= 0.38;
+  const leafY1 = potTop - stemH * 0.45;
+  const leafY2 = potTop - stemH * 0.82;
+  // 잎 하나를 그리는 뾰족한 타원형(포인트가 왼쪽을 향함) — dir=-1이면 왼쪽, 1이면 오른쪽으로 뒤집음
+  const leafPath = (ax, ay, dir, scale) => {
+    const w = 17 * scale, h = 10 * scale;
+    return `<path d="M${ax},${ay} C ${ax+dir*6},${ay-h*0.8} ${ax+dir*w*0.85},${ay-h*0.5} ${ax+dir*w},${ay}
+      C ${ax+dir*w*0.85},${ay+h*0.5} ${ax+dir*6},${ay+h*0.6} ${ax},${ay} Z" fill="${scale>0.85?'#4fa83f':'#5cb84f'}"/>`;
+  };
 
-  // 장미가 줄기 끝에서 점진적으로 피어나는 모습(단계별로 갑자기 나타나지 않도록 비율에 따라 연속적으로 커짐)
-  const bloomStart = 0.4;
-  const bloomRatio = ratio > bloomStart ? Math.min(1, (ratio - bloomStart) / (1 - bloomStart)) : 0;
-  const bloomScale = (0.25 + bloomRatio * 0.85).toFixed(3);
-  const petals = [0,72,144,216,288]
-    .map(deg => `<ellipse cx="0" cy="-5" rx="4.2" ry="6.2" fill="#e0527a" transform="rotate(${deg})"/>`)
-    .join('');
-  const flower = bloomRatio > 0
-    ? `<g transform="translate(30,${stemTopY}) scale(${bloomScale})" opacity="${Math.max(0.35, bloomRatio).toFixed(2)}">${petals}<circle cx="0" cy="0" r="3" fill="#b8325a"/></g>`
-    : `<circle cx="30" cy="${stemTopY}" r="2" fill="#6b9c4a"/>`;
+  // 고추가 줄기 마디에서 짧은 꼭지로 돋아나 점점 길어지고, 다 익으면 초록 -> 빨강으로 변함
+  const fruitStart = 0.4;
+  const growT = ratio > fruitStart ? Math.min(1, (ratio - fruitStart) / (1 - fruitStart)) : 0;
+  const len = growT * 24;
+  const bend = 5 + growT * 3;
+  const nodeX = 30, nodeY = leafY2 + 2;
+  const baseX = nodeX + 7, baseY = nodeY + 1;
+  const tipX = baseX - bend * 0.7, tipY = baseY + len;
+  const ripenT = ratio > 0.78 ? Math.min(1, (ratio - 0.78) / 0.22) : 0;
+  // 초록(hue 115) -> 빨강(hue -5)으로 색상환을 따라 돌려 칙칙한 갈색을 거치지 않고 자연스럽게 익어가도록 함
+  const ripenHue = Math.round((115 - ripenT * 120 + 360) % 360);
+  const fruitColor = `hsl(${ripenHue},62%,44%)`;
+  const highlightColor = ripenT > 0.5 ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.45)';
+  const fruit = growT > 0
+    ? `<line x1="${nodeX}" y1="${nodeY}" x2="${baseX-1}" y2="${baseY-1}" stroke="#3f7d3a" stroke-width="1.6" stroke-linecap="round"/>
+       <path d="M${baseX},${baseY}
+         C ${baseX+bend},${baseY+len*0.3} ${baseX+bend*0.7},${baseY+len*0.78} ${tipX},${tipY}
+         C ${baseX-2.2},${baseY+len*0.7} ${baseX-2},${baseY+len*0.22} ${baseX},${baseY}
+         Z" fill="${fruitColor}" stroke="rgba(0,0,0,0.18)" stroke-width="0.5"/>
+       <path d="M${baseX+0.5},${baseY+len*0.15} C ${baseX+bend*0.6},${baseY+len*0.4} ${baseX+bend*0.3},${baseY+len*0.65} ${baseX-0.5},${baseY+len*0.8}"
+         fill="none" stroke="${highlightColor}" stroke-width="1" stroke-linecap="round"/>
+       <path d="M${baseX-1.4},${baseY-1} q1.6,-2.6 3.2,0" fill="none" stroke="#3f7d3a" stroke-width="1.6" stroke-linecap="round"/>`
+    : '';
 
   return `<svg class="routine-plant-svg ${grew?'grew':''} ${ratio>=1?'mature':''}" viewBox="0 0 60 84" title="성장 중 (${Math.round(ratio*100)}%)">
     <ellipse cx="30" cy="80" rx="16" ry="3" fill="rgba(0,0,0,0.08)"/>
     <path d="M16,80 L20,64 Q30,60 40,64 L44,80 Z" fill="#c77b4a"/>
     <rect x="16" y="77.5" width="28" height="3" rx="1.5" fill="#a8602f"/>
-    ${stemH > 0 ? `<line x1="30" y1="${potTop}" x2="30" y2="${stemTopY}" stroke="#4a9b3e" stroke-width="3" stroke-linecap="round"/>` : ''}
-    ${leaf1 ? `<path d="M30,${leafY1} Q20,${leafY1-6} 18,${leafY1+2} Q24,${leafY1+6} 30,${leafY1}" fill="#5cb84f"/>
-               <path d="M30,${leafY1} Q40,${leafY1-6} 42,${leafY1+2} Q36,${leafY1+6} 30,${leafY1}" fill="#5cb84f"/>` : ''}
-    ${leaf2 ? `<path d="M30,${leafY2} Q21,${leafY2-7} 19,${leafY2+2} Q25,${leafY2+7} 30,${leafY2}" fill="#6bc95a"/>
-               <path d="M30,${leafY2} Q39,${leafY2-7} 41,${leafY2+2} Q35,${leafY2+7} 30,${leafY2}" fill="#6bc95a"/>` : ''}
-    ${stemH > 0 ? flower : ''}
+    ${stemH > 0 ? `<path d="M30,${potTop} Q${28+Math.sin(stemH*0.2)*2},${(potTop+stemTopY)/2} 30,${stemTopY}" stroke="#4a9b3e" stroke-width="3" fill="none" stroke-linecap="round"/>` : ''}
+    ${leaf1 ? leafPath(30, leafY1, -1, 1) + leafPath(30, leafY1, 1, 1) : ''}
+    ${leaf2 ? leafPath(30, leafY2, -1, 0.9) : ''}
+    ${fruit}
   </svg>`;
 }
 
