@@ -1211,6 +1211,63 @@
     .policy-item-title{font-size:13px;}
     .policy-content-title{font-size:15px;}
   }
+
+  /* ══════════ 루틴 업무 (오른쪽 슬라이드 패널) ══════════ */
+  .routine-panel{
+    position:fixed; top:0; right:0; height:100vh;
+    width:min(34vw,480px); min-width:300px;
+    display:flex; align-items:stretch;
+    transform:translateX(calc(100% - 18px));
+    transition:transform 0.28s cubic-bezier(.22,.9,.3,1);
+    z-index:140;
+  }
+  .routine-panel.open{ transform:translateX(0); }
+  .routine-panel-handle{
+    flex:0 0 18px; width:18px;
+    background:linear-gradient(180deg,#22c55e,#15803d);
+    color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:8px; cursor:pointer; box-shadow:-2px 0 8px rgba(0,0,0,0.12);
+  }
+  .routine-panel-handle .rph-label{writing-mode:vertical-rl; font-size:12.5px; font-weight:600; letter-spacing:2px;}
+  .routine-panel-inner{
+    flex:1; min-width:0; background:#fff; border-left:1px solid var(--border);
+    box-shadow:-6px 0 20px rgba(0,0,0,0.1);
+    display:flex; flex-direction:column; height:100vh;
+  }
+  .routine-panel-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border);}
+  .routine-panel-title{font-size:15px;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:6px;}
+  .routine-panel-actions{display:flex;gap:6px;}
+  .routine-panel-actions button{background:var(--gray-100);border:1px solid var(--border);border-radius:var(--radius);padding:5px 9px;font-size:12px;cursor:pointer;color:var(--gray-600);display:flex;align-items:center;gap:4px;}
+  .routine-panel-actions button.pinned{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .routine-panel-body{flex:1;overflow-y:auto;padding:14px 16px 24px;}
+  .routine-add-btn{width:100%;justify-content:center;margin-bottom:14px;}
+  .routine-list{display:flex;flex-direction:column;gap:12px;}
+  .routine-empty{text-align:center;color:var(--gray-400);font-size:13px;padding:40px 10px;}
+  .routine-item{border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;display:flex;gap:12px;align-items:center;background:#fafafa;}
+  .routine-jar-svg{width:52px;height:68px;flex:0 0 52px;display:block;}
+  .jar-outline{fill:rgba(0,0,0,0.03);stroke:var(--gray-400);stroke-width:2;}
+  .jar-lid{fill:var(--gray-400);}
+  .jar-fill{fill:#8bc34a;transition:y 0.5s ease, height 0.5s ease;}
+  .jar-seed{fill:#5d4037;}
+  .routine-item.jar-just-filled .routine-jar-svg{animation:jarPop 0.6s ease;}
+  @keyframes jarPop{
+    0%{transform:scale(1)}
+    30%{transform:scale(1.18) rotate(-4deg)}
+    60%{transform:scale(0.95) rotate(3deg)}
+    100%{transform:scale(1)}
+  }
+  .routine-info{flex:1;min-width:0;}
+  .routine-item-title{font-size:13.5px;font-weight:600;color:var(--gray-800);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .routine-item-meta{font-size:11.5px;color:var(--gray-500);display:flex;align-items:center;gap:6px;}
+  .routine-period-badge{display:inline-block;padding:1px 7px;border-radius:999px;background:#e8f5e9;color:#2e7d32;font-size:10.5px;font-weight:600;}
+  .routine-item-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
+  .routine-check-btn{padding:6px 12px;border-radius:999px;border:1px solid var(--accent);background:#fff;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}
+  .routine-check-btn.checked{background:var(--success);border-color:var(--success);color:#fff;cursor:default;}
+  .routine-del-btn{background:none;border:none;color:var(--gray-300);cursor:pointer;font-size:12px;padding:2px;}
+  .routine-del-btn:hover{color:var(--danger);}
+  @media (max-width:860px){
+    .routine-panel{width:85vw;min-width:0;}
+  }
 </style>
 </head>
 <body>
@@ -2668,6 +2725,8 @@ async function startApp() {
             leaves        = await loadLeavesSafe();
             noteComments  = await loadCommentsSafe();
             interactions  = await loadInteractionsSafe();
+            routines      = await loadRoutinesSafe();
+            routineChecks = await loadRoutineChecksSafe();
             await migrateLegacyExecEvents();
             showLoading(false);
             renderAll();
@@ -2698,6 +2757,8 @@ async function startApp() {
     leaves        = await loadLeavesSafe();
     noteComments  = await loadCommentsSafe();
     interactions  = await loadInteractionsSafe();
+    routines      = await loadRoutinesSafe();
+    routineChecks = await loadRoutineChecksSafe();
     await migrateLegacyExecEvents();
     if (useLocal || !sbClient) setDbStatus(false, '로컬 저장소');
     showLoading(false);
@@ -2745,6 +2806,7 @@ function renderAll() {
   initMyTaskBtn();
   populateMonthFilter();
   initSlideTrack();
+  initRoutinePanel();
   const firstVisible = tabConfig.find(t => t.visible);
   switchTab(firstVisible ? firstVisible.id : 'tasks', false);
 }
@@ -3770,6 +3832,7 @@ function saveMemberSettings() {
   renderTable();
   renderDash();
   renderWeekly();
+  renderRoutinePanel();
   showToast('설정을 저장했습니다.');
 }
 
@@ -7301,6 +7364,279 @@ window.addEventListener('resize', () => {
 });
 
 // ══════════════════════════════════════════════
+//  루틴 업무 (반복 업무 체크 + 유리병 시각화)
+// ══════════════════════════════════════════════
+let routines = [];
+let routineChecks = [];
+let routinePinned = (localStorage.getItem('hr_routine_pinned') === '1');
+let routineCollapseTimer = null;
+
+const ROUTINES_KEY = 'hr_routines_v1';
+const ROUTINE_CHECKS_KEY = 'hr_routine_checks_v1';
+const ROUTINE_PERIOD_LABEL = { monthly:'매월', quarterly:'분기', half:'반기', yearly:'연간' };
+const ROUTINE_JAR_CAP = 8; // 유리병 하나를 채우는 데 필요한 체크 횟수
+
+function routinesLocalLoad() {
+  try { const d = JSON.parse(localStorage.getItem(ROUTINES_KEY)); return Array.isArray(d) ? d : []; } catch { return []; }
+}
+function routinesLocalSave() { localStorage.setItem(ROUTINES_KEY, JSON.stringify(routines)); }
+function routineChecksLocalLoad() {
+  try { const d = JSON.parse(localStorage.getItem(ROUTINE_CHECKS_KEY)); return Array.isArray(d) ? d : []; } catch { return []; }
+}
+function routineChecksLocalSave() { localStorage.setItem(ROUTINE_CHECKS_KEY, JSON.stringify(routineChecks)); }
+
+async function loadRoutines() {
+  if (!useLocal && sbClient) {
+    const { data, error } = await sbClient.from('hr_routines').select('*').order('created_at', { ascending:true });
+    if (!error && Array.isArray(data)) return data;
+    if (error) throw error;
+  }
+  return routinesLocalLoad();
+}
+async function loadRoutineChecks() {
+  if (!useLocal && sbClient) {
+    const { data, error } = await sbClient.from('hr_routine_checks').select('*');
+    if (!error && Array.isArray(data)) return data;
+    if (error) throw error;
+  }
+  return routineChecksLocalLoad();
+}
+async function loadRoutinesSafe() {
+  try { return await loadRoutines(); }
+  catch (e) { console.warn('[routines] 테이블 없음, 빈 배열로 진행:', e.message||e); return []; }
+}
+async function loadRoutineChecksSafe() {
+  try { return await loadRoutineChecks(); }
+  catch (e) { console.warn('[routine_checks] 테이블 없음, 빈 배열로 진행:', e.message||e); return []; }
+}
+
+// 해당 주기의 현재 '구간 키' — 이 키가 같으면 같은 주기 안에 있는 것으로 간주(자동 리셋의 기준)
+function routinePeriodKey(period, date) {
+  date = date || new Date();
+  const y = date.getFullYear(), m = date.getMonth();
+  if (period === 'monthly')   return `${y}-${String(m+1).padStart(2,'0')}`;
+  if (period === 'quarterly') return `${y}-Q${Math.floor(m/3)+1}`;
+  if (period === 'half')      return `${y}-H${m < 6 ? 1 : 2}`;
+  if (period === 'yearly')    return `${y}`;
+  return `${y}-${String(m+1).padStart(2,'0')}`;
+}
+function routineTotalChecks(routineId) {
+  return routineChecks.filter(c => c.routine_id === routineId).length;
+}
+function routineIsCheckedThisPeriod(routine) {
+  const key = routinePeriodKey(routine.period);
+  return routineChecks.some(c => c.routine_id === routine.id && c.period_key === key);
+}
+
+async function routineInsertRow(title, period) {
+  const row = { member: myMember, title, period };
+  if (!useLocal && sbClient) {
+    const { data, error } = await sbClient.from('hr_routines').insert(row).select();
+    if (error) { showToast('루틴 업무 저장 오류: '+(error.message||''), 'error'); return null; }
+    const nr = data && data[0];
+    if (nr) routines.push(nr);
+    return nr;
+  }
+  const newId = routines.length ? Math.max(...routines.map(r=>r.id||0)) + 1 : 1;
+  const nr = { id:newId, ...row, created_at:new Date().toISOString() };
+  routines.push(nr); routinesLocalSave(); return nr;
+}
+
+async function routineDeleteRow(id) {
+  const idx = routines.findIndex(r => r.id === id);
+  const removed = idx !== -1 ? routines[idx] : null;
+  const removedChecks = routineChecks.filter(c => c.routine_id === id);
+  if (idx !== -1) routines.splice(idx, 1);
+  routineChecks = routineChecks.filter(c => c.routine_id !== id);
+  renderRoutinePanel(); // 낙관적 업데이트
+
+  if (!useLocal && sbClient) {
+    const { error } = await sbClient.from('hr_routines').delete().eq('id', id);
+    if (error) {
+      if (removed) { routines.push(removed); routineChecks.push(...removedChecks); renderRoutinePanel(); }
+      showToast('루틴 업무 삭제 오류: '+(error.message||''), 'error');
+      return false;
+    }
+    await sbClient.from('hr_routine_checks').delete().eq('routine_id', id);
+  } else {
+    routinesLocalSave(); routineChecksLocalSave();
+  }
+  return true;
+}
+
+async function routineCheckInsertRow(routineId, periodKey) {
+  const row = { routine_id: routineId, period_key: periodKey };
+  if (!useLocal && sbClient) {
+    const { data, error } = await sbClient.from('hr_routine_checks').insert(row).select();
+    if (error) { showToast('체크 저장 오류: '+(error.message||''), 'error'); return null; }
+    const nr = data && data[0];
+    if (nr) routineChecks.push(nr);
+    return nr;
+  }
+  const newId = routineChecks.length ? Math.max(...routineChecks.map(c=>c.id||0)) + 1 : 1;
+  const nr = { id:newId, ...row, checked_at:new Date().toISOString() };
+  routineChecks.push(nr); routineChecksLocalSave(); return nr;
+}
+
+async function checkRoutineNow(routineId) {
+  const routine = routines.find(r => r.id === routineId);
+  if (!routine) return;
+  if (routineIsCheckedThisPeriod(routine)) return;
+  const key = routinePeriodKey(routine.period);
+
+  const prevTotal = routineTotalChecks(routineId);
+  const willFillJar = (prevTotal + 1) % ROUTINE_JAR_CAP === 0;
+
+  // 낙관적 업데이트 — 즉시 체크 + 유리병 애니메이션 반영
+  const optimistic = { id:`tmp-${Date.now()}`, routine_id:routineId, period_key:key, checked_at:new Date().toISOString() };
+  routineChecks.push(optimistic);
+  renderRoutinePanel(willFillJar ? routineId : null);
+
+  const saved = await routineCheckInsertRow(routineId, key);
+  if (!saved) {
+    // 실패 시 롤백
+    routineChecks = routineChecks.filter(c => c !== optimistic);
+    renderRoutinePanel();
+    return;
+  }
+  if (saved.id !== optimistic.id) {
+    routineChecks = routineChecks.filter(c => c !== optimistic);
+    if (!routineChecks.includes(saved)) routineChecks.push(saved);
+  }
+}
+
+function routineJarSvg(totalChecks, justFilled) {
+  const inCycle = totalChecks % ROUTINE_JAR_CAP;
+  const fillCount = justFilled ? ROUTINE_JAR_CAP : inCycle; // 방금 다 찼으면 가득 찬 상태를 보여준 뒤 다음 렌더에서 0으로 리셋
+  const pct = fillCount / ROUTINE_JAR_CAP;
+  const jarsFilled = Math.floor(totalChecks / ROUTINE_JAR_CAP);
+
+  const bodyTop = 17, bodyBottom = 76, bodyHeight = bodyBottom - bodyTop;
+  const fillY = bodyBottom - pct * bodyHeight;
+  const seedPositions = [
+    [23,70],[30,72],[37,70],[26,65],[33,66],[40,64],[23,60],[30,60],
+  ];
+  const seeds = [];
+  for (let i = 0; i < fillCount; i++) {
+    const p = seedPositions[i % seedPositions.length];
+    const jitter = Math.floor(i / seedPositions.length) * 3;
+    const sy = p[1] - jitter;
+    if (sy < fillY - 2) continue;
+    seeds.push(`<circle class="jar-seed" cx="${p[0]}" cy="${sy}" r="2.1"/>`);
+  }
+
+  return `<svg class="routine-jar-svg" viewBox="0 0 60 84" title="${jarsFilled>0?`가득 채운 유리병 ${jarsFilled}개 · `:''}누적 ${totalChecks}회 완료">
+    <defs><clipPath id="jc${Math.random().toString(36).slice(2)}"><rect x="13" y="${bodyTop}" width="34" height="${bodyHeight}" rx="6"/></clipPath></defs>
+    <rect x="13" y="${bodyTop}" width="34" height="${bodyHeight}" rx="6" class="jar-outline"/>
+    <rect x="21" y="8" width="18" height="9" rx="2" class="jar-lid"/>
+    <g>
+      <rect x="14" y="${fillY}" width="32" height="${bodyBottom - fillY}" rx="4" class="jar-fill" style="clip-path:inset(0 0 0 0 round 4px)"/>
+      ${seeds.join('')}
+    </g>
+  </svg>`;
+}
+
+function renderRoutinePanel(justFilledId) {
+  const listEl = document.getElementById('routineList');
+  if (!listEl) return;
+  const mine = routines.filter(r => myMember && r.member === myMember);
+
+  if (!myMember) {
+    listEl.innerHTML = `<div class="routine-empty">팀원을 선택하면<br>나의 루틴 업무를 등록할 수 있어요.</div>`;
+    return;
+  }
+  if (!mine.length) {
+    listEl.innerHTML = `<div class="routine-empty">아직 등록한 루틴 업무가 없어요.<br>자주 반복하는 업무를 등록해보세요 🌱</div>`;
+    return;
+  }
+
+  listEl.innerHTML = mine.map(r => {
+    const total = routineTotalChecks(r.id);
+    const isChecked = routineIsCheckedThisPeriod(r) || r.id === justFilledId;
+    const justFilled = r.id === justFilledId;
+    return `<div class="routine-item ${justFilled?'jar-just-filled':''}" data-routine-id="${r.id}">
+      ${routineJarSvg(total, justFilled)}
+      <div class="routine-info">
+        <div class="routine-item-title">${escHtml(r.title)}</div>
+        <div class="routine-item-meta">
+          <span class="routine-period-badge">${ROUTINE_PERIOD_LABEL[r.period]||r.period}</span>
+          <span>누적 ${total}회</span>
+        </div>
+      </div>
+      <div class="routine-item-actions">
+        <button class="routine-check-btn ${isChecked?'checked':''}" ${isChecked?'disabled':''} onclick="checkRoutineNow(${r.id})">
+          ${isChecked ? '✓ 완료' : '체크'}
+        </button>
+        <button class="routine-del-btn" onclick="deleteRoutineItem(${r.id})" title="삭제">삭제</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function deleteRoutineItem(id) {
+  if (!confirm('이 루틴 업무를 삭제하시겠습니까?\n누적된 체크 기록도 함께 삭제됩니다.')) return;
+  routineDeleteRow(id);
+}
+
+function openRoutineAddModal() {
+  routineModalLock = true;
+  document.getElementById('routineTitleInput').value = '';
+  document.getElementById('routinePeriodInput').value = 'monthly';
+  document.getElementById('routineAddModal').classList.add('open');
+  setTimeout(() => document.getElementById('routineTitleInput').focus(), 100);
+}
+function closeRoutineAddModal() {
+  document.getElementById('routineAddModal').classList.remove('open');
+  routineModalLock = false;
+  scheduleCollapseRoutinePanel();
+}
+async function saveRoutineNew() {
+  const title = document.getElementById('routineTitleInput').value.trim();
+  if (!title) { showToast('업무명을 입력해주세요.', 'error'); return; }
+  if (!myMember) { showToast('먼저 팀원을 선택해주세요.', 'error'); return; }
+  const period = document.getElementById('routinePeriodInput').value;
+  closeRoutineAddModal();
+  await routineInsertRow(title, period);
+  renderRoutinePanel();
+  expandRoutinePanel(); // 추가 직후 바로 확인/체크할 수 있도록 패널을 다시 펼쳐둠
+}
+
+// ── 오른쪽 슬라이드 패널 열기/닫기/고정 ──
+let routineModalLock = false; // 루틴 추가 모달이 열려있는 동안은 호버가 벗어나도 패널을 접지 않음
+function expandRoutinePanel() {
+  clearTimeout(routineCollapseTimer);
+  document.getElementById('routinePanel').classList.add('open');
+}
+function scheduleCollapseRoutinePanel() {
+  if (routinePinned || routineModalLock) return;
+  clearTimeout(routineCollapseTimer);
+  routineCollapseTimer = setTimeout(() => {
+    document.getElementById('routinePanel').classList.remove('open');
+  }, 180);
+}
+function pinRoutinePanel() {
+  routinePinned = true;
+  localStorage.setItem('hr_routine_pinned', '1');
+  document.getElementById('routinePinBtn').classList.add('pinned');
+  expandRoutinePanel();
+}
+function collapseRoutinePanel() {
+  routinePinned = false;
+  localStorage.setItem('hr_routine_pinned', '0');
+  const pinBtn = document.getElementById('routinePinBtn');
+  if (pinBtn) pinBtn.classList.remove('pinned');
+  clearTimeout(routineCollapseTimer);
+  document.getElementById('routinePanel').classList.remove('open');
+}
+function initRoutinePanel() {
+  if (routinePinned) {
+    document.getElementById('routinePinBtn').classList.add('pinned');
+    document.getElementById('routinePanel').classList.add('open');
+  }
+  renderRoutinePanel();
+}
+
+// ══════════════════════════════════════════════
 //  NOTE COMMENTS (메모 댓글)
 // ══════════════════════════════════════════════
 const COMMENTS_KEY = 'hr_note_comments_v1';
@@ -8088,6 +8424,8 @@ function subscribeRealtime() {
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_leaves' },         scheduleRemoteRefresh)
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_note_comments' },  scheduleRemoteRefresh)
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_interactions' },   scheduleRemoteRefresh)
+      .on('postgres_changes', { event:'*', schema:'public', table:'hr_routines' },       scheduleRemoteRefresh)
+      .on('postgres_changes', { event:'*', schema:'public', table:'hr_routine_checks' }, scheduleRemoteRefresh)
       .subscribe();
   } catch (err) { console.warn('[realtime] 구독 실패:', err); }
 }
@@ -8100,10 +8438,10 @@ function scheduleRemoteRefresh() {
 async function remoteRefresh() {
   if (useLocal || !sbClient) return;
   try {
-    const [t, ex, me, nt, pl, lv, cm, ix] = await Promise.all([
-      dbLoad(), loadExecEvents(), loadMasterEvents(), loadNotes(), loadPolicies(), loadLeaves(), loadComments(), loadInteractionsSafe()
+    const [t, ex, me, nt, pl, lv, cm, ix, rt, rc] = await Promise.all([
+      dbLoad(), loadExecEvents(), loadMasterEvents(), loadNotes(), loadPolicies(), loadLeaves(), loadComments(), loadInteractionsSafe(), loadRoutinesSafe(), loadRoutineChecksSafe()
     ]);
-    tasks = t; execEvents = ex; masterEvents = me; notes = nt; policies = pl; leaves = lv; noteComments = cm; interactions = ix;
+    tasks = t; execEvents = ex; masterEvents = me; notes = nt; policies = pl; leaves = lv; noteComments = cm; interactions = ix; routines = rt; routineChecks = rc;
     rerenderCurrentView();
   } catch (err) { console.warn('[realtime] 갱신 실패:', err); }
 }
@@ -8121,6 +8459,7 @@ function rerenderCurrentView() {
   if (visible('view-network')) renderInteractionTab();
   const mc = document.getElementById('masterCalModal');
   if (mc && mc.style.display !== 'none') renderMasterCalPage();
+  renderRoutinePanel();
   updateCounts();
 }
 
@@ -8200,6 +8539,54 @@ window.addEventListener('focus', remoteRefresh);
 
 <!-- 휴가 툴팁 팝업 -->
 <div class="leave-tooltip-popup" id="leaveTooltipPopup"></div>
+
+<!-- 루틴 업무 슬라이드 패널 -->
+<aside class="routine-panel" id="routinePanel" onmouseenter="expandRoutinePanel()" onmouseleave="scheduleCollapseRoutinePanel()">
+  <div class="routine-panel-handle" title="루틴 업무">
+    <span>🌱</span><span class="rph-label">루틴 업무</span>
+  </div>
+  <div class="routine-panel-inner">
+    <div class="routine-panel-header">
+      <div class="routine-panel-title">🌱 내 루틴 업무</div>
+      <div class="routine-panel-actions">
+        <button id="routinePinBtn" onclick="pinRoutinePanel()">📌 고정</button>
+        <button onclick="collapseRoutinePanel()">✕ 접기</button>
+      </div>
+    </div>
+    <div class="routine-panel-body">
+      <button class="btn btn-primary routine-add-btn" onclick="openRoutineAddModal()">+ 루틴 업무 추가</button>
+      <div class="routine-list" id="routineList"></div>
+    </div>
+  </div>
+</aside>
+
+<!-- 루틴 업무 추가 모달 -->
+<div class="modal-overlay" id="routineAddModal">
+  <div class="modal" style="width:380px;max-width:92vw;padding:24px 24px 20px;">
+    <div class="modal-header">
+      <div class="modal-title">🌱 루틴 업무 추가</div>
+      <button class="modal-close" onclick="closeRoutineAddModal()">&#10005;</button>
+    </div>
+    <div class="form-row">
+      <label class="form-label">업무명</label>
+      <input type="text" class="form-input" id="routineTitleInput" placeholder="예: 급여대장 마감" maxlength="60"
+        onkeydown="if(event.key==='Enter')saveRoutineNew()">
+    </div>
+    <div class="form-row">
+      <label class="form-label">주기</label>
+      <select class="form-select" id="routinePeriodInput">
+        <option value="monthly">매월</option>
+        <option value="quarterly">분기</option>
+        <option value="half">반기</option>
+        <option value="yearly">연간</option>
+      </select>
+    </div>
+    <div class="modal-footer" style="justify-content:flex-end;">
+      <button class="btn" onclick="closeRoutineAddModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveRoutineNew()">추가</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
