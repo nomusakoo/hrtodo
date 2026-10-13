@@ -1224,19 +1224,17 @@
   }
   .routine-panel.open{ transform:translateX(0); transition:transform 0.45s cubic-bezier(0.34,1.45,0.4,1); }
   .routine-panel-handle{
-    position:relative; overflow:visible;
     flex:0 0 30px; width:30px;
-    background:linear-gradient(180deg,#22c55e,#15803d);
+    background:linear-gradient(180deg,var(--primary),var(--primary-mid));
     color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:8px; cursor:pointer; box-shadow:-2px 0 8px rgba(0,0,0,0.12);
-    transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
+    gap:10px; cursor:pointer; box-shadow:-2px 0 8px rgba(0,0,0,0.18);
+    transition:background 0.2s ease, transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
   }
-  .routine-panel-handle:hover{ transform:scale(1.05); }
+  .routine-panel-handle:hover{ transform:scale(1.04); background:linear-gradient(180deg,var(--primary-mid),var(--primary)); }
+  .routine-panel-handle .rph-icon{ font-size:14px; }
   .routine-panel-handle .rph-label{
-    writing-mode:vertical-rl; font-size:13px; font-weight:700; letter-spacing:2px;
-    position:relative; margin-left:-7px; padding:16px 9px 16px 13px; border-radius:999px;
-    background:linear-gradient(135deg,#34d058,#16a34a);
-    box-shadow:0 3px 10px rgba(0,0,0,0.28), inset 0 1px 1px rgba(255,255,255,0.45);
+    writing-mode:vertical-rl; font-size:12.5px; font-weight:600; letter-spacing:3px;
+    color:rgba(255,255,255,0.92);
   }
   .routine-panel-inner{
     flex:1; min-width:0; background:#fff; border-left:1px solid var(--border);
@@ -1253,7 +1251,9 @@
   .routine-list{display:flex;flex-direction:column;gap:12px;}
   .routine-empty{text-align:center;color:var(--gray-400);font-size:13px;padding:40px 10px;}
   .routine-item{border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;display:flex;flex-direction:column;gap:10px;background:#fafafa;}
-  .routine-main-row{display:flex;gap:12px;align-items:center;}
+  .routine-main-row{display:flex;gap:12px;align-items:center;position:relative;margin:-2px;padding:2px 16px 4px 2px;border-radius:var(--radius);cursor:pointer;transition:background 0.15s;}
+  .routine-main-row:hover{background:rgba(0,0,0,0.035);}
+  .routine-expand-indicator{position:absolute;right:-4px;bottom:-2px;font-size:11px;color:var(--gray-400);}
   .routine-plant-svg{width:52px;height:68px;flex:0 0 52px;display:block;}
   .routine-plant-svg.grew{animation:plantBounce 0.55s cubic-bezier(0.36,1.65,0.4,1);}
   .routine-plant-svg.mature{filter:drop-shadow(0 1px 1px rgba(0,0,0,0.08));}
@@ -1274,8 +1274,6 @@
   .routine-del-btn{background:none;border:none;color:var(--gray-300);cursor:pointer;font-size:12px;padding:2px;}
   .routine-del-btn:hover{color:var(--danger);}
   .routine-step-progress{color:var(--accent);font-weight:600;}
-  .routine-steps-toggle{background:none;border:none;color:var(--gray-500);font-size:11.5px;cursor:pointer;padding:2px;white-space:nowrap;}
-  .routine-steps-toggle:hover{color:var(--accent);}
   .routine-steps-section{display:flex;flex-direction:column;gap:5px;padding-top:10px;border-top:1px dashed var(--border);}
   .routine-step-row{display:flex;align-items:center;gap:8px;}
   .routine-step-check{flex:0 0 20px;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);background:#fff;cursor:pointer;color:#fff;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;}
@@ -7417,19 +7415,6 @@ const ROUTINE_CHECKS_KEY = 'hr_routine_checks_v1';
 const ROUTINE_STEPS_KEY = 'hr_routine_steps_v1';
 const ROUTINE_STEP_CHECKS_KEY = 'hr_routine_step_checks_v1';
 const ROUTINE_PERIOD_LABEL = { monthly:'매월', quarterly:'분기', half:'반기', yearly:'연간' };
-const ROUTINE_CROPS = [
-  { emoji:'🌶️', name:'고추' },
-  { emoji:'🍅', name:'토마토' },
-  { emoji:'🥬', name:'배추' },
-  { emoji:'🍉', name:'수박' },
-];
-// 루틴마다 고정된 작물을 자동 배정(등록 시 결정되어 바뀌지 않음)
-function routineCropFor(routine) {
-  const str = `${routine.id}-${routine.title||''}`;
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
-  return ROUTINE_CROPS[hash % ROUTINE_CROPS.length];
-}
 
 function routinesLocalLoad() {
   try { const d = JSON.parse(localStorage.getItem(ROUTINES_KEY)); return Array.isArray(d) ? d : []; } catch { return []; }
@@ -7805,7 +7790,12 @@ function addRoutineStepFromInput(routineId) {
   const title = input.value.trim();
   if (!title) return;
   input.value = '';
-  routineStepInsertRow(routineId, title).then(() => renderRoutinePanel());
+  routineStepInsertRow(routineId, title).then(() => {
+    renderRoutinePanel();
+    // 다음 단계를 바로 이어서 입력할 수 있도록 같은 자리의 입력란에 포커스
+    const nextInput = document.getElementById(`routineStepInput-${routineId}`);
+    if (nextInput) nextInput.focus();
+  });
 }
 
 function deleteRoutineStepItem(id) {
@@ -7815,20 +7805,28 @@ function deleteRoutineStepItem(id) {
 
 // 씨앗 → 새싹 → 작물로 자라나는 모습을 비율(ratio: 0~1)에 따라 그려줌.
 // 세부 단계가 많을수록(ratio 증가폭이 작을수록) 성장이 더 잘게 세분화되어 보임.
-function routinePlantSvg(ratio, crop, grew) {
+function routinePlantSvg(ratio, grew) {
   ratio = Math.max(0, Math.min(1, ratio));
-  const potTop = 70, stemMaxH = 42;
+  const potTop = 70, stemMaxH = 40;
   const stemH = ratio * stemMaxH;
   const stemTopY = potTop - stemH;
   const leaf1 = ratio >= 0.18;
-  const leaf2 = ratio >= 0.5;
-  const fruitVisible = ratio >= 0.72;
-  const fruitScale = fruitVisible ? Math.min(1, (ratio - 0.72) / 0.28) : 0;
-  const fruitSize = 9 + fruitScale * 13;
-  const leafY1 = potTop - stemH * 0.42;
-  const leafY2 = potTop - stemH * 0.8;
+  const leaf2 = ratio >= 0.42;
+  const leafY1 = potTop - stemH * 0.4;
+  const leafY2 = potTop - stemH * 0.75;
 
-  return `<svg class="routine-plant-svg ${grew?'grew':''} ${ratio>=1?'mature':''}" viewBox="0 0 60 84" title="${crop.name} 성장 중 (${Math.round(ratio*100)}%)">
+  // 장미가 줄기 끝에서 점진적으로 피어나는 모습(단계별로 갑자기 나타나지 않도록 비율에 따라 연속적으로 커짐)
+  const bloomStart = 0.4;
+  const bloomRatio = ratio > bloomStart ? Math.min(1, (ratio - bloomStart) / (1 - bloomStart)) : 0;
+  const bloomScale = (0.25 + bloomRatio * 0.85).toFixed(3);
+  const petals = [0,72,144,216,288]
+    .map(deg => `<ellipse cx="0" cy="-5" rx="4.2" ry="6.2" fill="#e0527a" transform="rotate(${deg})"/>`)
+    .join('');
+  const flower = bloomRatio > 0
+    ? `<g transform="translate(30,${stemTopY}) scale(${bloomScale})" opacity="${Math.max(0.35, bloomRatio).toFixed(2)}">${petals}<circle cx="0" cy="0" r="3" fill="#b8325a"/></g>`
+    : `<circle cx="30" cy="${stemTopY}" r="2" fill="#6b9c4a"/>`;
+
+  return `<svg class="routine-plant-svg ${grew?'grew':''} ${ratio>=1?'mature':''}" viewBox="0 0 60 84" title="성장 중 (${Math.round(ratio*100)}%)">
     <ellipse cx="30" cy="80" rx="16" ry="3" fill="rgba(0,0,0,0.08)"/>
     <path d="M16,80 L20,64 Q30,60 40,64 L44,80 Z" fill="#c77b4a"/>
     <rect x="16" y="77.5" width="28" height="3" rx="1.5" fill="#a8602f"/>
@@ -7837,7 +7835,7 @@ function routinePlantSvg(ratio, crop, grew) {
                <path d="M30,${leafY1} Q40,${leafY1-6} 42,${leafY1+2} Q36,${leafY1+6} 30,${leafY1}" fill="#5cb84f"/>` : ''}
     ${leaf2 ? `<path d="M30,${leafY2} Q21,${leafY2-7} 19,${leafY2+2} Q25,${leafY2+7} 30,${leafY2}" fill="#6bc95a"/>
                <path d="M30,${leafY2} Q39,${leafY2-7} 41,${leafY2+2} Q35,${leafY2+7} 30,${leafY2}" fill="#6bc95a"/>` : ''}
-    ${fruitVisible ? `<text x="30" y="${stemTopY+4}" text-anchor="middle" font-size="${fruitSize}">${crop.emoji}</text>` : ''}
+    ${stemH > 0 ? flower : ''}
   </svg>`;
 }
 
@@ -7856,7 +7854,6 @@ function renderRoutinePanel(justFilledId) {
   }
 
   listEl.innerHTML = mine.map(r => {
-    const crop = routineCropFor(r);
     const ratio = routineGrowthRatio(r);
     const harvestCount = routineHarvestCount(r.id);
     const grew = r.id === justFilledId;
@@ -7879,14 +7876,14 @@ function renderRoutinePanel(justFilledId) {
       ${stepsListHtml}
       <div class="routine-step-add-row">
         <input type="text" class="routine-step-input" id="routineStepInput-${r.id}" placeholder="+ 단계 추가" maxlength="40"
-          onkeydown="if(event.key==='Enter')addRoutineStepFromInput(${r.id})">
+          onkeydown="if(event.key==='Enter'){event.preventDefault();addRoutineStepFromInput(${r.id});}">
         <button class="routine-step-add-btn" onclick="addRoutineStepFromInput(${r.id})">추가</button>
       </div>
     </div>`;
 
     return `<div class="routine-item" data-routine-id="${r.id}">
-      <div class="routine-main-row">
-        ${routinePlantSvg(ratio, crop, grew)}
+      <div class="routine-main-row" onclick="toggleRoutineStepsExpanded(${r.id})" title="클릭해서 세부 단계 보기">
+        ${routinePlantSvg(ratio, grew)}
         <div class="routine-info">
           <div class="routine-item-title">${escHtml(r.title)}</div>
           <div class="routine-item-meta">
@@ -7896,10 +7893,10 @@ function renderRoutinePanel(justFilledId) {
           </div>
         </div>
         <div class="routine-item-actions">
-          ${hasSteps ? '' : `<button class="routine-check-btn ${isChecked?'checked':''}" onclick="toggleRoutineCheckNow(${r.id})" title="${isChecked?'클릭해서 취소':'체크'}">${isChecked ? '✓ 완료' : '체크'}</button>`}
-          <button class="routine-steps-toggle" onclick="toggleRoutineStepsExpanded(${r.id})" title="세부 단계">${expanded?'단계 ▾':'단계 ▸'}</button>
-          <button class="routine-del-btn" onclick="deleteRoutineItem(${r.id})" title="삭제">삭제</button>
+          ${hasSteps ? '' : `<button class="routine-check-btn ${isChecked?'checked':''}" onclick="event.stopPropagation();toggleRoutineCheckNow(${r.id})" title="${isChecked?'클릭해서 취소':'체크'}">${isChecked ? '✓ 완료' : '체크'}</button>`}
+          <button class="routine-del-btn" onclick="event.stopPropagation();deleteRoutineItem(${r.id})" title="삭제">삭제</button>
         </div>
+        <span class="routine-expand-indicator">${expanded?'▾':'▸'}</span>
       </div>
       ${expanded ? stepsSectionHtml : ''}
     </div>`;
@@ -8878,7 +8875,7 @@ window.addEventListener('focus', remoteRefresh);
 <!-- 루틴 업무 슬라이드 패널 -->
 <aside class="routine-panel" id="routinePanel" onmouseenter="expandRoutinePanel()" onmouseleave="scheduleCollapseRoutinePanel()">
   <div class="routine-panel-handle" title="루틴 업무">
-    <span>🌱</span><span class="rph-label">루틴 업무</span>
+    <span class="rph-icon">🌱</span><span class="rph-label">루틴 업무</span>
   </div>
   <div class="routine-panel-inner">
     <div class="routine-panel-header">
