@@ -7660,8 +7660,14 @@ async function routineUpdateGroup(id, groupId) {
 }
 
 // ── 루틴 그룹(전체보기/승진/급여 등 사용자 정의 탭) ──
+// 본인(myMember)이 등록한 그룹만 — 다른 팀원의 그룹은 보이지 않음
+function myRoutineGroups() {
+  return routineGroups.filter(g => myMember && g.member === myMember);
+}
+
 async function routineGroupInsertRow(name) {
-  const sortOrder = routineGroups.length ? Math.max(...routineGroups.map(g=>g.sort_order||0)) + 1 : 0;
+  const mine = myRoutineGroups();
+  const sortOrder = mine.length ? Math.max(...mine.map(g=>g.sort_order||0)) + 1 : 0;
   const row = { member: myMember, name, sort_order: sortOrder };
   if (!useLocal && sbClient && !routineDbUnavailable) {
     const { data, error } = await sbClient.from('hr_routine_groups').insert(row).select();
@@ -8124,7 +8130,7 @@ function renderRoutinePanel(justFilledId) {
 
   listEl.innerHTML = mine.map(r => {
     const groupOptionsHtml = `<option value="" ${!r.group_id?'selected':''}>미분류</option>` +
-      routineGroups.map(g => `<option value="${g.id}" ${String(r.group_id)===String(g.id)?'selected':''}>${escHtml(g.name)}</option>`).join('');
+      myRoutineGroups().map(g => `<option value="${g.id}" ${String(r.group_id)===String(g.id)?'selected':''}>${escHtml(g.name)}</option>`).join('');
     const ratio = routineGrowthRatio(r);
     const harvestCount = routineHarvestCount(r.id);
     const grew = r.id === justFilledId;
@@ -8191,7 +8197,7 @@ function openRoutineAddModal() {
   document.getElementById('routineTitleInput').value = '';
   document.getElementById('routinePeriodInput').value = 'monthly';
   const groupSel = document.getElementById('routineGroupInput');
-  groupSel.innerHTML = `<option value="">미분류</option>` + routineGroups.map(g => `<option value="${g.id}">${escHtml(g.name)}</option>`).join('');
+  groupSel.innerHTML = `<option value="">미분류</option>` + myRoutineGroups().map(g => `<option value="${g.id}">${escHtml(g.name)}</option>`).join('');
   if (routineSelectedGroupId !== 'all') groupSel.value = routineSelectedGroupId;
   document.getElementById('routineAddModal').classList.add('open');
   setTimeout(() => document.getElementById('routineTitleInput').focus(), 100);
@@ -8221,7 +8227,7 @@ function renderRoutineTabs() {
   const myAll = routines.filter(r => myMember && r.member === myMember);
   const countAll = myAll.length;
   const tabs = [`<button class="routine-tab ${routineSelectedGroupId==='all'&&routineViewMode==='list'?'active':''}" onclick="selectRoutineGroup('all')">전체보기<span class="routine-tab-count">${countAll}</span></button>`];
-  routineGroups.forEach(g => {
+  myRoutineGroups().forEach(g => {
     const cnt = myAll.filter(r => String(r.group_id||'') === String(g.id)).length;
     const active = routineViewMode==='list' && String(routineSelectedGroupId)===String(g.id);
     tabs.push(`<button class="routine-tab ${active?'active':''}" onclick="selectRoutineGroup(${g.id})">${escHtml(g.name)}<span class="routine-tab-count">${cnt}</span>${active?`
