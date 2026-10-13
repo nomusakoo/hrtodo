@@ -1217,19 +1217,27 @@
     position:fixed; top:0; right:0; height:100vh;
     width:min(34vw,480px); min-width:300px;
     display:flex; align-items:stretch;
-    transform:translateX(calc(100% - 18px));
-    transition:transform 0.45s cubic-bezier(0.16,1,0.3,1);
+    transform:translateX(calc(100% - 30px));
+    transition:transform 0.5s cubic-bezier(0.34,1.56,0.64,1);
     will-change:transform;
     z-index:140;
   }
-  .routine-panel.open{ transform:translateX(0); transition:transform 0.4s cubic-bezier(0.22,0.68,0,1); }
+  .routine-panel.open{ transform:translateX(0); transition:transform 0.45s cubic-bezier(0.34,1.45,0.4,1); }
   .routine-panel-handle{
-    flex:0 0 18px; width:18px;
+    position:relative; overflow:visible;
+    flex:0 0 30px; width:30px;
     background:linear-gradient(180deg,#22c55e,#15803d);
     color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center;
     gap:8px; cursor:pointer; box-shadow:-2px 0 8px rgba(0,0,0,0.12);
+    transition:transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
   }
-  .routine-panel-handle .rph-label{writing-mode:vertical-rl; font-size:12.5px; font-weight:600; letter-spacing:2px;}
+  .routine-panel-handle:hover{ transform:scale(1.05); }
+  .routine-panel-handle .rph-label{
+    writing-mode:vertical-rl; font-size:13px; font-weight:700; letter-spacing:2px;
+    position:relative; margin-left:-7px; padding:16px 9px 16px 13px; border-radius:999px;
+    background:linear-gradient(135deg,#34d058,#16a34a);
+    box-shadow:0 3px 10px rgba(0,0,0,0.28), inset 0 1px 1px rgba(255,255,255,0.45);
+  }
   .routine-panel-inner{
     flex:1; min-width:0; background:#fff; border-left:1px solid var(--border);
     box-shadow:-6px 0 20px rgba(0,0,0,0.1);
@@ -1246,17 +1254,15 @@
   .routine-empty{text-align:center;color:var(--gray-400);font-size:13px;padding:40px 10px;}
   .routine-item{border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;display:flex;flex-direction:column;gap:10px;background:#fafafa;}
   .routine-main-row{display:flex;gap:12px;align-items:center;}
-  .routine-jar-svg{width:52px;height:68px;flex:0 0 52px;display:block;}
-  .jar-outline{fill:rgba(0,0,0,0.03);stroke:var(--gray-400);stroke-width:2;}
-  .jar-lid{fill:var(--gray-400);}
-  .jar-fill{fill:#8bc34a;transition:y 0.5s ease, height 0.5s ease;}
-  .jar-seed{fill:#5d4037;}
-  .routine-item.jar-just-filled .routine-jar-svg{animation:jarPop 0.6s ease;}
-  @keyframes jarPop{
-    0%{transform:scale(1)}
-    30%{transform:scale(1.18) rotate(-4deg)}
-    60%{transform:scale(0.95) rotate(3deg)}
-    100%{transform:scale(1)}
+  .routine-plant-svg{width:52px;height:68px;flex:0 0 52px;display:block;}
+  .routine-plant-svg.grew{animation:plantBounce 0.55s cubic-bezier(0.36,1.65,0.4,1);}
+  .routine-plant-svg.mature{filter:drop-shadow(0 1px 1px rgba(0,0,0,0.08));}
+  @keyframes plantBounce{
+    0%{transform:scale(1) translateY(0)}
+    30%{transform:scale(1.22) translateY(-7px)}
+    55%{transform:scale(0.93) translateY(2px)}
+    80%{transform:scale(1.06) translateY(-2px)}
+    100%{transform:scale(1) translateY(0)}
   }
   .routine-info{flex:1;min-width:0;}
   .routine-item-title{font-size:13.5px;font-weight:600;color:var(--gray-800);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -1264,7 +1270,7 @@
   .routine-period-badge{display:inline-block;padding:1px 7px;border-radius:999px;background:#e8f5e9;color:#2e7d32;font-size:10.5px;font-weight:600;}
   .routine-item-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
   .routine-check-btn{padding:6px 12px;border-radius:999px;border:1px solid var(--accent);background:#fff;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}
-  .routine-check-btn.checked{background:var(--success);border-color:var(--success);color:#fff;cursor:default;}
+  .routine-check-btn.checked{background:var(--success);border-color:var(--success);color:#fff;}
   .routine-del-btn{background:none;border:none;color:var(--gray-300);cursor:pointer;font-size:12px;padding:2px;}
   .routine-del-btn:hover{color:var(--danger);}
   .routine-step-progress{color:var(--accent);font-weight:600;}
@@ -1273,7 +1279,7 @@
   .routine-steps-section{display:flex;flex-direction:column;gap:5px;padding-top:10px;border-top:1px dashed var(--border);}
   .routine-step-row{display:flex;align-items:center;gap:8px;}
   .routine-step-check{flex:0 0 20px;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);background:#fff;cursor:pointer;color:#fff;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;}
-  .routine-step-check.checked{background:var(--success);border-color:var(--success);cursor:default;}
+  .routine-step-check.checked{background:var(--success);border-color:var(--success);}
   .routine-step-title{flex:1;min-width:0;font-size:12.5px;color:var(--gray-700);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .routine-step-row.checked .routine-step-title{color:var(--gray-400);text-decoration:line-through;}
   .routine-step-del{background:none;border:none;color:var(--gray-300);cursor:pointer;font-size:11px;padding:2px;}
@@ -7411,7 +7417,19 @@ const ROUTINE_CHECKS_KEY = 'hr_routine_checks_v1';
 const ROUTINE_STEPS_KEY = 'hr_routine_steps_v1';
 const ROUTINE_STEP_CHECKS_KEY = 'hr_routine_step_checks_v1';
 const ROUTINE_PERIOD_LABEL = { monthly:'매월', quarterly:'분기', half:'반기', yearly:'연간' };
-const ROUTINE_JAR_CAP = 8; // 유리병 하나를 채우는 데 필요한 체크 횟수
+const ROUTINE_CROPS = [
+  { emoji:'🌶️', name:'고추' },
+  { emoji:'🍅', name:'토마토' },
+  { emoji:'🥬', name:'배추' },
+  { emoji:'🍉', name:'수박' },
+];
+// 루틴마다 고정된 작물을 자동 배정(등록 시 결정되어 바뀌지 않음)
+function routineCropFor(routine) {
+  const str = `${routine.id}-${routine.title||''}`;
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  return ROUTINE_CROPS[hash % ROUTINE_CROPS.length];
+}
 
 function routinesLocalLoad() {
   try { const d = JSON.parse(localStorage.getItem(ROUTINES_KEY)); return Array.isArray(d) ? d : []; } catch { return []; }
@@ -7489,14 +7507,18 @@ function routinePeriodKey(period, date) {
   if (period === 'yearly')    return `${y}`;
   return `${y}-${String(m+1).padStart(2,'0')}`;
 }
-// 세부 단계가 있는 루틴은 단계 체크 하나하나가 곧 씨앗 하나 — 단계를 체크할 때마다 바로 유리병이 채워짐
-function routineTotalChecks(routineId) {
-  const steps = routineStepsFor(routineId);
-  if (steps.length) {
-    const stepIds = steps.map(s => s.id);
-    return routineStepChecks.filter(c => stepIds.includes(c.step_id)).length;
-  }
+// 누적 수확 횟수(이번 주기 완료 기록의 총합 — 영구 보존)
+function routineHarvestCount(routineId) {
   return routineChecks.filter(c => c.routine_id === routineId).length;
+}
+// 이번 주기의 성장 진행률(0~1) — 세부 단계가 있으면 완료한 단계 비율, 없으면 체크 여부(0 또는 1)
+function routineGrowthRatio(routine) {
+  const steps = routineStepsFor(routine.id);
+  if (steps.length) {
+    const done = steps.filter(s => routineStepIsCheckedThisPeriod(s, routine)).length;
+    return done / steps.length;
+  }
+  return routineIsCheckedThisPeriod(routine) ? 1 : 0;
 }
 function routineIsCheckedThisPeriod(routine) {
   const key = routinePeriodKey(routine.period);
@@ -7583,19 +7605,31 @@ async function routineCheckInsertRow(routineId, periodKey) {
   routineChecks.push(nr); routineChecksLocalSave(); return nr;
 }
 
+async function routineCheckDeleteRow(check) {
+  routineChecks = routineChecks.filter(c => c !== check);
+  renderRoutinePanel();
+  if (!useLocal && sbClient && !routineDbUnavailable && typeof check.id !== 'string') {
+    const { error } = await sbClient.from('hr_routine_checks').delete().eq('id', check.id);
+    if (error && !isMissingTableErr(error)) {
+      routineChecks.push(check); renderRoutinePanel();
+      showToast('완료 취소 오류: '+(error.message||''), 'error');
+      return false;
+    }
+  }
+  routineChecksLocalSave();
+  return true;
+}
+
 async function checkRoutineNow(routineId) {
   const routine = routines.find(r => r.id === routineId);
   if (!routine) return;
   if (routineIsCheckedThisPeriod(routine)) return;
   const key = routinePeriodKey(routine.period);
 
-  const prevTotal = routineTotalChecks(routineId);
-  const willFillJar = (prevTotal + 1) % ROUTINE_JAR_CAP === 0;
-
-  // 낙관적 업데이트 — 즉시 체크 + 유리병 애니메이션 반영
+  // 낙관적 업데이트 — 즉시 체크 + 성장 애니메이션 반영
   const optimistic = { id:`tmp-${Date.now()}`, routine_id:routineId, period_key:key, checked_at:new Date().toISOString() };
   routineChecks.push(optimistic);
-  renderRoutinePanel(willFillJar ? routineId : null);
+  renderRoutinePanel(routineId);
 
   const saved = await routineCheckInsertRow(routineId, key);
   if (!saved) {
@@ -7607,6 +7641,19 @@ async function checkRoutineNow(routineId) {
   if (saved.id !== optimistic.id) {
     routineChecks = routineChecks.filter(c => c !== optimistic);
     if (!routineChecks.includes(saved)) routineChecks.push(saved);
+  }
+}
+
+async function toggleRoutineCheckNow(routineId) {
+  const routine = routines.find(r => r.id === routineId);
+  if (!routine) return;
+  const key = routinePeriodKey(routine.period);
+  const existing = routineChecks.find(c => c.routine_id === routineId && c.period_key === key);
+  if (existing) {
+    await routineCheckDeleteRow(existing);
+    renderRoutinePanel(routineId);
+  } else {
+    await checkRoutineNow(routineId);
   }
 }
 
@@ -7681,6 +7728,21 @@ async function routineStepCheckInsertRow(stepId, periodKey) {
   routineStepChecks.push(nr); routineStepChecksLocalSave(); return nr;
 }
 
+async function routineStepCheckDeleteRow(check) {
+  routineStepChecks = routineStepChecks.filter(c => c !== check);
+  renderRoutinePanel();
+  if (!useLocal && sbClient && !routineDbUnavailable && typeof check.id !== 'string') {
+    const { error } = await sbClient.from('hr_routine_step_checks').delete().eq('id', check.id);
+    if (error && !isMissingTableErr(error)) {
+      routineStepChecks.push(check); renderRoutinePanel();
+      showToast('단계 체크 취소 오류: '+(error.message||''), 'error');
+      return false;
+    }
+  }
+  routineStepChecksLocalSave();
+  return true;
+}
+
 async function checkRoutineStepNow(stepId) {
   const step = routineSteps.find(s => s.id === stepId);
   if (!step) return;
@@ -7689,13 +7751,9 @@ async function checkRoutineStepNow(stepId) {
   if (routineStepIsCheckedThisPeriod(step, routine)) return;
   const key = routinePeriodKey(routine.period);
 
-  // 단계 하나를 체크할 때마다 유리병에 씨앗이 바로 하나씩 채워짐(routineTotalChecks가 단계 체크 수를 기준으로 계산)
-  const prevTotal = routineTotalChecks(routine.id);
-  const willFillJar = (prevTotal + 1) % ROUTINE_JAR_CAP === 0;
-
   const optimistic = { id:`tmp-${Date.now()}`, step_id:stepId, period_key:key, checked_at:new Date().toISOString() };
   routineStepChecks.push(optimistic);
-  renderRoutinePanel(willFillJar ? routine.id : null);
+  renderRoutinePanel(routine.id); // 체크할 때마다 작물이 조금씩 자라는 애니메이션
 
   const saved = await routineStepCheckInsertRow(stepId, key);
   if (!saved) {
@@ -7708,11 +7766,30 @@ async function checkRoutineStepNow(stepId) {
     if (!routineStepChecks.includes(saved)) routineStepChecks.push(saved);
   }
 
-  // 이번 주기의 모든 단계를 체크하면 루틴 전체도 완료 기록(유리병은 이미 단계별로 채워졌으므로 추가 반영 없음 — 기록용)
+  // 이번 주기의 모든 단계를 체크하면 루틴 전체도 완료 기록(수확 횟수 집계용)
   const steps = routineStepsFor(routine.id);
   const allDone = steps.length > 0 && steps.every(s => routineStepIsCheckedThisPeriod(s, routine));
   if (allDone && !routineIsCheckedThisPeriod(routine)) {
     routineCheckInsertRow(routine.id, key);
+  }
+}
+
+async function toggleRoutineStepNow(stepId) {
+  const step = routineSteps.find(s => s.id === stepId);
+  if (!step) return;
+  const routine = routines.find(r => r.id === step.routine_id);
+  if (!routine) return;
+  const key = routinePeriodKey(routine.period);
+  const existing = routineStepChecks.find(c => c.step_id === stepId && c.period_key === key);
+
+  if (existing) {
+    // 체크 해제 — 작물이 이전 성장 단계로 되돌아감. 이미 전체 완료 기록이 있었다면 그것도 취소.
+    await routineStepCheckDeleteRow(existing);
+    const doneRecord = routineChecks.find(c => c.routine_id === routine.id && c.period_key === key);
+    if (doneRecord) await routineCheckDeleteRow(doneRecord);
+    renderRoutinePanel(routine.id);
+  } else {
+    await checkRoutineStepNow(stepId);
   }
 }
 
@@ -7736,34 +7813,31 @@ function deleteRoutineStepItem(id) {
   routineStepDeleteRow(id);
 }
 
-function routineJarSvg(totalChecks, justFilled) {
-  const inCycle = totalChecks % ROUTINE_JAR_CAP;
-  const fillCount = justFilled ? ROUTINE_JAR_CAP : inCycle; // 방금 다 찼으면 가득 찬 상태를 보여준 뒤 다음 렌더에서 0으로 리셋
-  const pct = fillCount / ROUTINE_JAR_CAP;
-  const jarsFilled = Math.floor(totalChecks / ROUTINE_JAR_CAP);
+// 씨앗 → 새싹 → 작물로 자라나는 모습을 비율(ratio: 0~1)에 따라 그려줌.
+// 세부 단계가 많을수록(ratio 증가폭이 작을수록) 성장이 더 잘게 세분화되어 보임.
+function routinePlantSvg(ratio, crop, grew) {
+  ratio = Math.max(0, Math.min(1, ratio));
+  const potTop = 70, stemMaxH = 42;
+  const stemH = ratio * stemMaxH;
+  const stemTopY = potTop - stemH;
+  const leaf1 = ratio >= 0.18;
+  const leaf2 = ratio >= 0.5;
+  const fruitVisible = ratio >= 0.72;
+  const fruitScale = fruitVisible ? Math.min(1, (ratio - 0.72) / 0.28) : 0;
+  const fruitSize = 9 + fruitScale * 13;
+  const leafY1 = potTop - stemH * 0.42;
+  const leafY2 = potTop - stemH * 0.8;
 
-  const bodyTop = 17, bodyBottom = 76, bodyHeight = bodyBottom - bodyTop;
-  const fillY = bodyBottom - pct * bodyHeight;
-  const seedPositions = [
-    [23,70],[30,72],[37,70],[26,65],[33,66],[40,64],[23,60],[30,60],
-  ];
-  const seeds = [];
-  for (let i = 0; i < fillCount; i++) {
-    const p = seedPositions[i % seedPositions.length];
-    const jitter = Math.floor(i / seedPositions.length) * 3;
-    const sy = p[1] - jitter;
-    if (sy < fillY - 2) continue;
-    seeds.push(`<circle class="jar-seed" cx="${p[0]}" cy="${sy}" r="2.1"/>`);
-  }
-
-  return `<svg class="routine-jar-svg" viewBox="0 0 60 84" title="${jarsFilled>0?`가득 채운 유리병 ${jarsFilled}개 · `:''}누적 ${totalChecks}회 완료">
-    <defs><clipPath id="jc${Math.random().toString(36).slice(2)}"><rect x="13" y="${bodyTop}" width="34" height="${bodyHeight}" rx="6"/></clipPath></defs>
-    <rect x="13" y="${bodyTop}" width="34" height="${bodyHeight}" rx="6" class="jar-outline"/>
-    <rect x="21" y="8" width="18" height="9" rx="2" class="jar-lid"/>
-    <g>
-      <rect x="14" y="${fillY}" width="32" height="${bodyBottom - fillY}" rx="4" class="jar-fill" style="clip-path:inset(0 0 0 0 round 4px)"/>
-      ${seeds.join('')}
-    </g>
+  return `<svg class="routine-plant-svg ${grew?'grew':''} ${ratio>=1?'mature':''}" viewBox="0 0 60 84" title="${crop.name} 성장 중 (${Math.round(ratio*100)}%)">
+    <ellipse cx="30" cy="80" rx="16" ry="3" fill="rgba(0,0,0,0.08)"/>
+    <path d="M16,80 L20,64 Q30,60 40,64 L44,80 Z" fill="#c77b4a"/>
+    <rect x="16" y="77.5" width="28" height="3" rx="1.5" fill="#a8602f"/>
+    ${stemH > 0 ? `<line x1="30" y1="${potTop}" x2="30" y2="${stemTopY}" stroke="#4a9b3e" stroke-width="3" stroke-linecap="round"/>` : ''}
+    ${leaf1 ? `<path d="M30,${leafY1} Q20,${leafY1-6} 18,${leafY1+2} Q24,${leafY1+6} 30,${leafY1}" fill="#5cb84f"/>
+               <path d="M30,${leafY1} Q40,${leafY1-6} 42,${leafY1+2} Q36,${leafY1+6} 30,${leafY1}" fill="#5cb84f"/>` : ''}
+    ${leaf2 ? `<path d="M30,${leafY2} Q21,${leafY2-7} 19,${leafY2+2} Q25,${leafY2+7} 30,${leafY2}" fill="#6bc95a"/>
+               <path d="M30,${leafY2} Q39,${leafY2-7} 41,${leafY2+2} Q35,${leafY2+7} 30,${leafY2}" fill="#6bc95a"/>` : ''}
+    ${fruitVisible ? `<text x="30" y="${stemTopY+4}" text-anchor="middle" font-size="${fruitSize}">${crop.emoji}</text>` : ''}
   </svg>`;
 }
 
@@ -7782,9 +7856,11 @@ function renderRoutinePanel(justFilledId) {
   }
 
   listEl.innerHTML = mine.map(r => {
-    const total = routineTotalChecks(r.id);
-    const isChecked = routineIsCheckedThisPeriod(r) || r.id === justFilledId;
-    const justFilled = r.id === justFilledId;
+    const crop = routineCropFor(r);
+    const ratio = routineGrowthRatio(r);
+    const harvestCount = routineHarvestCount(r.id);
+    const grew = r.id === justFilledId;
+    const isChecked = routineIsCheckedThisPeriod(r);
     const steps = routineStepsFor(r.id);
     const hasSteps = steps.length > 0;
     const doneCount = steps.filter(s => routineStepIsCheckedThisPeriod(s, r)).length;
@@ -7793,7 +7869,7 @@ function renderRoutinePanel(justFilledId) {
     const stepsListHtml = steps.map(s => {
       const sChecked = routineStepIsCheckedThisPeriod(s, r);
       return `<div class="routine-step-row ${sChecked?'checked':''}">
-        <button class="routine-step-check ${sChecked?'checked':''}" ${sChecked?'disabled':''} onclick="checkRoutineStepNow(${s.id})" title="${sChecked?'완료':'체크'}">${sChecked?'✓':''}</button>
+        <button class="routine-step-check ${sChecked?'checked':''}" onclick="toggleRoutineStepNow(${s.id})" title="${sChecked?'클릭해서 취소':'체크'}">${sChecked?'✓':''}</button>
         <span class="routine-step-title">${escHtml(s.title)}</span>
         <button class="routine-step-del" onclick="deleteRoutineStepItem(${s.id})" title="삭제">✕</button>
       </div>`;
@@ -7808,19 +7884,19 @@ function renderRoutinePanel(justFilledId) {
       </div>
     </div>`;
 
-    return `<div class="routine-item ${justFilled?'jar-just-filled':''}" data-routine-id="${r.id}">
+    return `<div class="routine-item" data-routine-id="${r.id}">
       <div class="routine-main-row">
-        ${routineJarSvg(total, justFilled)}
+        ${routinePlantSvg(ratio, crop, grew)}
         <div class="routine-info">
           <div class="routine-item-title">${escHtml(r.title)}</div>
           <div class="routine-item-meta">
             <span class="routine-period-badge">${ROUTINE_PERIOD_LABEL[r.period]||r.period}</span>
-            <span>누적 ${total}회</span>
+            <span>🧺 수확 ${harvestCount}회</span>
             ${hasSteps ? `<span class="routine-step-progress">· 단계 ${doneCount}/${steps.length}</span>` : ''}
           </div>
         </div>
         <div class="routine-item-actions">
-          ${hasSteps ? '' : `<button class="routine-check-btn ${isChecked?'checked':''}" ${isChecked?'disabled':''} onclick="checkRoutineNow(${r.id})">${isChecked ? '✓ 완료' : '체크'}</button>`}
+          ${hasSteps ? '' : `<button class="routine-check-btn ${isChecked?'checked':''}" onclick="toggleRoutineCheckNow(${r.id})" title="${isChecked?'클릭해서 취소':'체크'}">${isChecked ? '✓ 완료' : '체크'}</button>`}
           <button class="routine-steps-toggle" onclick="toggleRoutineStepsExpanded(${r.id})" title="세부 단계">${expanded?'단계 ▾':'단계 ▸'}</button>
           <button class="routine-del-btn" onclick="deleteRoutineItem(${r.id})" title="삭제">삭제</button>
         </div>
