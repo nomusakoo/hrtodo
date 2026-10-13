@@ -7489,7 +7489,13 @@ function routinePeriodKey(period, date) {
   if (period === 'yearly')    return `${y}`;
   return `${y}-${String(m+1).padStart(2,'0')}`;
 }
+// 세부 단계가 있는 루틴은 단계 체크 하나하나가 곧 씨앗 하나 — 단계를 체크할 때마다 바로 유리병이 채워짐
 function routineTotalChecks(routineId) {
+  const steps = routineStepsFor(routineId);
+  if (steps.length) {
+    const stepIds = steps.map(s => s.id);
+    return routineStepChecks.filter(c => stepIds.includes(c.step_id)).length;
+  }
   return routineChecks.filter(c => c.routine_id === routineId).length;
 }
 function routineIsCheckedThisPeriod(routine) {
@@ -7683,9 +7689,13 @@ async function checkRoutineStepNow(stepId) {
   if (routineStepIsCheckedThisPeriod(step, routine)) return;
   const key = routinePeriodKey(routine.period);
 
+  // 단계 하나를 체크할 때마다 유리병에 씨앗이 바로 하나씩 채워짐(routineTotalChecks가 단계 체크 수를 기준으로 계산)
+  const prevTotal = routineTotalChecks(routine.id);
+  const willFillJar = (prevTotal + 1) % ROUTINE_JAR_CAP === 0;
+
   const optimistic = { id:`tmp-${Date.now()}`, step_id:stepId, period_key:key, checked_at:new Date().toISOString() };
   routineStepChecks.push(optimistic);
-  renderRoutinePanel();
+  renderRoutinePanel(willFillJar ? routine.id : null);
 
   const saved = await routineStepCheckInsertRow(stepId, key);
   if (!saved) {
@@ -7698,13 +7708,11 @@ async function checkRoutineStepNow(stepId) {
     if (!routineStepChecks.includes(saved)) routineStepChecks.push(saved);
   }
 
-  // 이번 주기의 모든 단계를 체크하면 루틴 업무 전체도 자동으로 완료 처리(유리병에 반영)
+  // 이번 주기의 모든 단계를 체크하면 루틴 전체도 완료 기록(유리병은 이미 단계별로 채워졌으므로 추가 반영 없음 — 기록용)
   const steps = routineStepsFor(routine.id);
   const allDone = steps.length > 0 && steps.every(s => routineStepIsCheckedThisPeriod(s, routine));
   if (allDone && !routineIsCheckedThisPeriod(routine)) {
-    await checkRoutineNow(routine.id);
-  } else {
-    renderRoutinePanel();
+    routineCheckInsertRow(routine.id, key);
   }
 }
 
