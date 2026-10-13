@@ -1244,7 +1244,8 @@
   .routine-add-btn{width:100%;justify-content:center;margin-bottom:14px;}
   .routine-list{display:flex;flex-direction:column;gap:12px;}
   .routine-empty{text-align:center;color:var(--gray-400);font-size:13px;padding:40px 10px;}
-  .routine-item{border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;display:flex;gap:12px;align-items:center;background:#fafafa;}
+  .routine-item{border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;display:flex;flex-direction:column;gap:10px;background:#fafafa;}
+  .routine-main-row{display:flex;gap:12px;align-items:center;}
   .routine-jar-svg{width:52px;height:68px;flex:0 0 52px;display:block;}
   .jar-outline{fill:rgba(0,0,0,0.03);stroke:var(--gray-400);stroke-width:2;}
   .jar-lid{fill:var(--gray-400);}
@@ -1266,6 +1267,21 @@
   .routine-check-btn.checked{background:var(--success);border-color:var(--success);color:#fff;cursor:default;}
   .routine-del-btn{background:none;border:none;color:var(--gray-300);cursor:pointer;font-size:12px;padding:2px;}
   .routine-del-btn:hover{color:var(--danger);}
+  .routine-step-progress{color:var(--accent);font-weight:600;}
+  .routine-steps-toggle{background:none;border:none;color:var(--gray-500);font-size:11.5px;cursor:pointer;padding:2px;white-space:nowrap;}
+  .routine-steps-toggle:hover{color:var(--accent);}
+  .routine-steps-section{display:flex;flex-direction:column;gap:5px;padding-top:10px;border-top:1px dashed var(--border);}
+  .routine-step-row{display:flex;align-items:center;gap:8px;}
+  .routine-step-check{flex:0 0 20px;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--border);background:#fff;cursor:pointer;color:#fff;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;}
+  .routine-step-check.checked{background:var(--success);border-color:var(--success);cursor:default;}
+  .routine-step-title{flex:1;min-width:0;font-size:12.5px;color:var(--gray-700);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .routine-step-row.checked .routine-step-title{color:var(--gray-400);text-decoration:line-through;}
+  .routine-step-del{background:none;border:none;color:var(--gray-300);cursor:pointer;font-size:11px;padding:2px;}
+  .routine-step-del:hover{color:var(--danger);}
+  .routine-step-add-row{display:flex;gap:6px;margin-top:2px;}
+  .routine-step-input{flex:1;min-width:0;padding:5px 9px;border:1px solid var(--border);border-radius:var(--radius);font-size:12px;font-family:var(--font);outline:none;}
+  .routine-step-input:focus{border-color:var(--accent);}
+  .routine-step-add-btn{padding:5px 10px;border-radius:var(--radius);border:1px solid var(--border);background:#fff;color:var(--gray-600);font-size:12px;cursor:pointer;white-space:nowrap;}
   @media (max-width:860px){
     .routine-panel{width:85vw;min-width:0;}
   }
@@ -2738,6 +2754,8 @@ async function startApp() {
             interactions  = await loadInteractionsSafe();
             routines      = await loadRoutinesSafe();
             routineChecks = await loadRoutineChecksSafe();
+            routineSteps      = await loadRoutineStepsSafe();
+            routineStepChecks = await loadRoutineStepChecksSafe();
             await migrateLegacyExecEvents();
             showLoading(false);
             renderAll();
@@ -2770,6 +2788,8 @@ async function startApp() {
     interactions  = await loadInteractionsSafe();
     routines      = await loadRoutinesSafe();
     routineChecks = await loadRoutineChecksSafe();
+    routineSteps      = await loadRoutineStepsSafe();
+    routineStepChecks = await loadRoutineStepChecksSafe();
     await migrateLegacyExecEvents();
     if (useLocal || !sbClient) setDbStatus(false, '로컬 저장소');
     showLoading(false);
@@ -7382,8 +7402,14 @@ let routineChecks = [];
 let routinePinned = (localStorage.getItem('hr_routine_pinned') === '1');
 let routineCollapseTimer = null;
 
+let routineSteps = [];
+let routineStepChecks = [];
+let routineStepsExpanded = new Set(); // 세부 단계를 펼쳐둔 루틴 id
+
 const ROUTINES_KEY = 'hr_routines_v1';
 const ROUTINE_CHECKS_KEY = 'hr_routine_checks_v1';
+const ROUTINE_STEPS_KEY = 'hr_routine_steps_v1';
+const ROUTINE_STEP_CHECKS_KEY = 'hr_routine_step_checks_v1';
 const ROUTINE_PERIOD_LABEL = { monthly:'매월', quarterly:'분기', half:'반기', yearly:'연간' };
 const ROUTINE_JAR_CAP = 8; // 유리병 하나를 채우는 데 필요한 체크 횟수
 
@@ -7395,6 +7421,14 @@ function routineChecksLocalLoad() {
   try { const d = JSON.parse(localStorage.getItem(ROUTINE_CHECKS_KEY)); return Array.isArray(d) ? d : []; } catch { return []; }
 }
 function routineChecksLocalSave() { localStorage.setItem(ROUTINE_CHECKS_KEY, JSON.stringify(routineChecks)); }
+function routineStepsLocalLoad() {
+  try { const d = JSON.parse(localStorage.getItem(ROUTINE_STEPS_KEY)); return Array.isArray(d) ? d : []; } catch { return []; }
+}
+function routineStepsLocalSave() { localStorage.setItem(ROUTINE_STEPS_KEY, JSON.stringify(routineSteps)); }
+function routineStepChecksLocalLoad() {
+  try { const d = JSON.parse(localStorage.getItem(ROUTINE_STEP_CHECKS_KEY)); return Array.isArray(d) ? d : []; } catch { return []; }
+}
+function routineStepChecksLocalSave() { localStorage.setItem(ROUTINE_STEP_CHECKS_KEY, JSON.stringify(routineStepChecks)); }
 
 async function loadRoutines() {
   if (!useLocal && sbClient) {
@@ -7412,6 +7446,22 @@ async function loadRoutineChecks() {
   }
   return routineChecksLocalLoad();
 }
+async function loadRoutineSteps() {
+  if (!useLocal && sbClient) {
+    const { data, error } = await sbClient.from('hr_routine_steps').select('*').order('sort_order', { ascending:true });
+    if (!error && Array.isArray(data)) return data;
+    if (error) throw error;
+  }
+  return routineStepsLocalLoad();
+}
+async function loadRoutineStepChecks() {
+  if (!useLocal && sbClient) {
+    const { data, error } = await sbClient.from('hr_routine_step_checks').select('*');
+    if (!error && Array.isArray(data)) return data;
+    if (error) throw error;
+  }
+  return routineStepChecksLocalLoad();
+}
 async function loadRoutinesSafe() {
   try { return await loadRoutines(); }
   catch (e) { console.warn('[routines] 테이블 없음, 빈 배열로 진행:', e.message||e); return []; }
@@ -7419,6 +7469,14 @@ async function loadRoutinesSafe() {
 async function loadRoutineChecksSafe() {
   try { return await loadRoutineChecks(); }
   catch (e) { console.warn('[routine_checks] 테이블 없음, 빈 배열로 진행:', e.message||e); return []; }
+}
+async function loadRoutineStepsSafe() {
+  try { return await loadRoutineSteps(); }
+  catch (e) { console.warn('[routine_steps] 테이블 없음, 빈 배열로 진행:', e.message||e); return []; }
+}
+async function loadRoutineStepChecksSafe() {
+  try { return await loadRoutineStepChecks(); }
+  catch (e) { console.warn('[routine_step_checks] 테이블 없음, 빈 배열로 진행:', e.message||e); return []; }
 }
 
 // 해당 주기의 현재 '구간 키' — 이 키가 같으면 같은 주기 안에 있는 것으로 간주(자동 리셋의 기준)
@@ -7469,8 +7527,13 @@ async function routineDeleteRow(id) {
   const idx = routines.findIndex(r => r.id === id);
   const removed = idx !== -1 ? routines[idx] : null;
   const removedChecks = routineChecks.filter(c => c.routine_id === id);
+  const removedStepIds = routineSteps.filter(s => s.routine_id === id).map(s => s.id);
+  const removedSteps = routineSteps.filter(s => s.routine_id === id);
+  const removedStepChecks = routineStepChecks.filter(c => removedStepIds.includes(c.step_id));
   if (idx !== -1) routines.splice(idx, 1);
   routineChecks = routineChecks.filter(c => c.routine_id !== id);
+  routineSteps = routineSteps.filter(s => s.routine_id !== id);
+  routineStepChecks = routineStepChecks.filter(c => !removedStepIds.includes(c.step_id));
   renderRoutinePanel(); // 낙관적 업데이트
 
   if (!useLocal && sbClient && !routineDbUnavailable) {
@@ -7479,16 +7542,21 @@ async function routineDeleteRow(id) {
       if (isMissingTableErr(error)) {
         warnRoutineTableMissing();
       } else {
-        if (removed) { routines.push(removed); routineChecks.push(...removedChecks); renderRoutinePanel(); }
+        if (removed) {
+          routines.push(removed); routineChecks.push(...removedChecks);
+          routineSteps.push(...removedSteps); routineStepChecks.push(...removedStepChecks);
+          renderRoutinePanel();
+        }
         showToast('루틴 업무 삭제 오류: '+(error.message||''), 'error');
         return false;
       }
     } else {
       await sbClient.from('hr_routine_checks').delete().eq('routine_id', id);
+      await sbClient.from('hr_routine_steps').delete().eq('routine_id', id);
       return true;
     }
   }
-  routinesLocalSave(); routineChecksLocalSave();
+  routinesLocalSave(); routineChecksLocalSave(); routineStepsLocalSave(); routineStepChecksLocalSave();
   return true;
 }
 
@@ -7534,6 +7602,130 @@ async function checkRoutineNow(routineId) {
     routineChecks = routineChecks.filter(c => c !== optimistic);
     if (!routineChecks.includes(saved)) routineChecks.push(saved);
   }
+}
+
+// ── 루틴 업무의 세부 단계(체크리스트) ──
+function routineStepsFor(routineId) {
+  return routineSteps.filter(s => s.routine_id === routineId).sort((a,b) => (a.sort_order||0) - (b.sort_order||0));
+}
+function routineStepIsCheckedThisPeriod(step, routine) {
+  const key = routinePeriodKey(routine.period);
+  return routineStepChecks.some(c => c.step_id === step.id && c.period_key === key);
+}
+
+async function routineStepInsertRow(routineId, title) {
+  const steps = routineStepsFor(routineId);
+  const sortOrder = steps.length ? Math.max(...steps.map(s => s.sort_order||0)) + 1 : 0;
+  const row = { routine_id: routineId, title, sort_order: sortOrder };
+  if (!useLocal && sbClient && !routineDbUnavailable) {
+    const { data, error } = await sbClient.from('hr_routine_steps').insert(row).select();
+    if (!error) {
+      const nr = data && data[0];
+      if (nr) routineSteps.push(nr);
+      return nr;
+    }
+    if (isMissingTableErr(error)) { warnRoutineTableMissing(); }
+    else { showToast('단계 저장 오류: '+(error.message||''), 'error'); return null; }
+  }
+  const newId = routineSteps.length ? Math.max(...routineSteps.map(s=>s.id||0)) + 1 : 1;
+  const nr = { id:newId, ...row, created_at:new Date().toISOString() };
+  routineSteps.push(nr); routineStepsLocalSave(); return nr;
+}
+
+async function routineStepDeleteRow(id) {
+  const idx = routineSteps.findIndex(s => s.id === id);
+  const removed = idx !== -1 ? routineSteps[idx] : null;
+  const removedChecks = routineStepChecks.filter(c => c.step_id === id);
+  if (idx !== -1) routineSteps.splice(idx, 1);
+  routineStepChecks = routineStepChecks.filter(c => c.step_id !== id);
+  renderRoutinePanel(); // 낙관적 업데이트
+
+  if (!useLocal && sbClient && !routineDbUnavailable) {
+    const { error } = await sbClient.from('hr_routine_steps').delete().eq('id', id);
+    if (error) {
+      if (isMissingTableErr(error)) {
+        warnRoutineTableMissing();
+      } else {
+        if (removed) { routineSteps.push(removed); routineStepChecks.push(...removedChecks); renderRoutinePanel(); }
+        showToast('단계 삭제 오류: '+(error.message||''), 'error');
+        return false;
+      }
+    } else {
+      return true;
+    }
+  }
+  routineStepsLocalSave(); routineStepChecksLocalSave();
+  return true;
+}
+
+async function routineStepCheckInsertRow(stepId, periodKey) {
+  const row = { step_id: stepId, period_key: periodKey };
+  if (!useLocal && sbClient && !routineDbUnavailable) {
+    const { data, error } = await sbClient.from('hr_routine_step_checks').insert(row).select();
+    if (!error) {
+      const nr = data && data[0];
+      if (nr) routineStepChecks.push(nr);
+      return nr;
+    }
+    if (isMissingTableErr(error)) { warnRoutineTableMissing(); }
+    else { showToast('단계 체크 저장 오류: '+(error.message||''), 'error'); return null; }
+  }
+  const newId = routineStepChecks.length ? Math.max(...routineStepChecks.map(c=>c.id||0)) + 1 : 1;
+  const nr = { id:newId, ...row, checked_at:new Date().toISOString() };
+  routineStepChecks.push(nr); routineStepChecksLocalSave(); return nr;
+}
+
+async function checkRoutineStepNow(stepId) {
+  const step = routineSteps.find(s => s.id === stepId);
+  if (!step) return;
+  const routine = routines.find(r => r.id === step.routine_id);
+  if (!routine) return;
+  if (routineStepIsCheckedThisPeriod(step, routine)) return;
+  const key = routinePeriodKey(routine.period);
+
+  const optimistic = { id:`tmp-${Date.now()}`, step_id:stepId, period_key:key, checked_at:new Date().toISOString() };
+  routineStepChecks.push(optimistic);
+  renderRoutinePanel();
+
+  const saved = await routineStepCheckInsertRow(stepId, key);
+  if (!saved) {
+    routineStepChecks = routineStepChecks.filter(c => c !== optimistic);
+    renderRoutinePanel();
+    return;
+  }
+  if (saved.id !== optimistic.id) {
+    routineStepChecks = routineStepChecks.filter(c => c !== optimistic);
+    if (!routineStepChecks.includes(saved)) routineStepChecks.push(saved);
+  }
+
+  // 이번 주기의 모든 단계를 체크하면 루틴 업무 전체도 자동으로 완료 처리(유리병에 반영)
+  const steps = routineStepsFor(routine.id);
+  const allDone = steps.length > 0 && steps.every(s => routineStepIsCheckedThisPeriod(s, routine));
+  if (allDone && !routineIsCheckedThisPeriod(routine)) {
+    await checkRoutineNow(routine.id);
+  } else {
+    renderRoutinePanel();
+  }
+}
+
+function toggleRoutineStepsExpanded(routineId) {
+  if (routineStepsExpanded.has(routineId)) routineStepsExpanded.delete(routineId);
+  else routineStepsExpanded.add(routineId);
+  renderRoutinePanel();
+}
+
+function addRoutineStepFromInput(routineId) {
+  const input = document.getElementById(`routineStepInput-${routineId}`);
+  if (!input) return;
+  const title = input.value.trim();
+  if (!title) return;
+  input.value = '';
+  routineStepInsertRow(routineId, title).then(() => renderRoutinePanel());
+}
+
+function deleteRoutineStepItem(id) {
+  if (!confirm('이 단계를 삭제하시겠습니까?')) return;
+  routineStepDeleteRow(id);
 }
 
 function routineJarSvg(totalChecks, justFilled) {
@@ -7585,21 +7777,47 @@ function renderRoutinePanel(justFilledId) {
     const total = routineTotalChecks(r.id);
     const isChecked = routineIsCheckedThisPeriod(r) || r.id === justFilledId;
     const justFilled = r.id === justFilledId;
+    const steps = routineStepsFor(r.id);
+    const hasSteps = steps.length > 0;
+    const doneCount = steps.filter(s => routineStepIsCheckedThisPeriod(s, r)).length;
+    const expanded = routineStepsExpanded.has(r.id);
+
+    const stepsListHtml = steps.map(s => {
+      const sChecked = routineStepIsCheckedThisPeriod(s, r);
+      return `<div class="routine-step-row ${sChecked?'checked':''}">
+        <button class="routine-step-check ${sChecked?'checked':''}" ${sChecked?'disabled':''} onclick="checkRoutineStepNow(${s.id})" title="${sChecked?'완료':'체크'}">${sChecked?'✓':''}</button>
+        <span class="routine-step-title">${escHtml(s.title)}</span>
+        <button class="routine-step-del" onclick="deleteRoutineStepItem(${s.id})" title="삭제">✕</button>
+      </div>`;
+    }).join('');
+
+    const stepsSectionHtml = `<div class="routine-steps-section">
+      ${stepsListHtml}
+      <div class="routine-step-add-row">
+        <input type="text" class="routine-step-input" id="routineStepInput-${r.id}" placeholder="+ 단계 추가" maxlength="40"
+          onkeydown="if(event.key==='Enter')addRoutineStepFromInput(${r.id})">
+        <button class="routine-step-add-btn" onclick="addRoutineStepFromInput(${r.id})">추가</button>
+      </div>
+    </div>`;
+
     return `<div class="routine-item ${justFilled?'jar-just-filled':''}" data-routine-id="${r.id}">
-      ${routineJarSvg(total, justFilled)}
-      <div class="routine-info">
-        <div class="routine-item-title">${escHtml(r.title)}</div>
-        <div class="routine-item-meta">
-          <span class="routine-period-badge">${ROUTINE_PERIOD_LABEL[r.period]||r.period}</span>
-          <span>누적 ${total}회</span>
+      <div class="routine-main-row">
+        ${routineJarSvg(total, justFilled)}
+        <div class="routine-info">
+          <div class="routine-item-title">${escHtml(r.title)}</div>
+          <div class="routine-item-meta">
+            <span class="routine-period-badge">${ROUTINE_PERIOD_LABEL[r.period]||r.period}</span>
+            <span>누적 ${total}회</span>
+            ${hasSteps ? `<span class="routine-step-progress">· 단계 ${doneCount}/${steps.length}</span>` : ''}
+          </div>
+        </div>
+        <div class="routine-item-actions">
+          ${hasSteps ? '' : `<button class="routine-check-btn ${isChecked?'checked':''}" ${isChecked?'disabled':''} onclick="checkRoutineNow(${r.id})">${isChecked ? '✓ 완료' : '체크'}</button>`}
+          <button class="routine-steps-toggle" onclick="toggleRoutineStepsExpanded(${r.id})" title="세부 단계">${expanded?'단계 ▾':'단계 ▸'}</button>
+          <button class="routine-del-btn" onclick="deleteRoutineItem(${r.id})" title="삭제">삭제</button>
         </div>
       </div>
-      <div class="routine-item-actions">
-        <button class="routine-check-btn ${isChecked?'checked':''}" ${isChecked?'disabled':''} onclick="checkRoutineNow(${r.id})">
-          ${isChecked ? '✓ 완료' : '체크'}
-        </button>
-        <button class="routine-del-btn" onclick="deleteRoutineItem(${r.id})" title="삭제">삭제</button>
-      </div>
+      ${expanded ? stepsSectionHtml : ''}
     </div>`;
   }).join('');
 }
@@ -8455,8 +8673,10 @@ function subscribeRealtime() {
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_leaves' },         scheduleRemoteRefresh)
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_note_comments' },  scheduleRemoteRefresh)
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_interactions' },   scheduleRemoteRefresh)
-      .on('postgres_changes', { event:'*', schema:'public', table:'hr_routines' },       scheduleRemoteRefresh)
-      .on('postgres_changes', { event:'*', schema:'public', table:'hr_routine_checks' }, scheduleRemoteRefresh)
+      .on('postgres_changes', { event:'*', schema:'public', table:'hr_routines' },            scheduleRemoteRefresh)
+      .on('postgres_changes', { event:'*', schema:'public', table:'hr_routine_checks' },      scheduleRemoteRefresh)
+      .on('postgres_changes', { event:'*', schema:'public', table:'hr_routine_steps' },       scheduleRemoteRefresh)
+      .on('postgres_changes', { event:'*', schema:'public', table:'hr_routine_step_checks' }, scheduleRemoteRefresh)
       .subscribe();
   } catch (err) { console.warn('[realtime] 구독 실패:', err); }
 }
@@ -8469,10 +8689,10 @@ function scheduleRemoteRefresh() {
 async function remoteRefresh() {
   if (useLocal || !sbClient) return;
   try {
-    const [t, ex, me, nt, pl, lv, cm, ix, rt, rc] = await Promise.all([
-      dbLoad(), loadExecEvents(), loadMasterEvents(), loadNotes(), loadPolicies(), loadLeaves(), loadComments(), loadInteractionsSafe(), loadRoutinesSafe(), loadRoutineChecksSafe()
+    const [t, ex, me, nt, pl, lv, cm, ix, rt, rc, rs, rsc] = await Promise.all([
+      dbLoad(), loadExecEvents(), loadMasterEvents(), loadNotes(), loadPolicies(), loadLeaves(), loadComments(), loadInteractionsSafe(), loadRoutinesSafe(), loadRoutineChecksSafe(), loadRoutineStepsSafe(), loadRoutineStepChecksSafe()
     ]);
-    tasks = t; execEvents = ex; masterEvents = me; notes = nt; policies = pl; leaves = lv; noteComments = cm; interactions = ix; routines = rt; routineChecks = rc;
+    tasks = t; execEvents = ex; masterEvents = me; notes = nt; policies = pl; leaves = lv; noteComments = cm; interactions = ix; routines = rt; routineChecks = rc; routineSteps = rs; routineStepChecks = rsc;
     rerenderCurrentView();
   } catch (err) { console.warn('[realtime] 갱신 실패:', err); }
 }
