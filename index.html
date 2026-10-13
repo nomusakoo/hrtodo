@@ -1218,10 +1218,11 @@
     width:min(34vw,480px); min-width:300px;
     display:flex; align-items:stretch;
     transform:translateX(calc(100% - 18px));
-    transition:transform 0.28s cubic-bezier(.22,.9,.3,1);
+    transition:transform 0.45s cubic-bezier(0.16,1,0.3,1);
+    will-change:transform;
     z-index:140;
   }
-  .routine-panel.open{ transform:translateX(0); }
+  .routine-panel.open{ transform:translateX(0); transition:transform 0.4s cubic-bezier(0.22,0.68,0,1); }
   .routine-panel-handle{
     flex:0 0 18px; width:18px;
     background:linear-gradient(180deg,#22c55e,#15803d);
@@ -2370,6 +2371,16 @@ async function dbLoad() {
 function isMissingColumnErr(error, key) {
   const msg = (error && error.message) || '';
   return /column/i.test(msg) && new RegExp(key, 'i').test(msg);
+}
+
+// 테이블 자체가 아직 생성되지 않은 경우(예: hr_routines) 감지 — 로컬 저장소로 폴백하기 위함
+function isMissingTableErr(error) {
+  if (!error) return false;
+  const code = error.code || '';
+  const msg = error.message || '';
+  return code === '42P01' || code === 'PGRST205' || code === 'PGRST200'
+    || /schema cache/i.test(msg) || /could not find the table/i.test(msg)
+    || (/relation/i.test(msg) && /does not exist/i.test(msg));
 }
 
 async function dbInsert(task) {
@@ -7428,14 +7439,26 @@ function routineIsCheckedThisPeriod(routine) {
   return routineChecks.some(c => c.routine_id === routine.id && c.period_key === key);
 }
 
+// hr_routines/hr_routine_checks 테이블이 아직 생성되지 않아 로컬 저장소로 폴백 중인지
+let routineDbUnavailable = false;
+function warnRoutineTableMissing() {
+  if (routineDbUnavailable) return;
+  routineDbUnavailable = true;
+  console.warn('[routines] hr_routines/hr_routine_checks 테이블이 없어 이 기기의 로컬 저장소로 동작합니다. Supabase에서 테이블을 생성해주세요.');
+  showToast('루틴 업무 테이블이 아직 Supabase에 없어 이 기기에만 저장됩니다. (관리자에게 테이블 생성을 요청하세요)', 'error');
+}
+
 async function routineInsertRow(title, period) {
   const row = { member: myMember, title, period };
-  if (!useLocal && sbClient) {
+  if (!useLocal && sbClient && !routineDbUnavailable) {
     const { data, error } = await sbClient.from('hr_routines').insert(row).select();
-    if (error) { showToast('루틴 업무 저장 오류: '+(error.message||''), 'error'); return null; }
-    const nr = data && data[0];
-    if (nr) routines.push(nr);
-    return nr;
+    if (!error) {
+      const nr = data && data[0];
+      if (nr) routines.push(nr);
+      return nr;
+    }
+    if (isMissingTableErr(error)) { warnRoutineTableMissing(); }
+    else { showToast('루틴 업무 저장 오류: '+(error.message||''), 'error'); return null; }
   }
   const newId = routines.length ? Math.max(...routines.map(r=>r.id||0)) + 1 : 1;
   const nr = { id:newId, ...row, created_at:new Date().toISOString() };
@@ -7450,28 +7473,36 @@ async function routineDeleteRow(id) {
   routineChecks = routineChecks.filter(c => c.routine_id !== id);
   renderRoutinePanel(); // 낙관적 업데이트
 
-  if (!useLocal && sbClient) {
+  if (!useLocal && sbClient && !routineDbUnavailable) {
     const { error } = await sbClient.from('hr_routines').delete().eq('id', id);
     if (error) {
-      if (removed) { routines.push(removed); routineChecks.push(...removedChecks); renderRoutinePanel(); }
-      showToast('루틴 업무 삭제 오류: '+(error.message||''), 'error');
-      return false;
+      if (isMissingTableErr(error)) {
+        warnRoutineTableMissing();
+      } else {
+        if (removed) { routines.push(removed); routineChecks.push(...removedChecks); renderRoutinePanel(); }
+        showToast('루틴 업무 삭제 오류: '+(error.message||''), 'error');
+        return false;
+      }
+    } else {
+      await sbClient.from('hr_routine_checks').delete().eq('routine_id', id);
+      return true;
     }
-    await sbClient.from('hr_routine_checks').delete().eq('routine_id', id);
-  } else {
-    routinesLocalSave(); routineChecksLocalSave();
   }
+  routinesLocalSave(); routineChecksLocalSave();
   return true;
 }
 
 async function routineCheckInsertRow(routineId, periodKey) {
   const row = { routine_id: routineId, period_key: periodKey };
-  if (!useLocal && sbClient) {
+  if (!useLocal && sbClient && !routineDbUnavailable) {
     const { data, error } = await sbClient.from('hr_routine_checks').insert(row).select();
-    if (error) { showToast('체크 저장 오류: '+(error.message||''), 'error'); return null; }
-    const nr = data && data[0];
-    if (nr) routineChecks.push(nr);
-    return nr;
+    if (!error) {
+      const nr = data && data[0];
+      if (nr) routineChecks.push(nr);
+      return nr;
+    }
+    if (isMissingTableErr(error)) { warnRoutineTableMissing(); }
+    else { showToast('체크 저장 오류: '+(error.message||''), 'error'); return null; }
   }
   const newId = routineChecks.length ? Math.max(...routineChecks.map(c=>c.id||0)) + 1 : 1;
   const nr = { id:newId, ...row, checked_at:new Date().toISOString() };
