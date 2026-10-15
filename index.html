@@ -2510,8 +2510,11 @@ function isMissingTableErr(error) {
   if (!error) return false;
   const code = error.code || '';
   const msg = error.message || '';
+  // 주의: PostgREST는 '컬럼 없음'(PGRST204) 오류도 메시지에 "...in the schema cache"라는
+  // 문구를 똑같이 포함하므로, 느슨한 /schema cache/i 매칭은 컬럼 누락을 테이블 누락으로
+  // 오분류하게 만든다. 반드시 "테이블을 찾을 수 없다"는 문구/코드로만 판단해야 함.
   return code === '42P01' || code === 'PGRST205' || code === 'PGRST200'
-    || /schema cache/i.test(msg) || /could not find the table/i.test(msg)
+    || /could not find the table/i.test(msg)
     || (/relation/i.test(msg) && /does not exist/i.test(msg));
 }
 
@@ -7743,21 +7746,29 @@ async function routineInsertRow(title, period, groupId, resetMode) {
   const row = { member: myMember, title, period, reset_mode: resetMode || 'anniversary', sort_order: sortOrder };
   if (groupId) row.group_id = groupId;
   if (!useLocal && sbClient && !routineTableDown('hr_routines')) {
-    let { data, error } = await sbClient.from('hr_routines').insert(row).select();
+    // 주의: 컬럼이 여러 개 동시에 없을 수 있으므로, 매번 원본 row가 아니라
+    // 이전 재시도에서 이미 걸러낸 결과(currentRow)를 이어받아 계속 걸러내야 함
+    // (예전에는 매번 원본 row에서 하나만 빼서, 두 컬럼이 동시에 없으면 두 번째 재시도에서
+    //  첫 번째에 걸러냈던 컬럼이 다시 끼어들어가 계속 실패하는 버그가 있었음)
+    let currentRow = row;
+    let { data, error } = await sbClient.from('hr_routines').insert(currentRow).select();
     if (error && isMissingColumnErr(error, 'group_id')) {
-      const { group_id, ...fallbackRow } = row;
+      const { group_id, ...fallbackRow } = currentRow;
+      currentRow = fallbackRow;
       console.warn('[routines] hr_routines.group_id 컬럼이 없어 해당 값 없이 저장합니다. Supabase에서 다음 SQL을 실행해주세요: ALTER TABLE hr_routines ADD COLUMN group_id bigint;');
-      ({ data, error } = await sbClient.from('hr_routines').insert(fallbackRow).select());
+      ({ data, error } = await sbClient.from('hr_routines').insert(currentRow).select());
     }
     if (error && isMissingColumnErr(error, 'reset_mode')) {
-      const { reset_mode, ...fallbackRow } = row;
+      const { reset_mode, ...fallbackRow } = currentRow;
+      currentRow = fallbackRow;
       console.warn('[routines] hr_routines.reset_mode 컬럼이 없어 해당 값 없이 저장합니다(등록일 기준 리셋으로 동작). Supabase에서 다음 SQL을 실행해주세요: ALTER TABLE hr_routines ADD COLUMN reset_mode text DEFAULT \'anniversary\';');
-      ({ data, error } = await sbClient.from('hr_routines').insert(fallbackRow).select());
+      ({ data, error } = await sbClient.from('hr_routines').insert(currentRow).select());
     }
     if (error && isMissingColumnErr(error, 'sort_order')) {
-      const { sort_order, ...fallbackRow } = row;
+      const { sort_order, ...fallbackRow } = currentRow;
+      currentRow = fallbackRow;
       console.warn('[routines] hr_routines.sort_order 컬럼이 없어 순서 변경이 이 기기에만 저장됩니다. Supabase에서 다음 SQL을 실행해주세요: ALTER TABLE hr_routines ADD COLUMN sort_order int DEFAULT 0;');
-      ({ data, error } = await sbClient.from('hr_routines').insert(fallbackRow).select());
+      ({ data, error } = await sbClient.from('hr_routines').insert(currentRow).select());
     }
     if (!error) {
       const nr = data && data[0];
