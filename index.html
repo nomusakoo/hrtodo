@@ -1275,7 +1275,9 @@
     flex:1; min-width:0; background:#fff; border-left:1px solid var(--border);
     box-shadow:-6px 0 20px rgba(0,0,0,0.1);
     display:flex; flex-direction:column; height:100vh;
+    transition:background 0.25s ease;
   }
+  .routine-panel.pinned .routine-panel-inner{ background:#eceef1; }
   .routine-panel-header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border);}
   .routine-panel-title{font-size:15px;font-weight:700;color:var(--primary);display:flex;align-items:center;gap:6px;}
   .routine-panel-actions{display:flex;gap:6px;}
@@ -1317,10 +1319,10 @@
   .routine-plant-wrap.selling .routine-plant-sell-overlay{display:none;}
   .routine-plant-truck{position:absolute;left:1px;bottom:3px;font-size:20px;animation:truckDepart 1.3s ease-in forwards;pointer-events:none;}
   @keyframes truckDepart{
-    0%{transform:translateX(-6px);opacity:1}
-    15%{transform:translateX(0);opacity:1}
-    70%{transform:translateX(0);opacity:1}
-    100%{transform:translateX(70px);opacity:0}
+    0%{transform:translateX(-6px) scaleX(-1);opacity:1}
+    15%{transform:translateX(0) scaleX(-1);opacity:1}
+    70%{transform:translateX(0) scaleX(-1);opacity:1}
+    100%{transform:translateX(70px) scaleX(-1);opacity:0}
   }
   .routine-info{flex:1;min-width:0;}
   .routine-item-title{font-size:13.5px;font-weight:600;color:var(--gray-800);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -7673,7 +7675,8 @@ function routineIsCheckedThisPeriod(routine) {
   return routineChecks.some(c => c.routine_id === routine.id && c.period_key === key);
 }
 
-// 다 자란 작물을 '판매'해서 빈 화분으로 되돌린 상태(기록/수확 횟수에는 영향 없는 연출용 상태)
+// 세부 단계가 없는 루틴은 되돌릴 체크리스트가 없으므로, 판매 후 빈 화분으로 보여주기 위한 연출용 상태
+// (수확 기록/횟수에는 영향 없음). 세부 단계가 있는 루틴은 실제로 단계 체크를 해제하므로 이 플래그가 필요 없음.
 let routineSoldIds = new Set();
 function routineIsSold(routine) {
   if (!routineSoldIds.has(routine.id)) return false;
@@ -7689,8 +7692,18 @@ function sellRoutinePlant(routineId, wrapEl) {
   truck.className = 'routine-plant-truck';
   truck.textContent = '🚚';
   wrapEl.appendChild(truck);
-  setTimeout(() => {
-    routineSoldIds.add(routineId);
+  setTimeout(async () => {
+    const steps = routineStepsFor(routineId);
+    if (steps.length) {
+      // 트럭이 지나가면 하위 단계 체크가 해제되어 작물이 다시 자라나기 전 상태로 돌아감
+      const key = routinePeriodKey(routine);
+      for (const s of steps) {
+        const existing = routineStepChecks.find(c => c.step_id === s.id && c.period_key === key);
+        if (existing) await routineStepCheckDeleteRow(existing);
+      }
+    } else {
+      routineSoldIds.add(routineId);
+    }
     renderRoutinePanel();
   }, 1300);
 }
@@ -8455,10 +8468,14 @@ async function saveRoutineNew() {
   const groupVal = document.getElementById('routineGroupInput').value;
   const groupId = groupVal ? Number(groupVal) : null;
   const resetMode = document.getElementById('routineResetModeInput').checked ? 'fixed' : 'anniversary';
-  closeRoutineAddModal();
+  // 모달만 먼저 닫고, 저장이 끝날 때까지는 routineModalLock을 유지해 패널이 중간에 접히지 않도록 함
+  // (저장이 느릴 때 closeRoutineAddModal을 먼저 불러 lock을 풀면, 저장 도중 접힘 타이머가 발동해
+  //  방금 등록한 항목이 잠깐 사라졌다 나타나는 것처럼 보이는 버그가 있었음)
+  document.getElementById('routineAddModal').classList.remove('open');
   await routineInsertRow(title, period, groupId, resetMode);
+  routineModalLock = false;
   renderRoutinePanel();
-  expandRoutinePanel(); // 추가 직후 바로 확인/체크할 수 있도록 패널을 다시 펼쳐둠
+  expandRoutinePanel(); // 추가 직후 바로 확인/체크할 수 있도록 패널을 펼쳐둠
 }
 
 // ── 루틴 그룹 탭 ──
@@ -8524,6 +8541,7 @@ function pinRoutinePanel() {
   routinePinned = true;
   localStorage.setItem('hr_routine_pinned', '1');
   document.getElementById('routinePinBtn').classList.add('pinned');
+  document.getElementById('routinePanel').classList.add('pinned');
   expandRoutinePanel();
 }
 function collapseRoutinePanel() {
@@ -8532,7 +8550,9 @@ function collapseRoutinePanel() {
   const pinBtn = document.getElementById('routinePinBtn');
   if (pinBtn) pinBtn.classList.remove('pinned');
   clearTimeout(routineCollapseTimer);
-  document.getElementById('routinePanel').classList.remove('open');
+  const panel = document.getElementById('routinePanel');
+  panel.classList.remove('open');
+  panel.classList.remove('pinned');
 }
 // 모바일 전용 — 호버가 없으므로 FAB 탭으로 열고 닫음(열 때는 고정 상태로 열어둠)
 function toggleRoutinePanelMobile() {
@@ -8546,7 +8566,7 @@ function toggleRoutinePanelMobile() {
 function initRoutinePanel() {
   if (routinePinned) {
     document.getElementById('routinePinBtn').classList.add('pinned');
-    document.getElementById('routinePanel').classList.add('open');
+    document.getElementById('routinePanel').classList.add('open', 'pinned');
   }
   renderRoutinePanel();
 }
