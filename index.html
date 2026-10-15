@@ -7763,7 +7763,7 @@ async function routineInsertRow(title, period, groupId, resetMode) {
       return nr;
     }
     if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routines'); }
-    else { showToast('루틴 업무 저장 오류: '+(error.message||''), 'error'); return null; }
+    else { showToast('루틴 업무 저장 오류(이 기기에만 저장됨): '+(error.message||''), 'error'); }
   }
   const newId = routines.length ? Math.max(...routines.map(r=>r.id||0)) + 1 : 1;
   const nr = { id:newId, ...row, created_at:new Date().toISOString() };
@@ -7857,7 +7857,7 @@ async function routineGroupInsertRow(name) {
       return nr;
     }
     if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routine_groups'); }
-    else { showToast('그룹 저장 오류: '+(error.message||''), 'error'); return null; }
+    else { showToast('그룹 저장 오류(이 기기에만 저장됨): '+(error.message||''), 'error'); }
   }
   const newId = routineGroups.length ? Math.max(...routineGroups.map(g=>g.id||0)) + 1 : 1;
   const nr = { id:newId, ...row, created_at:new Date().toISOString() };
@@ -7963,7 +7963,7 @@ async function routineCheckInsertRow(routineId, periodKey) {
       return nr;
     }
     if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routine_checks'); }
-    else { showToast('체크 저장 오류: '+(error.message||''), 'error'); return null; }
+    else { showToast('체크 저장 오류(이 기기에만 저장됨): '+(error.message||''), 'error'); }
   }
   const newId = routineChecks.length ? Math.max(...routineChecks.map(c=>c.id||0)) + 1 : 1;
   const nr = { id:newId, ...row, checked_at:new Date().toISOString() };
@@ -8043,7 +8043,7 @@ async function routineStepInsertRow(routineId, title) {
       return nr;
     }
     if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routine_steps'); }
-    else { showToast('단계 저장 오류: '+(error.message||''), 'error'); return null; }
+    else { showToast('단계 저장 오류(이 기기에만 저장됨): '+(error.message||''), 'error'); }
   }
   const newId = routineSteps.length ? Math.max(...routineSteps.map(s=>s.id||0)) + 1 : 1;
   const nr = { id:newId, ...row, created_at:new Date().toISOString() };
@@ -8103,7 +8103,7 @@ async function routineStepCheckInsertRow(stepId, periodKey) {
       return nr;
     }
     if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routine_step_checks'); }
-    else { showToast('단계 체크 저장 오류: '+(error.message||''), 'error'); return null; }
+    else { showToast('단계 체크 저장 오류(이 기기에만 저장됨): '+(error.message||''), 'error'); }
   }
   const newId = routineStepChecks.length ? Math.max(...routineStepChecks.map(c=>c.id||0)) + 1 : 1;
   const nr = { id:newId, ...row, checked_at:new Date().toISOString() };
