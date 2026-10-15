@@ -7698,17 +7698,19 @@ function sellRoutinePlant(routineId, wrapEl) {
   setTimeout(async () => {
     const steps = routineStepsFor(routineId);
     const key = routinePeriodKey(routine);
-    // 판매하는 순간이 곧 수확 시점 — 이번 주기에 아직 수확 기록이 없으면 여기서 기록(수확 횟수/대시보드 수익 집계용)
-    if (!routineChecks.some(c => c.routine_id === routineId && c.period_key === key)) {
-      await routineCheckInsertRow(routineId, key);
-    }
     if (steps.length) {
+      // 세부 단계가 있는 루틴은 판매하는 순간이 곧 수확 시점 — 같은 주기 안에서도 다시 키워서
+      // 판매할 때마다 매번 수확 횟수/대시보드 수익에 반영됨(이전엔 주기당 1회로 막혀있어
+      // 같은 달에 두 번째로 판매해도 횟수가 늘지 않는 버그가 있었음)
+      await routineCheckInsertRow(routineId, key);
       // 트럭이 지나가면 하위 단계 체크가 해제되어 작물이 다시 자라나기 전 상태로 돌아감
       for (const s of steps) {
         const existing = routineStepChecks.find(c => c.step_id === s.id && c.period_key === key);
         if (existing) await routineStepCheckDeleteRow(existing);
       }
     } else {
+      // 세부 단계가 없는 단순 체크형 루틴은 체크하는 순간 이미 수확이 집계되므로
+      // 판매는 화분을 비우는 연출만 담당(중복 집계 방지)
       routineSoldIds.add(routineId);
     }
     renderRoutinePanel();
