@@ -7712,13 +7712,20 @@ function sellRoutinePlant(routineId, wrapEl) {
   }, 1300);
 }
 
-// hr_routines/hr_routine_checks 테이블이 아직 생성되지 않아 로컬 저장소로 폴백 중인지
-let routineDbUnavailable = false;
-function warnRoutineTableMissing() {
-  if (routineDbUnavailable) return;
-  routineDbUnavailable = true;
-  console.warn('[routines] hr_routines/hr_routine_checks 테이블이 없어 이 기기의 로컬 저장소로 동작합니다. Supabase에서 테이블을 생성해주세요.');
-  showToast('루틴 업무 테이블이 아직 Supabase에 없어 이 기기에만 저장됩니다. (관리자에게 테이블 생성을 요청하세요)', 'error');
+// hr_routines/hr_routine_checks/hr_routine_steps/hr_routine_step_checks/hr_routine_groups 중
+// 테이블별로 각각 아직 생성되지 않아 로컬 저장소로 폴백 중인지 추적
+// (예전에는 테이블 하나가 통째로 공용 플래그를 켜버려서, 예를 들어 hr_routine_groups가
+//  없을 때 생긴 오류가 전혀 무관한 hr_routines 저장까지 그 세션 내내 조용히 로컬로만
+//  저장되게 만들어, 새로고침하면 방금 등록한 루틴이 사라지는 버그의 원인이 되었음)
+let routineUnavailableTables = new Set();
+function warnRoutineTableMissing(table) {
+  if (routineUnavailableTables.has(table)) return;
+  routineUnavailableTables.add(table);
+  console.warn(`[routines] ${table} 테이블이 없어 이 기기의 로컬 저장소로 동작합니다. Supabase에서 테이블을 생성해주세요.`);
+  showToast(`'${table}' 테이블이 아직 Supabase에 없어 이 기기에만 저장됩니다. (관리자에게 테이블 생성을 요청하세요)`, 'error');
+}
+function routineTableDown(table) {
+  return routineUnavailableTables.has(table);
 }
 
 // 등록 순서를 위한 기본 정렬값 (sort_order가 없는 기존 루틴은 id 순으로 간주)
@@ -7733,7 +7740,7 @@ async function routineInsertRow(title, period, groupId, resetMode) {
   const sortOrder = mineForOrder.length ? Math.max(...mineForOrder.map(r => r.sort_order ?? r.id ?? 0)) + 1 : 0;
   const row = { member: myMember, title, period, reset_mode: resetMode || 'anniversary', sort_order: sortOrder };
   if (groupId) row.group_id = groupId;
-  if (!useLocal && sbClient && !routineDbUnavailable) {
+  if (!useLocal && sbClient && !routineTableDown('hr_routines')) {
     let { data, error } = await sbClient.from('hr_routines').insert(row).select();
     if (error && isMissingColumnErr(error, 'group_id')) {
       const { group_id, ...fallbackRow } = row;
@@ -7755,7 +7762,7 @@ async function routineInsertRow(title, period, groupId, resetMode) {
       if (nr) routines.push(nr);
       return nr;
     }
-    if (isMissingTableErr(error)) { warnRoutineTableMissing(); }
+    if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routines'); }
     else { showToast('루틴 업무 저장 오류: '+(error.message||''), 'error'); return null; }
   }
   const newId = routines.length ? Math.max(...routines.map(r=>r.id||0)) + 1 : 1;
@@ -7769,7 +7776,7 @@ async function routineUpdateGroup(id, groupId) {
   const prevGroup = routine.group_id || null;
   routine.group_id = groupId || null;
   renderRoutinePanel();
-  if (!useLocal && sbClient && !routineDbUnavailable) {
+  if (!useLocal && sbClient && !routineTableDown('hr_routines')) {
     const { error } = await sbClient.from('hr_routines').update({ group_id: routine.group_id }).eq('id', id);
     if (error && !isMissingColumnErr(error, 'group_id') && !isMissingTableErr(error)) {
       routine.group_id = prevGroup; renderRoutinePanel();
@@ -7783,7 +7790,7 @@ async function routineUpdateGroup(id, groupId) {
 // ── 루틴 업무 드래그 정렬 ──
 let routineDragId = null;
 async function persistRoutineOrder(list) {
-  if (!useLocal && sbClient && !routineDbUnavailable) {
+  if (!useLocal && sbClient && !routineTableDown('hr_routines')) {
     for (const r of list) {
       const { error } = await sbClient.from('hr_routines').update({ sort_order: r.sort_order }).eq('id', r.id);
       if (error) {
@@ -7842,14 +7849,14 @@ async function routineGroupInsertRow(name) {
   const mine = myRoutineGroups();
   const sortOrder = mine.length ? Math.max(...mine.map(g=>g.sort_order||0)) + 1 : 0;
   const row = { member: myMember, name, sort_order: sortOrder };
-  if (!useLocal && sbClient && !routineDbUnavailable) {
+  if (!useLocal && sbClient && !routineTableDown('hr_routine_groups')) {
     const { data, error } = await sbClient.from('hr_routine_groups').insert(row).select();
     if (!error) {
       const nr = data && data[0];
       if (nr) routineGroups.push(nr);
       return nr;
     }
-    if (isMissingTableErr(error)) { warnRoutineTableMissing(); }
+    if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routine_groups'); }
     else { showToast('그룹 저장 오류: '+(error.message||''), 'error'); return null; }
   }
   const newId = routineGroups.length ? Math.max(...routineGroups.map(g=>g.id||0)) + 1 : 1;
@@ -7863,7 +7870,7 @@ async function routineGroupRenameRow(id, name) {
   const prev = g.name;
   g.name = name;
   renderRoutinePanel();
-  if (!useLocal && sbClient && !routineDbUnavailable) {
+  if (!useLocal && sbClient && !routineTableDown('hr_routine_groups')) {
     const { error } = await sbClient.from('hr_routine_groups').update({ name }).eq('id', id);
     if (error && !isMissingTableErr(error)) {
       g.name = prev; renderRoutinePanel();
@@ -7885,7 +7892,7 @@ async function routineGroupDeleteRow(id) {
     localStorage.setItem('hr_routine_selected_group', 'all');
   }
   renderRoutinePanel();
-  if (!useLocal && sbClient && !routineDbUnavailable) {
+  if (!useLocal && sbClient && !routineTableDown('hr_routine_groups')) {
     const { error } = await sbClient.from('hr_routine_groups').delete().eq('id', id);
     if (error && !isMissingTableErr(error)) {
       routineGroups.splice(idx, 0, removed);
@@ -7913,7 +7920,7 @@ async function routineDeleteRow(id) {
   routineStepChecks = routineStepChecks.filter(c => !removedStepIds.includes(c.step_id));
   renderRoutinePanel(); // 낙관적 업데이트
 
-  if (!useLocal && sbClient && !routineDbUnavailable) {
+  if (!useLocal && sbClient && !routineTableDown('hr_routines')) {
     // FK 외래키에 ON DELETE CASCADE가 걸려있지 않은 환경에서도 안전하게 지워지도록
     // 자식 레코드(단계 체크 → 단계 → 전체 체크)를 먼저 지운 뒤 마지막에 루틴 본체를 삭제함
     if (removedStepIds.length) {
@@ -7928,7 +7935,7 @@ async function routineDeleteRow(id) {
     const { error } = await sbClient.from('hr_routines').delete().eq('id', id);
     if (error) {
       if (isMissingTableErr(error)) {
-        warnRoutineTableMissing();
+        warnRoutineTableMissing('hr_routines');
       } else {
         if (removed) {
           routines.push(removed); routineChecks.push(...removedChecks);
@@ -7948,14 +7955,14 @@ async function routineDeleteRow(id) {
 
 async function routineCheckInsertRow(routineId, periodKey) {
   const row = { routine_id: routineId, period_key: periodKey };
-  if (!useLocal && sbClient && !routineDbUnavailable) {
+  if (!useLocal && sbClient && !routineTableDown('hr_routine_checks')) {
     const { data, error } = await sbClient.from('hr_routine_checks').insert(row).select();
     if (!error) {
       const nr = data && data[0];
       if (nr) routineChecks.push(nr);
       return nr;
     }
-    if (isMissingTableErr(error)) { warnRoutineTableMissing(); }
+    if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routine_checks'); }
     else { showToast('체크 저장 오류: '+(error.message||''), 'error'); return null; }
   }
   const newId = routineChecks.length ? Math.max(...routineChecks.map(c=>c.id||0)) + 1 : 1;
@@ -7966,7 +7973,7 @@ async function routineCheckInsertRow(routineId, periodKey) {
 async function routineCheckDeleteRow(check) {
   routineChecks = routineChecks.filter(c => c !== check);
   renderRoutinePanel();
-  if (!useLocal && sbClient && !routineDbUnavailable && typeof check.id !== 'string') {
+  if (!useLocal && sbClient && !routineTableDown('hr_routine_checks') && typeof check.id !== 'string') {
     const { error } = await sbClient.from('hr_routine_checks').delete().eq('id', check.id);
     if (error && !isMissingTableErr(error)) {
       routineChecks.push(check); renderRoutinePanel();
@@ -8028,14 +8035,14 @@ async function routineStepInsertRow(routineId, title) {
   const steps = routineStepsFor(routineId);
   const sortOrder = steps.length ? Math.max(...steps.map(s => s.sort_order||0)) + 1 : 0;
   const row = { routine_id: routineId, title, sort_order: sortOrder };
-  if (!useLocal && sbClient && !routineDbUnavailable) {
+  if (!useLocal && sbClient && !routineTableDown('hr_routine_steps')) {
     const { data, error } = await sbClient.from('hr_routine_steps').insert(row).select();
     if (!error) {
       const nr = data && data[0];
       if (nr) routineSteps.push(nr);
       return nr;
     }
-    if (isMissingTableErr(error)) { warnRoutineTableMissing(); }
+    if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routine_steps'); }
     else { showToast('단계 저장 오류: '+(error.message||''), 'error'); return null; }
   }
   const newId = routineSteps.length ? Math.max(...routineSteps.map(s=>s.id||0)) + 1 : 1;
@@ -8049,7 +8056,7 @@ async function routineStepUpdateTitle(id, title) {
   const prev = step.title;
   step.title = title;
   renderRoutinePanel();
-  if (!useLocal && sbClient && !routineDbUnavailable) {
+  if (!useLocal && sbClient && !routineTableDown('hr_routine_steps')) {
     const { error } = await sbClient.from('hr_routine_steps').update({ title }).eq('id', id);
     if (error && !isMissingTableErr(error)) {
       step.title = prev; renderRoutinePanel();
@@ -8068,11 +8075,11 @@ async function routineStepDeleteRow(id) {
   routineStepChecks = routineStepChecks.filter(c => c.step_id !== id);
   renderRoutinePanel(); // 낙관적 업데이트
 
-  if (!useLocal && sbClient && !routineDbUnavailable) {
+  if (!useLocal && sbClient && !routineTableDown('hr_routine_steps')) {
     const { error } = await sbClient.from('hr_routine_steps').delete().eq('id', id);
     if (error) {
       if (isMissingTableErr(error)) {
-        warnRoutineTableMissing();
+        warnRoutineTableMissing('hr_routine_steps');
       } else {
         if (removed) { routineSteps.push(removed); routineStepChecks.push(...removedChecks); renderRoutinePanel(); }
         showToast('단계 삭제 오류: '+(error.message||''), 'error');
@@ -8088,14 +8095,14 @@ async function routineStepDeleteRow(id) {
 
 async function routineStepCheckInsertRow(stepId, periodKey) {
   const row = { step_id: stepId, period_key: periodKey };
-  if (!useLocal && sbClient && !routineDbUnavailable) {
+  if (!useLocal && sbClient && !routineTableDown('hr_routine_step_checks')) {
     const { data, error } = await sbClient.from('hr_routine_step_checks').insert(row).select();
     if (!error) {
       const nr = data && data[0];
       if (nr) routineStepChecks.push(nr);
       return nr;
     }
-    if (isMissingTableErr(error)) { warnRoutineTableMissing(); }
+    if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routine_step_checks'); }
     else { showToast('단계 체크 저장 오류: '+(error.message||''), 'error'); return null; }
   }
   const newId = routineStepChecks.length ? Math.max(...routineStepChecks.map(c=>c.id||0)) + 1 : 1;
@@ -8106,7 +8113,7 @@ async function routineStepCheckInsertRow(stepId, periodKey) {
 async function routineStepCheckDeleteRow(check) {
   routineStepChecks = routineStepChecks.filter(c => c !== check);
   renderRoutinePanel();
-  if (!useLocal && sbClient && !routineDbUnavailable && typeof check.id !== 'string') {
+  if (!useLocal && sbClient && !routineTableDown('hr_routine_step_checks') && typeof check.id !== 'string') {
     const { error } = await sbClient.from('hr_routine_step_checks').delete().eq('id', check.id);
     if (error && !isMissingTableErr(error)) {
       routineStepChecks.push(check); renderRoutinePanel();
