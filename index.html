@@ -1281,14 +1281,23 @@
   .routine-panel-actions{display:flex;gap:6px;}
   .routine-panel-actions button{background:var(--gray-100);border:1px solid var(--border);border-radius:var(--radius);padding:5px 9px;font-size:12px;cursor:pointer;color:var(--gray-600);display:flex;align-items:center;gap:4px;}
   .routine-panel-actions button.pinned{background:var(--accent);border-color:var(--accent);color:#fff;}
+  .pin-emoji{display:inline-block;transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);}
+  .routine-panel-actions button.pinned .pin-emoji{transform:rotate(-28deg);}
   .routine-panel-body{flex:1;overflow-y:auto;padding:14px 16px 24px;}
   .routine-add-btn{width:100%;justify-content:center;margin-bottom:14px;}
   .routine-list{display:flex;flex-direction:column;gap:12px;}
   .routine-empty{text-align:center;color:var(--gray-400);font-size:13px;padding:40px 10px;}
-  .routine-item{border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;display:flex;flex-direction:column;gap:10px;background:#fafafa;}
+  .routine-item{border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;display:flex;flex-direction:column;gap:10px;background:#fafafa;transition:opacity 0.15s, box-shadow 0.15s;}
+  .routine-item.dragging{opacity:0.4;}
+  .routine-item.drag-over{box-shadow:0 -3px 0 var(--accent) inset;}
+  .routine-drag-handle{flex:0 0 auto;cursor:grab;color:var(--gray-300);font-size:14px;padding:0 2px;touch-action:none;}
+  .routine-drag-handle:hover{color:var(--gray-500);}
+  .routine-drag-handle:active{cursor:grabbing;}
   .routine-main-row{display:flex;gap:12px;align-items:center;position:relative;margin:-2px;padding:2px 16px 4px 2px;border-radius:var(--radius);cursor:pointer;transition:background 0.15s;}
   .routine-main-row:hover{background:rgba(0,0,0,0.035);}
   .routine-expand-indicator{position:absolute;right:-4px;bottom:-2px;font-size:11px;color:var(--gray-400);}
+  .routine-plant-wrap{position:relative;flex:0 0 52px;width:52px;height:68px;overflow:visible;}
+  .routine-plant-wrap.sellable{cursor:pointer;}
   .routine-plant-svg{width:52px;height:68px;flex:0 0 52px;display:block;}
   .routine-plant-svg.grew{animation:plantBounce 0.55s cubic-bezier(0.36,1.65,0.4,1);}
   .routine-plant-svg.mature{filter:drop-shadow(0 1px 1px rgba(0,0,0,0.08));}
@@ -1298,6 +1307,20 @@
     55%{transform:scale(0.93) translateY(2px)}
     80%{transform:scale(1.06) translateY(-2px)}
     100%{transform:scale(1) translateY(0)}
+  }
+  .routine-plant-sell-overlay{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,0.55);color:#fff;font-size:11px;font-weight:700;border-radius:8px;
+    opacity:0;transition:opacity 0.15s;pointer-events:none;
+  }
+  .routine-plant-wrap.sellable:hover .routine-plant-sell-overlay{opacity:1;}
+  .routine-plant-wrap.selling .routine-plant-sell-overlay{display:none;}
+  .routine-plant-truck{position:absolute;left:1px;bottom:3px;font-size:20px;animation:truckDepart 1.3s ease-in forwards;pointer-events:none;}
+  @keyframes truckDepart{
+    0%{transform:translateX(-6px);opacity:1}
+    15%{transform:translateX(0);opacity:1}
+    70%{transform:translateX(0);opacity:1}
+    100%{transform:translateX(70px);opacity:0}
   }
   .routine-info{flex:1;min-width:0;}
   .routine-item-title{font-size:13.5px;font-weight:600;color:var(--gray-800);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -1317,6 +1340,9 @@
   .routine-step-title:hover{color:var(--accent);text-decoration:underline;text-decoration-style:dotted;}
   .routine-step-row.checked .routine-step-title{color:var(--gray-400);text-decoration:line-through;}
   .routine-step-edit-input{flex:1;min-width:0;padding:3px 6px;border:1px solid var(--accent);border-radius:var(--radius);font-size:12.5px;font-family:var(--font);outline:none;}
+  .routine-reset-mode-row{margin-top:-6px;}
+  .routine-reset-mode-label{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--gray-600);cursor:pointer;line-height:1.4;}
+  .routine-reset-mode-label input{margin-top:2px;}
   .routine-step-del{background:none;border:none;color:var(--gray-300);cursor:pointer;font-size:11px;padding:2px;}
   .routine-step-del:hover{color:var(--danger);}
   .routine-step-add-row{display:flex;gap:6px;margin-top:2px;}
@@ -1355,8 +1381,13 @@
   .routine-dash-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:flex-end;height:100%;}
   .routine-dash-bar{width:100%;max-width:26px;background:linear-gradient(180deg,var(--accent-light),var(--accent));border-radius:4px 4px 0 0;}
   .routine-dash-bar-label{font-size:10.5px;color:var(--gray-400);}
-  .routine-dash-gallery{display:flex;flex-wrap:wrap;gap:4px;font-size:18px;line-height:1;}
+  .routine-dash-gallery-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:16px 0 10px;}
+  .routine-dash-gallery-header .routine-dash-section-title{margin:0;}
+  .routine-gallery-fold-btn{padding:3px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;color:var(--gray-600);font-size:11px;cursor:pointer;white-space:nowrap;}
+  .routine-gallery-fold-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .routine-dash-gallery{display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:18px;line-height:1;}
   .routine-harvest-pepper{cursor:default;}
+  .routine-harvest-bundle{font-size:12px;font-weight:700;color:#7a4a1f;background:#f3e3cf;border:1px solid #dbb77e;border-radius:8px;padding:4px 7px;cursor:default;}
   @media (max-width:900px){
     .routine-panel{width:85vw;min-width:0;transform:translateX(100%);}
     .routine-panel.open{transform:translateX(0);}
@@ -7586,14 +7617,43 @@ async function loadRoutineStepChecksSafe() {
 }
 
 // 해당 주기의 현재 '구간 키' — 이 키가 같으면 같은 주기 안에 있는 것으로 간주(자동 리셋의 기준)
-function routinePeriodKey(period, date) {
-  date = date || new Date();
+// reset_mode === 'fixed'(초일 고정)면 캘린더 기준(매월 1일 등), 기본(anniversary)이면 등록일 기준으로 리셋됨
+const ROUTINE_PERIOD_MONTHS = { monthly:1, quarterly:3, half:6, yearly:12 };
+function routinePeriodKeyFixed(period, date) {
   const y = date.getFullYear(), m = date.getMonth();
   if (period === 'monthly')   return `${y}-${String(m+1).padStart(2,'0')}`;
   if (period === 'quarterly') return `${y}-Q${Math.floor(m/3)+1}`;
   if (period === 'half')      return `${y}-H${m < 6 ? 1 : 2}`;
   if (period === 'yearly')    return `${y}`;
   return `${y}-${String(m+1).padStart(2,'0')}`;
+}
+function routineClampDay(year, month, day) {
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  return Math.min(day, lastDay);
+}
+// 등록일을 기준(anniversary)으로 현재 시점이 속한 주기의 시작일을 구함
+function routineCycleStart(createdAt, period, now) {
+  const step = ROUTINE_PERIOD_MONTHS[period] || 1;
+  const anchorDay = createdAt.getDate();
+  let y = createdAt.getFullYear(), m = createdAt.getMonth(), d = routineClampDay(y, m, anchorDay);
+  let start = new Date(y, m, d);
+  while (true) {
+    let ny = y, nm = m + step;
+    while (nm > 11) { nm -= 12; ny += 1; }
+    const nd = routineClampDay(ny, nm, anchorDay);
+    const next = new Date(ny, nm, nd);
+    if (next > now) break;
+    y = ny; m = nm; d = nd; start = next;
+  }
+  return start;
+}
+function routinePeriodKey(routine, date) {
+  date = date || new Date();
+  if (routine.reset_mode === 'fixed' || !routine.created_at) {
+    return routinePeriodKeyFixed(routine.period, date);
+  }
+  const start = routineCycleStart(new Date(routine.created_at), routine.period, date);
+  return start.toISOString().slice(0, 10);
 }
 // 누적 수확 횟수(이번 주기 완료 기록의 총합 — 영구 보존)
 function routineHarvestCount(routineId) {
@@ -7609,8 +7669,30 @@ function routineGrowthRatio(routine) {
   return routineIsCheckedThisPeriod(routine) ? 1 : 0;
 }
 function routineIsCheckedThisPeriod(routine) {
-  const key = routinePeriodKey(routine.period);
+  const key = routinePeriodKey(routine);
   return routineChecks.some(c => c.routine_id === routine.id && c.period_key === key);
+}
+
+// 다 자란 작물을 '판매'해서 빈 화분으로 되돌린 상태(기록/수확 횟수에는 영향 없는 연출용 상태)
+let routineSoldIds = new Set();
+function routineIsSold(routine) {
+  if (!routineSoldIds.has(routine.id)) return false;
+  if (routineGrowthRatio(routine) < 1) { routineSoldIds.delete(routine.id); return false; } // 새 주기가 되면 자동 해제
+  return true;
+}
+function sellRoutinePlant(routineId, wrapEl) {
+  if (routineSoldIds.has(routineId)) return;
+  const routine = routines.find(r => r.id === routineId);
+  if (!routine || routineGrowthRatio(routine) < 1) return;
+  wrapEl.classList.add('selling');
+  const truck = document.createElement('span');
+  truck.className = 'routine-plant-truck';
+  truck.textContent = '🚚';
+  wrapEl.appendChild(truck);
+  setTimeout(() => {
+    routineSoldIds.add(routineId);
+    renderRoutinePanel();
+  }, 1300);
 }
 
 // hr_routines/hr_routine_checks 테이블이 아직 생성되지 않아 로컬 저장소로 폴백 중인지
@@ -7622,14 +7704,31 @@ function warnRoutineTableMissing() {
   showToast('루틴 업무 테이블이 아직 Supabase에 없어 이 기기에만 저장됩니다. (관리자에게 테이블 생성을 요청하세요)', 'error');
 }
 
-async function routineInsertRow(title, period, groupId) {
-  const row = { member: myMember, title, period };
+// 등록 순서를 위한 기본 정렬값 (sort_order가 없는 기존 루틴은 id 순으로 간주)
+function routineSortComparator(a, b) {
+  return (a.sort_order ?? a.id) - (b.sort_order ?? b.id);
+}
+
+async function routineInsertRow(title, period, groupId, resetMode) {
+  const mineForOrder = routines.filter(r => r.member === myMember);
+  const sortOrder = mineForOrder.length ? Math.max(...mineForOrder.map(r => r.sort_order ?? 0)) + 1 : 0;
+  const row = { member: myMember, title, period, reset_mode: resetMode || 'anniversary', sort_order: sortOrder };
   if (groupId) row.group_id = groupId;
   if (!useLocal && sbClient && !routineDbUnavailable) {
     let { data, error } = await sbClient.from('hr_routines').insert(row).select();
     if (error && isMissingColumnErr(error, 'group_id')) {
       const { group_id, ...fallbackRow } = row;
       console.warn('[routines] hr_routines.group_id 컬럼이 없어 해당 값 없이 저장합니다. Supabase에서 다음 SQL을 실행해주세요: ALTER TABLE hr_routines ADD COLUMN group_id bigint;');
+      ({ data, error } = await sbClient.from('hr_routines').insert(fallbackRow).select());
+    }
+    if (error && isMissingColumnErr(error, 'reset_mode')) {
+      const { reset_mode, ...fallbackRow } = row;
+      console.warn('[routines] hr_routines.reset_mode 컬럼이 없어 해당 값 없이 저장합니다(등록일 기준 리셋으로 동작). Supabase에서 다음 SQL을 실행해주세요: ALTER TABLE hr_routines ADD COLUMN reset_mode text DEFAULT \'anniversary\';');
+      ({ data, error } = await sbClient.from('hr_routines').insert(fallbackRow).select());
+    }
+    if (error && isMissingColumnErr(error, 'sort_order')) {
+      const { sort_order, ...fallbackRow } = row;
+      console.warn('[routines] hr_routines.sort_order 컬럼이 없어 순서 변경이 이 기기에만 저장됩니다. Supabase에서 다음 SQL을 실행해주세요: ALTER TABLE hr_routines ADD COLUMN sort_order int DEFAULT 0;');
       ({ data, error } = await sbClient.from('hr_routines').insert(fallbackRow).select());
     }
     if (!error) {
@@ -7660,6 +7759,58 @@ async function routineUpdateGroup(id, groupId) {
     }
   }
   routinesLocalSave();
+}
+
+// ── 루틴 업무 드래그 정렬 ──
+let routineDragId = null;
+async function persistRoutineOrder(list) {
+  if (!useLocal && sbClient && !routineDbUnavailable) {
+    for (const r of list) {
+      const { error } = await sbClient.from('hr_routines').update({ sort_order: r.sort_order }).eq('id', r.id);
+      if (error) {
+        if (isMissingColumnErr(error, 'sort_order')) {
+          console.warn('[routines] hr_routines.sort_order 컬럼이 없어 순서가 이 기기에만 저장됩니다. Supabase에서 다음 SQL을 실행해주세요: ALTER TABLE hr_routines ADD COLUMN sort_order int DEFAULT 0;');
+          break;
+        } else if (!isMissingTableErr(error)) {
+          console.warn('[routines] 순서 저장 실패:', error.message || error);
+        }
+      }
+    }
+  }
+  routinesLocalSave();
+}
+function handleRoutineDragStart(e, id) {
+  routineDragId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  try { e.dataTransfer.setData('text/plain', String(id)); } catch (err) {}
+  const item = e.target.closest('.routine-item');
+  if (item) item.classList.add('dragging');
+}
+function handleRoutineDragEnd() {
+  document.querySelectorAll('.routine-item.dragging').forEach(el => el.classList.remove('dragging'));
+  document.querySelectorAll('.routine-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+  routineDragId = null;
+}
+function handleRoutineDragOver(e) {
+  e.preventDefault();
+  if (routineDragId == null) return;
+  document.querySelectorAll('.routine-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+  e.currentTarget.classList.add('drag-over');
+}
+function handleRoutineDrop(e, targetId) {
+  e.preventDefault();
+  const draggedId = routineDragId;
+  handleRoutineDragEnd();
+  if (draggedId == null || draggedId === targetId) return;
+  const myAll = routines.filter(r => myMember && r.member === myMember).sort(routineSortComparator);
+  const fromIdx = myAll.findIndex(r => r.id === draggedId);
+  const toIdx = myAll.findIndex(r => r.id === targetId);
+  if (fromIdx === -1 || toIdx === -1) return;
+  const [moved] = myAll.splice(fromIdx, 1);
+  myAll.splice(toIdx, 0, moved);
+  myAll.forEach((r, i) => { r.sort_order = i; });
+  renderRoutinePanel();
+  persistRoutineOrder(myAll);
 }
 
 // ── 루틴 그룹(전체보기/승진/급여 등 사용자 정의 탭) ──
@@ -7744,6 +7895,17 @@ async function routineDeleteRow(id) {
   renderRoutinePanel(); // 낙관적 업데이트
 
   if (!useLocal && sbClient && !routineDbUnavailable) {
+    // FK 외래키에 ON DELETE CASCADE가 걸려있지 않은 환경에서도 안전하게 지워지도록
+    // 자식 레코드(단계 체크 → 단계 → 전체 체크)를 먼저 지운 뒤 마지막에 루틴 본체를 삭제함
+    if (removedStepIds.length) {
+      const { error: stepCheckErr } = await sbClient.from('hr_routine_step_checks').delete().in('step_id', removedStepIds);
+      if (stepCheckErr && !isMissingTableErr(stepCheckErr)) console.warn('[routines] 단계 체크 삭제 실패(계속 진행):', stepCheckErr.message||stepCheckErr);
+    }
+    const { error: stepErr } = await sbClient.from('hr_routine_steps').delete().eq('routine_id', id);
+    if (stepErr && !isMissingTableErr(stepErr)) console.warn('[routines] 단계 삭제 실패(계속 진행):', stepErr.message||stepErr);
+    const { error: checkErr } = await sbClient.from('hr_routine_checks').delete().eq('routine_id', id);
+    if (checkErr && !isMissingTableErr(checkErr)) console.warn('[routines] 완료 기록 삭제 실패(계속 진행):', checkErr.message||checkErr);
+
     const { error } = await sbClient.from('hr_routines').delete().eq('id', id);
     if (error) {
       if (isMissingTableErr(error)) {
@@ -7758,8 +7920,6 @@ async function routineDeleteRow(id) {
         return false;
       }
     } else {
-      await sbClient.from('hr_routine_checks').delete().eq('routine_id', id);
-      await sbClient.from('hr_routine_steps').delete().eq('routine_id', id);
       return true;
     }
   }
@@ -7803,7 +7963,7 @@ async function checkRoutineNow(routineId) {
   const routine = routines.find(r => r.id === routineId);
   if (!routine) return;
   if (routineIsCheckedThisPeriod(routine)) return;
-  const key = routinePeriodKey(routine.period);
+  const key = routinePeriodKey(routine);
 
   // 낙관적 업데이트 — 즉시 체크 + 성장 애니메이션 반영
   const optimistic = { id:`tmp-${Date.now()}`, routine_id:routineId, period_key:key, checked_at:new Date().toISOString() };
@@ -7826,7 +7986,7 @@ async function checkRoutineNow(routineId) {
 async function toggleRoutineCheckNow(routineId) {
   const routine = routines.find(r => r.id === routineId);
   if (!routine) return;
-  const key = routinePeriodKey(routine.period);
+  const key = routinePeriodKey(routine);
   const existing = routineChecks.find(c => c.routine_id === routineId && c.period_key === key);
   if (existing) {
     await routineCheckDeleteRow(existing);
@@ -7841,7 +8001,7 @@ function routineStepsFor(routineId) {
   return routineSteps.filter(s => s.routine_id === routineId).sort((a,b) => (a.sort_order||0) - (b.sort_order||0));
 }
 function routineStepIsCheckedThisPeriod(step, routine) {
-  const key = routinePeriodKey(routine.period);
+  const key = routinePeriodKey(routine);
   return routineStepChecks.some(c => c.step_id === step.id && c.period_key === key);
 }
 
@@ -7945,7 +8105,7 @@ async function checkRoutineStepNow(stepId) {
   const routine = routines.find(r => r.id === step.routine_id);
   if (!routine) return;
   if (routineStepIsCheckedThisPeriod(step, routine)) return;
-  const key = routinePeriodKey(routine.period);
+  const key = routinePeriodKey(routine);
 
   const optimistic = { id:`tmp-${Date.now()}`, step_id:stepId, period_key:key, checked_at:new Date().toISOString() };
   routineStepChecks.push(optimistic);
@@ -7975,7 +8135,7 @@ async function toggleRoutineStepNow(stepId) {
   if (!step) return;
   const routine = routines.find(r => r.id === step.routine_id);
   if (!routine) return;
-  const key = routinePeriodKey(routine.period);
+  const key = routinePeriodKey(routine);
   const existing = routineStepChecks.find(c => c.step_id === stepId && c.period_key === key);
 
   if (existing) {
@@ -8092,6 +8252,12 @@ function routinePlantSvg(ratio, grew) {
 }
 
 // ── 루틴 업무 미니 대시보드 ──
+const ROUTINE_PEPPER_PRICE = 100; // 수확한 고추 1개당 가상 판매가(원)
+let routineGalleryFolded = false; // 수확 갤러리를 10개 단위 포대로 접어서 볼지 여부
+function toggleRoutineGalleryFold() {
+  routineGalleryFolded = !routineGalleryFolded;
+  renderRoutineDashboard();
+}
 function renderRoutineDashboard() {
   const el = document.getElementById('routineDashboardView');
   if (!el) return;
@@ -8120,11 +8286,22 @@ function renderRoutineDashboard() {
     </div>`).join('');
 
   const harvestRecords = routineChecks.filter(c => mineIds.has(c.routine_id)).sort((a,b) => new Date(b.checked_at) - new Date(a.checked_at));
-  const galleryHtml = harvestRecords.slice(0, 120).map(c => {
+  const revenue = harvestRecords.length * ROUTINE_PEPPER_PRICE;
+  const peppersHtml = list => list.map(c => {
     const r = mine.find(x => x.id === c.routine_id);
     const dateStr = c.checked_at ? new Date(c.checked_at).toLocaleDateString('ko-KR',{year:'numeric',month:'2-digit',day:'2-digit'}) : '';
     return `<span class="routine-harvest-pepper" title="${escHtml(r?r.title:'')} · ${dateStr}">🌶️</span>`;
   }).join('');
+
+  let galleryBodyHtml;
+  if (routineGalleryFolded) {
+    const BUNDLE = 10;
+    const bundleCount = Math.floor(harvestRecords.length / BUNDLE);
+    const bundleHtml = Array.from({length:bundleCount}, () => `<span class="routine-harvest-bundle" title="${BUNDLE}개 묶음 (${BUNDLE * ROUTINE_PEPPER_PRICE}원)">🧺×${BUNDLE}</span>`).join('');
+    galleryBodyHtml = bundleHtml + peppersHtml(harvestRecords.slice(bundleCount * BUNDLE));
+  } else {
+    galleryBodyHtml = peppersHtml(harvestRecords.slice(0, 120));
+  }
 
   el.innerHTML = `
     <div class="routine-dash-stats">
@@ -8135,8 +8312,11 @@ function renderRoutineDashboard() {
     </div>
     <div class="routine-dash-section-title">최근 6개월 수확 추이</div>
     <div class="routine-dash-chart">${chartHtml}</div>
-    <div class="routine-dash-section-title">수확한 작물 🌶️ (${harvestRecords.length}개)</div>
-    <div class="routine-dash-gallery">${galleryHtml || '<div class="routine-empty">아직 수확한 작물이 없어요.</div>'}</div>
+    <div class="routine-dash-gallery-header">
+      <span class="routine-dash-section-title">수확한 작물 🌶️ (${harvestRecords.length}개, ${revenue.toLocaleString()}원 수익)</span>
+      <button class="routine-gallery-fold-btn" onclick="toggleRoutineGalleryFold()">${routineGalleryFolded?'펼치기':'접기'}</button>
+    </div>
+    <div class="routine-dash-gallery">${galleryBodyHtml || '<div class="routine-empty">아직 수확한 작물이 없어요.</div>'}</div>
   `;
 }
 
@@ -8158,7 +8338,7 @@ function renderRoutinePanel(justFilledId) {
 
   const listEl = document.getElementById('routineList');
   if (!listEl) return;
-  const myAll = routines.filter(r => myMember && r.member === myMember);
+  const myAll = routines.filter(r => myMember && r.member === myMember).sort(routineSortComparator);
   const mine = routineSelectedGroupId === 'all'
     ? myAll
     : myAll.filter(r => String(r.group_id || '') === String(routineSelectedGroupId));
@@ -8175,7 +8355,9 @@ function renderRoutinePanel(justFilledId) {
   listEl.innerHTML = mine.map(r => {
     const groupOptionsHtml = `<option value="" ${!r.group_id?'selected':''}>미분류</option>` +
       myRoutineGroups().map(g => `<option value="${g.id}" ${String(r.group_id)===String(g.id)?'selected':''}>${escHtml(g.name)}</option>`).join('');
-    const ratio = routineGrowthRatio(r);
+    const sold = routineIsSold(r);
+    const ratio = sold ? 0 : routineGrowthRatio(r);
+    const isMatureUnsold = !sold && routineGrowthRatio(r) >= 1;
     const harvestCount = routineHarvestCount(r.id);
     const grew = r.id === justFilledId;
     const isChecked = routineIsCheckedThisPeriod(r);
@@ -8214,9 +8396,16 @@ function renderRoutinePanel(justFilledId) {
       </div>
     </div>`;
 
-    return `<div class="routine-item" data-routine-id="${r.id}">
+    return `<div class="routine-item" data-routine-id="${r.id}" ondragover="handleRoutineDragOver(event)" ondrop="handleRoutineDrop(event, ${r.id})">
       <div class="routine-main-row" onclick="toggleRoutineStepsExpanded(${r.id})" title="클릭해서 세부 단계 보기">
-        ${routinePlantSvg(ratio, grew)}
+        <span class="routine-drag-handle" draggable="true"
+          ondragstart="event.stopPropagation();handleRoutineDragStart(event, ${r.id})"
+          ondragend="event.stopPropagation();handleRoutineDragEnd()"
+          onclick="event.stopPropagation()" title="드래그해서 순서 변경">⠿</span>
+        <div class="routine-plant-wrap ${isMatureUnsold?'sellable':''}" ${isMatureUnsold?`onclick="event.stopPropagation();sellRoutinePlant(${r.id},this)"`:''}>
+          ${routinePlantSvg(ratio, grew)}
+          ${isMatureUnsold?`<div class="routine-plant-sell-overlay">판매</div>`:''}
+        </div>
         <div class="routine-info">
           <div class="routine-item-title">${escHtml(r.title)}</div>
           <div class="routine-item-meta">
@@ -8246,6 +8435,7 @@ function openRoutineAddModal() {
   routineModalLock = true;
   document.getElementById('routineTitleInput').value = '';
   document.getElementById('routinePeriodInput').value = 'monthly';
+  document.getElementById('routineResetModeInput').checked = false;
   const groupSel = document.getElementById('routineGroupInput');
   groupSel.innerHTML = `<option value="">미분류</option>` + myRoutineGroups().map(g => `<option value="${g.id}">${escHtml(g.name)}</option>`).join('');
   if (routineSelectedGroupId !== 'all') groupSel.value = routineSelectedGroupId;
@@ -8264,8 +8454,9 @@ async function saveRoutineNew() {
   const period = document.getElementById('routinePeriodInput').value;
   const groupVal = document.getElementById('routineGroupInput').value;
   const groupId = groupVal ? Number(groupVal) : null;
+  const resetMode = document.getElementById('routineResetModeInput').checked ? 'fixed' : 'anniversary';
   closeRoutineAddModal();
-  await routineInsertRow(title, period, groupId);
+  await routineInsertRow(title, period, groupId, resetMode);
   renderRoutinePanel();
   expandRoutinePanel(); // 추가 직후 바로 확인/체크할 수 있도록 패널을 다시 펼쳐둠
 }
@@ -9276,7 +9467,7 @@ window.addEventListener('focus', remoteRefresh);
     <div class="routine-panel-header">
       <div class="routine-panel-title">🌱 내 루틴 업무</div>
       <div class="routine-panel-actions">
-        <button id="routinePinBtn" onclick="pinRoutinePanel()">📌 고정</button>
+        <button id="routinePinBtn" onclick="pinRoutinePanel()"><span class="pin-emoji">📌</span> 고정</button>
         <button onclick="collapseRoutinePanel()">✕ 접기</button>
       </div>
     </div>
@@ -9311,6 +9502,12 @@ window.addEventListener('focus', remoteRefresh);
         <option value="half">반기</option>
         <option value="yearly">연간</option>
       </select>
+    </div>
+    <div class="form-row routine-reset-mode-row">
+      <label class="routine-reset-mode-label">
+        <input type="checkbox" id="routineResetModeInput">
+        초일 고정 (등록일 대신 매월 1일 등 캘린더 기준으로 리셋)
+      </label>
     </div>
     <div class="form-row">
       <label class="form-label">그룹</label>
