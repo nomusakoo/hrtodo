@@ -7718,10 +7718,12 @@ function sellRoutinePlant(routineId, wrapEl) {
 //  없을 때 생긴 오류가 전혀 무관한 hr_routines 저장까지 그 세션 내내 조용히 로컬로만
 //  저장되게 만들어, 새로고침하면 방금 등록한 루틴이 사라지는 버그의 원인이 되었음)
 let routineUnavailableTables = new Set();
-function warnRoutineTableMissing(table) {
+function warnRoutineTableMissing(table, error) {
+  // 실제로는 '테이블 없음'이 아닌 다른 오류(권한/스키마 캐시 등)가 오분류되는 경우를 진단하기 위해
+  // 원본 오류를 그대로 콘솔에 남김 — 문제가 재발하면 브라우저 콘솔(F12)에서 code/message를 확인
+  console.error(`[routines] ${table} 테이블 접근 오류(원본):`, error && error.code, error && error.message, error);
   if (routineUnavailableTables.has(table)) return;
   routineUnavailableTables.add(table);
-  console.warn(`[routines] ${table} 테이블이 없어 이 기기의 로컬 저장소로 동작합니다. Supabase에서 테이블을 생성해주세요.`);
   showToast(`'${table}' 테이블이 아직 Supabase에 없어 이 기기에만 저장됩니다. (관리자에게 테이블 생성을 요청하세요)`, 'error');
 }
 function routineTableDown(table) {
@@ -7762,7 +7764,7 @@ async function routineInsertRow(title, period, groupId, resetMode) {
       if (nr) routines.push(nr);
       return nr;
     }
-    if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routines'); }
+    if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routines', error); }
     else { showToast('루틴 업무 저장 오류(이 기기에만 저장됨): '+(error.message||''), 'error'); }
   }
   const newId = routines.length ? Math.max(...routines.map(r=>r.id||0)) + 1 : 1;
@@ -7856,7 +7858,7 @@ async function routineGroupInsertRow(name) {
       if (nr) routineGroups.push(nr);
       return nr;
     }
-    if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routine_groups'); }
+    if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routine_groups', error); }
     else { showToast('그룹 저장 오류(이 기기에만 저장됨): '+(error.message||''), 'error'); }
   }
   const newId = routineGroups.length ? Math.max(...routineGroups.map(g=>g.id||0)) + 1 : 1;
@@ -7935,7 +7937,7 @@ async function routineDeleteRow(id) {
     const { error } = await sbClient.from('hr_routines').delete().eq('id', id);
     if (error) {
       if (isMissingTableErr(error)) {
-        warnRoutineTableMissing('hr_routines');
+        warnRoutineTableMissing('hr_routines', error);
       } else {
         if (removed) {
           routines.push(removed); routineChecks.push(...removedChecks);
@@ -7962,7 +7964,7 @@ async function routineCheckInsertRow(routineId, periodKey) {
       if (nr) routineChecks.push(nr);
       return nr;
     }
-    if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routine_checks'); }
+    if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routine_checks', error); }
     else { showToast('체크 저장 오류(이 기기에만 저장됨): '+(error.message||''), 'error'); }
   }
   const newId = routineChecks.length ? Math.max(...routineChecks.map(c=>c.id||0)) + 1 : 1;
@@ -8042,7 +8044,7 @@ async function routineStepInsertRow(routineId, title) {
       if (nr) routineSteps.push(nr);
       return nr;
     }
-    if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routine_steps'); }
+    if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routine_steps', error); }
     else { showToast('단계 저장 오류(이 기기에만 저장됨): '+(error.message||''), 'error'); }
   }
   const newId = routineSteps.length ? Math.max(...routineSteps.map(s=>s.id||0)) + 1 : 1;
@@ -8079,7 +8081,7 @@ async function routineStepDeleteRow(id) {
     const { error } = await sbClient.from('hr_routine_steps').delete().eq('id', id);
     if (error) {
       if (isMissingTableErr(error)) {
-        warnRoutineTableMissing('hr_routine_steps');
+        warnRoutineTableMissing('hr_routine_steps', error);
       } else {
         if (removed) { routineSteps.push(removed); routineStepChecks.push(...removedChecks); renderRoutinePanel(); }
         showToast('단계 삭제 오류: '+(error.message||''), 'error');
@@ -8102,7 +8104,7 @@ async function routineStepCheckInsertRow(stepId, periodKey) {
       if (nr) routineStepChecks.push(nr);
       return nr;
     }
-    if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routine_step_checks'); }
+    if (isMissingTableErr(error)) { warnRoutineTableMissing('hr_routine_step_checks', error); }
     else { showToast('단계 체크 저장 오류(이 기기에만 저장됨): '+(error.message||''), 'error'); }
   }
   const newId = routineStepChecks.length ? Math.max(...routineStepChecks.map(c=>c.id||0)) + 1 : 1;
