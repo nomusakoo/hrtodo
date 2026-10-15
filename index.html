@@ -7694,9 +7694,13 @@ function sellRoutinePlant(routineId, wrapEl) {
   wrapEl.appendChild(truck);
   setTimeout(async () => {
     const steps = routineStepsFor(routineId);
+    const key = routinePeriodKey(routine);
+    // 판매하는 순간이 곧 수확 시점 — 이번 주기에 아직 수확 기록이 없으면 여기서 기록(수확 횟수/대시보드 수익 집계용)
+    if (!routineChecks.some(c => c.routine_id === routineId && c.period_key === key)) {
+      await routineCheckInsertRow(routineId, key);
+    }
     if (steps.length) {
       // 트럭이 지나가면 하위 단계 체크가 해제되어 작물이 다시 자라나기 전 상태로 돌아감
-      const key = routinePeriodKey(routine);
       for (const s of steps) {
         const existing = routineStepChecks.find(c => c.step_id === s.id && c.period_key === key);
         if (existing) await routineStepCheckDeleteRow(existing);
@@ -7723,8 +7727,10 @@ function routineSortComparator(a, b) {
 }
 
 async function routineInsertRow(title, period, groupId, resetMode) {
+  // sort_order가 아직 없는(레거시) 루틴은 id를 기준값으로 간주해야, 새로 추가하는 루틴이
+  // 항상 기존 것들보다 큰 sort_order를 받아 목록 맨 아래에 등록됨 (routineSortComparator와 동일한 기준)
   const mineForOrder = routines.filter(r => r.member === myMember);
-  const sortOrder = mineForOrder.length ? Math.max(...mineForOrder.map(r => r.sort_order ?? 0)) + 1 : 0;
+  const sortOrder = mineForOrder.length ? Math.max(...mineForOrder.map(r => r.sort_order ?? r.id ?? 0)) + 1 : 0;
   const row = { member: myMember, title, period, reset_mode: resetMode || 'anniversary', sort_order: sortOrder };
   if (groupId) row.group_id = groupId;
   if (!useLocal && sbClient && !routineDbUnavailable) {
@@ -8134,13 +8140,8 @@ async function checkRoutineStepNow(stepId) {
     routineStepChecks = routineStepChecks.filter(c => c !== optimistic);
     if (!routineStepChecks.includes(saved)) routineStepChecks.push(saved);
   }
-
-  // 이번 주기의 모든 단계를 체크하면 루틴 전체도 완료 기록(수확 횟수 집계용)
-  const steps = routineStepsFor(routine.id);
-  const allDone = steps.length > 0 && steps.every(s => routineStepIsCheckedThisPeriod(s, routine));
-  if (allDone && !routineIsCheckedThisPeriod(routine)) {
-    routineCheckInsertRow(routine.id, key);
-  }
+  // 수확 횟수 집계(hr_routine_checks 기록)는 여기서 하지 않고, 다 자란 작물을 '판매'할 때
+  // sellRoutinePlant에서 기록함 — 다 자라기만 해서는 아직 수확한 것이 아님
 }
 
 async function toggleRoutineStepNow(stepId) {
