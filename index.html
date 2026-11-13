@@ -1325,7 +1325,9 @@
     100%{transform:translateX(70px) scaleX(-1);opacity:0}
   }
   .routine-info{flex:1;min-width:0;}
-  .routine-item-title{font-size:13.5px;font-weight:600;color:var(--gray-800);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .routine-item-title{font-size:13.5px;font-weight:600;color:var(--gray-800);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;}
+  .routine-item-title:hover{color:var(--accent);text-decoration:underline;text-decoration-style:dotted;}
+  .routine-item-title-edit-input{width:100%;margin-bottom:2px;padding:3px 7px;border:1px solid var(--accent);border-radius:var(--radius);font-size:13.5px;font-weight:600;font-family:var(--font);color:var(--gray-800);outline:none;}
   .routine-item-meta{font-size:11.5px;color:var(--gray-500);display:flex;align-items:center;gap:6px;}
   .routine-period-badge{display:inline-block;padding:1px 7px;border-radius:999px;background:#e8f5e9;color:#2e7d32;font-size:10.5px;font-weight:600;}
   .routine-item-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-end;}
@@ -1394,6 +1396,111 @@
     .routine-panel{width:85vw;min-width:0;transform:translateX(100%);}
     .routine-panel.open{transform:translateX(0);}
     .routine-panel-handle{display:none;}
+  }
+
+  /* DUTY (업무분장) */
+  .duty-header-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+  .duty-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+  .duty-search{width:220px !important;padding:7px 12px !important;font-size:13px !important;}
+  .duty-summary{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12.5px;color:var(--gray-600);}
+  .duty-chip{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;border:1px solid var(--border);background:#fff;font-size:12px;font-family:var(--font);cursor:pointer;transition:all .15s;}
+  .duty-chip.warn-p{border-color:#fca5a5;color:var(--danger);}
+  .duty-chip.warn-b{border-color:#fcd34d;color:#b45309;}
+  .duty-chip.active{background:var(--primary);border-color:var(--primary);color:#fff;}
+  .duty-legend{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--gray-500);}
+  .duty-notice{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:var(--radius);padding:9px 12px;font-size:12.5px;margin-bottom:10px;}
+  .duty-table-wrap{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:auto;box-shadow:var(--shadow-sm);max-height:calc(100vh - 230px);}
+  .duty-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
+  .duty-table th{position:sticky;top:0;z-index:2;background:var(--gray-50);border-bottom:1px solid var(--border);padding:9px 8px;font-size:12px;font-weight:600;color:var(--gray-600);text-align:center;white-space:nowrap;}
+  .duty-table th.duty-th-title{text-align:left;min-width:240px;left:0;z-index:3;padding-left:14px;}
+  .duty-table th.duty-th-note{text-align:left;min-width:160px;}
+  .duty-table th.duty-th-member{min-width:64px;}
+  .duty-member-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:1px;}
+  .duty-ex-member{display:inline-block;font-size:10px;color:#b45309;background:#fef3c7;border-radius:4px;padding:0 4px;}
+  .duty-table td{border-bottom:1px solid var(--gray-100);padding:5px 8px;vertical-align:middle;background:#fff;}
+  .duty-table td.duty-title-cell{position:sticky;left:0;z-index:1;padding-left:10px;}
+  .duty-cat-row td{background:var(--accent-bg);border-bottom:1px solid #dbe3ef;padding:7px 10px;}
+  .duty-cat-row.drag-over td{background:#dbe6f7;}
+  .duty-cat-inner{position:sticky;left:10px;display:inline-flex;align-items:center;gap:8px;font-weight:600;color:var(--primary);}
+  .duty-cat-toggle{background:none;border:none;cursor:pointer;color:var(--gray-500);font-size:12px;padding:0 2px;width:16px;}
+  .duty-cat-name{cursor:pointer;font-size:13.5px;}
+  .duty-cat-name:not(.static):hover{color:var(--accent);text-decoration:underline;text-decoration-style:dotted;}
+  .duty-cat-count{font-size:11px;font-weight:600;color:var(--gray-500);background:#fff;border-radius:999px;padding:1px 8px;}
+  .duty-cat-actions{display:inline-flex;gap:2px;margin-left:6px;opacity:0;transition:opacity .15s;}
+  .duty-cat-row:hover .duty-cat-actions{opacity:1;}
+  .duty-cat-actions button{background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:11px;padding:2px 5px;border-radius:4px;}
+  .duty-cat-actions button:hover{background:#fff;color:var(--gray-700);}
+  .duty-cat-actions button.del:hover{color:var(--danger);}
+  .duty-row:hover td{background:var(--gray-50);}
+  .duty-row.gap-p td.duty-title-cell{box-shadow:inset 3px 0 0 var(--danger);}
+  .duty-row.gap-b td.duty-title-cell{box-shadow:inset 3px 0 0 #f59e0b;}
+  .duty-row.dragging{opacity:.4;}
+  .duty-row.drag-over td{box-shadow:inset 0 2px 0 var(--accent);}
+  .duty-title-wrap{display:flex;align-items:center;gap:6px;min-width:0;}
+  .duty-drag{cursor:grab;color:var(--gray-300);font-size:13px;user-select:none;}
+  .duty-drag:hover{color:var(--gray-600);}
+  .duty-title{cursor:pointer;color:var(--gray-800);font-weight:500;}
+  .duty-title:hover{color:var(--accent);text-decoration:underline;text-decoration-style:dotted;}
+  .duty-gap-badge{font-size:10.5px;font-weight:600;border-radius:4px;padding:1px 6px;white-space:nowrap;}
+  .duty-gap-badge.p{background:var(--danger-bg);color:var(--danger);}
+  .duty-gap-badge.b{background:#fef3c7;color:#b45309;}
+  .duty-freq-cell{text-align:center;}
+  .duty-freq-select{border:1px solid transparent;background:transparent;font-size:12px;font-family:var(--font);color:var(--gray-600);border-radius:6px;padding:2px 4px;cursor:pointer;}
+  .duty-freq-select:hover,.duty-freq-select:focus{border-color:var(--border);background:#fff;outline:none;}
+  .duty-cell{text-align:center;cursor:pointer;user-select:none;}
+  .duty-cell.busy{opacity:.45;pointer-events:none;}
+  .duty-mark{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;font-size:11.5px;font-weight:700;transition:transform .12s;}
+  .duty-cell:hover .duty-mark{transform:scale(1.12);}
+  .duty-mark.primary{background:var(--mc,#4a6fa5);color:#fff;}
+  .duty-mark.backup{background:#fff;border:2px solid var(--mc,#4a6fa5);color:var(--mc,#4a6fa5);}
+  .duty-mark.empty{color:transparent;border:1px dashed transparent;}
+  .duty-cell:hover .duty-mark.empty{color:var(--gray-400);border-color:var(--gray-300);}
+  .duty-mark.sample{width:18px;height:18px;font-size:10px;--mc:var(--accent);}
+  .duty-note{cursor:pointer;color:var(--gray-600);font-size:12.5px;}
+  .duty-note.empty{color:var(--gray-300);}
+  .duty-row:hover .duty-note.empty{color:var(--gray-400);}
+  .duty-note:hover{color:var(--accent);}
+  .duty-del-cell{width:30px;text-align:center;}
+  .duty-del{background:none;border:none;cursor:pointer;color:var(--gray-300);font-size:12px;opacity:0;}
+  .duty-row:hover .duty-del{opacity:1;}
+  .duty-del:hover{color:var(--danger);}
+  .duty-edit-input{flex:1;min-width:160px;width:100%;padding:4px 8px;border:1px solid var(--accent);border-radius:6px;font-size:13px;font-family:var(--font);outline:none;background:#fff;}
+  .duty-add-row td{padding:3px 10px;}
+  .duty-add-inner{position:sticky;left:10px;display:flex;max-width:420px;padding-left:22px;}
+  .duty-add-btn{position:sticky;left:32px;background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:12px;font-family:var(--font);padding:3px 0;}
+  .duty-add-btn:hover{color:var(--accent);}
+  .duty-empty{text-align:center;color:var(--gray-400);padding:40px 0 !important;}
+  .duty-table tfoot td{position:sticky;bottom:0;background:var(--gray-50);border-top:1px solid var(--border);border-bottom:none;font-size:11.5px;}
+  .duty-table tfoot td.duty-title-cell{z-index:3;}
+  .duty-foot-label{font-weight:600;color:var(--gray-600);}
+  .duty-foot-cell{text-align:center;white-space:nowrap;color:var(--gray-600);}
+  .duty-foot-cell b{color:var(--gray-800);margin-right:5px;}
+  .duty-paste-modal{width:760px;}
+  .duty-paste-help{font-size:12px;color:var(--gray-600);background:var(--gray-50);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;line-height:1.7;}
+  .duty-paste-summary{font-size:12.5px;color:var(--gray-700);margin:10px 0 6px;}
+  .duty-unknown-note{color:#b45309;margin-top:4px;font-size:12px;}
+  .duty-unknown{color:#b45309;font-weight:600;}
+  .duty-paste-table-wrap{max-height:260px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius);}
+  .duty-paste-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .duty-paste-table th{position:sticky;top:0;background:var(--gray-50);padding:6px 8px;text-align:left;font-weight:600;color:var(--gray-600);border-bottom:1px solid var(--border);}
+  .duty-paste-table td{padding:5px 8px;border-bottom:1px solid var(--gray-100);}
+  .duty-paste-table tr.dup td{color:var(--gray-400);text-decoration:line-through;}
+  .duty-new-badge{font-size:10px;background:#dcfce7;color:#15803d;border-radius:4px;padding:0 4px;}
+  .duty-paste-more{font-size:11.5px;color:var(--gray-400);margin-top:4px;}
+  .duty-history-modal{width:600px;}
+  .duty-history-list{max-height:60vh;overflow-y:auto;}
+  .duty-history-item{padding:9px 2px;border-bottom:1px solid var(--gray-100);}
+  .duty-history-meta{display:flex;gap:8px;align-items:center;font-size:11.5px;margin-bottom:3px;}
+  .duty-history-time{color:var(--gray-400);font-family:var(--font-mono);}
+  .duty-history-actor{font-weight:600;color:var(--gray-700);}
+  .duty-history-action{background:var(--accent-bg);color:var(--accent);border-radius:4px;padding:1px 6px;font-weight:600;}
+  .duty-history-detail{font-size:12.5px;color:var(--gray-700);word-break:break-all;}
+  .duty-history-empty{text-align:center;color:var(--gray-400);padding:30px 0;font-size:13px;}
+  @media (max-width:900px){
+    .duty-legend{margin-left:0;}
+    .duty-search{width:100% !important;}
+    .duty-table th.duty-th-title{min-width:170px;}
+    .duty-cat-actions,.duty-del{opacity:1;}
   }
 </style>
 </head>
@@ -1777,6 +1884,26 @@
       </div>
     </div><!-- /view-network -->
 
+    <!-- DUTY TAB (업무분장) -->
+    <div id="view-duty" style="display:none">
+      <div class="page-header">
+        <div class="page-title">업무분장<span id="dutyCountLabel"></span></div>
+        <div class="duty-header-actions">
+          <button class="btn btn-sm" onclick="openDutyHistoryModal()">&#128337; 변경 이력</button>
+          <button class="btn btn-sm" onclick="exportDutyExcel()">&#11015; 엑셀 내보내기</button>
+          <button class="btn btn-sm" onclick="openDutyPasteModal()">&#128203; 붙여넣기로 가져오기</button>
+          <button class="btn btn-green" onclick="dutyOpenEdit('newCat', 0)">+ 대분류 추가</button>
+        </div>
+      </div>
+      <div class="duty-toolbar">
+        <input type="text" class="form-input duty-search" id="dutySearchInput" placeholder="업무명·담당자 검색" oninput="dutySearch=this.value;renderDutyTab()">
+        <div class="duty-summary" id="dutySummary"></div>
+        <div class="duty-legend"><span class="duty-mark primary sample">정</span>정 담당 <span class="duty-mark backup sample">부</span>부 담당 · 칸을 클릭하면 없음 → 정 → 부 순으로 바뀝니다</div>
+      </div>
+      <div id="dutyNotice"></div>
+      <div class="duty-table-wrap"><table class="duty-table" id="dutyTable"></table></div>
+    </div><!-- /view-duty -->
+
     <!-- EXEC DASHBOARD TAB (임원 대시보드) -->
     <div id="view-exec" style="display:none">
       <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
@@ -1947,6 +2074,37 @@
 </div>
 
 <!-- POLICY EDIT MODAL (제도 항목 추가/수정) -->
+<div class="modal-overlay" id="dutyPasteModal">
+  <div class="modal duty-paste-modal">
+    <div class="modal-header" style="margin-bottom:12px;">
+      <div class="modal-title">&#128203; 업무분장 붙여넣기로 가져오기</div>
+      <button class="modal-close" onclick="closeDutyPasteModal()">&#10005;</button>
+    </div>
+    <div class="duty-paste-help">
+      엑셀에서 표를 복사(Ctrl+C)해서 아래에 붙여넣으세요.<br>
+      열 순서: <b>대분류 · 업무명 · 정 담당 · 부 담당 · 주기 · 비고</b> (첫 줄에 머리글이 있으면 머리글 이름으로 자동 인식)<br>
+      담당자가 여러 명이면 쉼표(,)나 슬래시(/)로 구분하세요. 대분류 칸이 비어 있으면 바로 위 행의 대분류를 이어 씁니다.
+    </div>
+    <textarea class="form-textarea" id="dutyPasteInput" rows="7" oninput="previewDutyPaste()" placeholder="대분류	업무명	정 담당	부 담당	주기	비고&#10;급여·4대보험	월 급여 계산 및 지급	구우회	이호동	월	매월 25일"></textarea>
+    <div id="dutyPastePreview"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;">
+      <button class="btn" onclick="closeDutyPasteModal()">취소</button>
+      <button class="btn btn-primary" id="dutyPasteSubmit" onclick="submitDutyPaste()" disabled>가져오기</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="dutyHistoryModal">
+  <div class="modal duty-history-modal">
+    <div class="modal-header" style="margin-bottom:12px;">
+      <div class="modal-title">&#128337; 업무분장 변경 이력</div>
+      <button class="modal-close" onclick="closeDutyHistoryModal()">&#10005;</button>
+    </div>
+    <input type="text" class="form-input" id="dutyHistorySearch" placeholder="이름·업무명으로 검색" oninput="renderDutyHistory()" style="margin-bottom:10px;">
+    <div class="duty-history-list" id="dutyHistoryList"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="policyEditModal">
   <div class="policy-edit-modal">
     <div class="modal-header" style="margin-bottom:18px;">
@@ -2636,12 +2794,18 @@ const TAB_META = [
   { id:'memo',      label:'메모',          icon:'🗒' },
   { id:'policy',    label:'제도',          icon:'📚' },
   { id:'network',   label:'상호작용',      icon:'🕸' },
+  { id:'duty',      label:'업무분장',      icon:'🧩' },
 ];
 const TAB_ORDER_KEY = 'hr_tab_order_v1';
 function loadTabConfig() {
   try {
     const saved = JSON.parse(localStorage.getItem(TAB_ORDER_KEY));
-    if (Array.isArray(saved) && saved.length === TAB_META.length) return saved;
+    if (Array.isArray(saved) && saved.length) {
+      // 새 탭이 추가돼도 기존 순서/표시 설정은 유지하고, 새 탭만 끝에 붙임
+      const known = saved.filter(t => t && TAB_META.some(m => m.id === t.id));
+      const missing = TAB_META.filter(m => !known.some(t => t.id === m.id)).map(m => ({ id: m.id, visible: true }));
+      if (known.length) return known.concat(missing);
+    }
   } catch {}
   return TAB_META.map(t => ({ id: t.id, visible: true }));
 }
@@ -2876,6 +3040,7 @@ async function startApp() {
             routineSteps      = await loadRoutineStepsSafe();
             routineStepChecks = await loadRoutineStepChecksSafe();
             routineGroups     = await loadRoutineGroupsSafe();
+            await loadDutyData();
             await migrateLegacyExecEvents();
             showLoading(false);
             renderAll();
@@ -2911,6 +3076,7 @@ async function startApp() {
     routineSteps      = await loadRoutineStepsSafe();
     routineStepChecks = await loadRoutineStepChecksSafe();
     routineGroups     = await loadRoutineGroupsSafe();
+    await loadDutyData();
     await migrateLegacyExecEvents();
     if (useLocal || !sbClient) setDbStatus(false, '로컬 저장소');
     showLoading(false);
@@ -3036,7 +3202,8 @@ function renderTabBar() {
     exec:      '💼 임원 대시보드',
     memo:      '🗒 메모',
     policy:    '📚 제도',
-    network:   '🕸 상호작용'
+    network:   '🕸 상호작용',
+    duty:      '🧩 업무분장'
   };
   bar.innerHTML = visible.map(t => {
     const m = TAB_META.find(x => x.id === t.id);
@@ -3050,8 +3217,8 @@ function renderMobileNav() {
   const nav = document.getElementById('mobileNavBtns');
   if (!nav) return;
   const visible = tabConfig.filter(t => t.visible);
-  const icons  = {tasks:'📋',dashboard:'📅',weekly:'🗓',exec:'💼',memo:'🗒',policy:'📚',network:'🕸'};
-  const labels = {tasks:'할 일',dashboard:'대시보드',weekly:'주간',exec:'임원',memo:'메모',policy:'제도',network:'상호작용'};
+  const icons  = {tasks:'📋',dashboard:'📅',weekly:'🗓',exec:'💼',memo:'🗒',policy:'📚',network:'🕸',duty:'🧩'};
+  const labels = {tasks:'할 일',dashboard:'대시보드',weekly:'주간',exec:'임원',memo:'메모',policy:'제도',network:'상호작용',duty:'업무분장'};
   nav.innerHTML = visible.map(t =>
     `<button class="mobile-nav-btn" id="mnav-${t.id}" onclick="switchTab('${t.id}')">
       <span class="nav-icon">${icons[t.id]||'■'}</span>${labels[t.id]||t.id}
@@ -3120,6 +3287,7 @@ function switchTab(tab, animate = true) {
   if (tab === 'memo')      renderMemoTab();
   if (tab === 'policy')    renderPolicyTab();
   if (tab === 'network')   renderInteractionTab();
+  if (tab === 'duty')      renderDutyTab();
   if (tab === 'tasks') {
     renderTable(true);
     setTimeout(scrollTasksToToday, 70);
@@ -3885,7 +4053,7 @@ function renderTabOrderList() {
   _renderTabOrderList();
 }
 function _renderTabOrderList() {
-  const icons = {tasks:'📋',dashboard:'📅',weekly:'🗓',exec:'💼',memo:'🗒',policy:'📚',network:'🕸'};
+  const icons = {tasks:'📋',dashboard:'📅',weekly:'🗓',exec:'💼',memo:'🗒',policy:'📚',network:'🕸',duty:'🧩'};
   document.getElementById('tabOrderList').innerHTML = tempTabConfig.map((t,i) => {
     const m = TAB_META.find(x => x.id === t.id);
     if (!m) return '';
@@ -7527,6 +7695,7 @@ let routineSteps = [];
 let routineStepChecks = [];
 let routineStepsExpanded = new Set(); // 세부 단계를 펼쳐둔 루틴 id
 let routineEditingStepId = null; // 제목을 수정 중인 세부 단계 id
+let routineEditingId = null; // 제목을 수정 중인 루틴 업무 id
 
 let routineGroups = [];
 let routineSelectedGroupId = localStorage.getItem('hr_routine_selected_group') || 'all'; // 'all' 또는 그룹 id(문자열)
@@ -7783,6 +7952,23 @@ async function routineInsertRow(title, period, groupId, resetMode) {
   const newId = routines.length ? Math.max(...routines.map(r=>r.id||0)) + 1 : 1;
   const nr = { id:newId, ...row, created_at:new Date().toISOString() };
   routines.push(nr); routinesLocalSave(); return nr;
+}
+
+async function routineUpdateTitle(id, title) {
+  const routine = routines.find(r => r.id === id);
+  if (!routine) return;
+  const prev = routine.title;
+  routine.title = title;
+  renderRoutinePanel();
+  if (!useLocal && sbClient && !routineTableDown('hr_routines')) {
+    const { error } = await sbClient.from('hr_routines').update({ title }).eq('id', id);
+    if (error && !isMissingTableErr(error)) {
+      routine.title = prev; renderRoutinePanel();
+      showToast('루틴 업무 수정 오류: '+(error.message||''), 'error');
+      return;
+    }
+  }
+  routinesLocalSave();
 }
 
 async function routineUpdateGroup(id, groupId) {
@@ -8234,6 +8420,30 @@ function saveEditRoutineStep(id) {
   else renderRoutinePanel();
 }
 
+function startEditRoutine(id) {
+  routineEditingId = id;
+  renderRoutinePanel();
+  setTimeout(() => {
+    const el = document.getElementById(`routineEditInput-${id}`);
+    if (el) { el.focus(); el.select(); }
+  }, 0);
+}
+let routineEditJustCancelled = false; // Escape로 취소한 직후 뒤따라오는 blur가 값을 저장해버리지 않도록 막는 플래그
+function cancelEditRoutine() {
+  routineEditJustCancelled = true;
+  routineEditingId = null;
+  renderRoutinePanel();
+}
+function saveEditRoutine(id) {
+  if (routineEditJustCancelled) { routineEditJustCancelled = false; return; }
+  const el = document.getElementById(`routineEditInput-${id}`);
+  if (!el) return;
+  const title = el.value.trim();
+  routineEditingId = null;
+  if (title) routineUpdateTitle(id, title);
+  else renderRoutinePanel();
+}
+
 // 씨앗 → 새싹 → 작물로 자라나는 모습을 비율(ratio: 0~1)에 따라 그려줌.
 // 세부 단계가 많을수록(ratio 증가폭이 작을수록) 성장이 더 잘게 세분화되어 보임.
 function routinePlantSvg(ratio, grew) {
@@ -8401,6 +8611,7 @@ function renderRoutinePanel(justFilledId) {
     const hasSteps = steps.length > 0;
     const doneCount = steps.filter(s => routineStepIsCheckedThisPeriod(s, r)).length;
     const expanded = routineStepsExpanded.has(r.id);
+    const editingRoutine = routineEditingId === r.id;
 
     const stepsListHtml = steps.map((s, i) => {
       const sChecked = routineStepIsCheckedThisPeriod(s, r);
@@ -8443,7 +8654,12 @@ function renderRoutinePanel(justFilledId) {
           ${isMatureUnsold?`<div class="routine-plant-sell-overlay">판매</div>`:''}
         </div>
         <div class="routine-info">
-          <div class="routine-item-title">${escHtml(r.title)}</div>
+          ${editingRoutine
+            ? `<input type="text" class="routine-item-title-edit-input" id="routineEditInput-${r.id}" value="${escHtml(r.title)}" maxlength="60"
+                 onclick="event.stopPropagation()"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault();saveEditRoutine(${r.id});}else if(event.key==='Escape'){cancelEditRoutine();}"
+                 onblur="saveEditRoutine(${r.id})">`
+            : `<div class="routine-item-title" onclick="event.stopPropagation();startEditRoutine(${r.id})" title="클릭해서 수정">${escHtml(r.title)}</div>`}
           <div class="routine-item-meta">
             <span class="routine-period-badge">${ROUTINE_PERIOD_LABEL[r.period]||r.period}</span>
             <span>🧺 수확 ${harvestCount}회</span>
@@ -9353,6 +9569,727 @@ async function deletePolicyItem(id) {
 let realtimeChannel = null;
 let _remoteRefreshTimer = null;
 
+// ══════════════════════════════════════════════
+//  업무분장 (DUTY MATRIX)
+// ══════════════════════════════════════════════
+const DUTY_DEFAULT_CATEGORIES = ['인사기획·조직','채용·온보딩','발령·승진','평가·보상','급여·4대보험','근태·휴가','노무·노사관계','복리후생','교육·육성','퇴직·퇴직연금','제증명·인사시스템'];
+const DUTY_FREQS = ['상시','수시','월','분기','반기','연'];
+const DUTY_ROLE_LABEL = { primary:'정', backup:'부' };
+const DUTY_T = { cat:'hr_duty_categories', duty:'hr_duties', asg:'hr_duty_assignees', hist:'hr_duty_history' };
+let dutyCats = [], duties = [], dutyAssignees = [], dutyHistory = [];
+let dutyDownTables = new Set();
+let dutyCatsLoaded = false, dutySeedTried = false;
+let dutySearch = '';
+let dutyGapFilter = null; // 'primary' | 'backup' | null
+let dutyCollapsed = new Set();
+let dutyEditing = null;   // { kind:'newCat'|'cat'|'newDuty'|'title'|'note', id, token, fresh }
+let dutyEditSeq = 0;
+let dutyRendering = false; // 재렌더 중 제거되는 입력창의 blur가 저장을 일으키지 않도록 막음
+let dutyBusyCells = new Set();
+let dutyDragId = null;
+let dutyPasteParsed = null;
+
+function dutyGet(t) { return t === DUTY_T.cat ? dutyCats : t === DUTY_T.duty ? duties : t === DUTY_T.asg ? dutyAssignees : dutyHistory; }
+function dutySet(t, arr) {
+  if (t === DUTY_T.cat) dutyCats = arr;
+  else if (t === DUTY_T.duty) duties = arr;
+  else if (t === DUTY_T.asg) dutyAssignees = arr;
+  else dutyHistory = arr;
+}
+function dutyLocalLoad(t) {
+  try { const d = JSON.parse(localStorage.getItem('hr_local_' + t)); return Array.isArray(d) ? d : []; } catch { return []; }
+}
+function dutyLocalSave(t) {
+  let arr = dutyGet(t);
+  if (t === DUTY_T.hist && arr.length > 500) arr = arr.slice(-500);
+  try { localStorage.setItem('hr_local_' + t, JSON.stringify(arr)); } catch {}
+}
+function dutyRemote(t) { return !useLocal && sbClient && !dutyDownTables.has(t); }
+function dutyMarkDown(t, error) {
+  console.error(`[duty] ${t} 테이블 접근 오류(원본):`, error && error.code, error && error.message);
+  dutyDownTables.add(t);
+}
+
+async function dutyLoadTable(t) {
+  if (dutyRemote(t)) {
+    let q = sbClient.from(t).select('*');
+    q = t === DUTY_T.hist ? q.order('created_at', { ascending:true }).limit(1000) : q.order('id', { ascending:true });
+    const { data, error } = await q;
+    if (!error && Array.isArray(data)) return data;
+    if (isMissingTableErr(error)) { dutyMarkDown(t, error); return dutyLocalLoad(t); }
+    console.warn(`[duty] ${t} 로드 실패:`, error && error.message);
+    return null; // 일시적 오류 — 기존 화면 데이터를 그대로 유지
+  }
+  return dutyLocalLoad(t);
+}
+async function loadDutyData() {
+  try {
+    const [c, d, a, h] = await Promise.all([DUTY_T.cat, DUTY_T.duty, DUTY_T.asg, DUTY_T.hist].map(dutyLoadTable));
+    if (c) { dutyCats = c; dutyCatsLoaded = true; }
+    if (d) duties = d;
+    if (a) dutyAssignees = a;
+    if (h) dutyHistory = h;
+  } catch (e) { console.warn('[duty] 로드 예외:', e); }
+}
+
+async function dutyInsertRows(t, rows, label = '업무분장 저장') {
+  if (!rows.length) return [];
+  if (dutyRemote(t)) {
+    const { data, error } = await sbClient.from(t).insert(rows).select();
+    if (!error && Array.isArray(data)) { dutySet(t, dutyGet(t).concat(data)); return data; }
+    if (!isMissingTableErr(error)) { showToast(`${label} 오류: ` + ((error && error.message) || ''), 'error'); return null; }
+    dutyMarkDown(t, error);
+  }
+  let maxId = dutyGet(t).reduce((m, x) => Math.max(m, x.id || 0), 0);
+  const now = new Date().toISOString();
+  const added = rows.map(r => ({ id: ++maxId, created_at: now, ...r }));
+  dutySet(t, dutyGet(t).concat(added));
+  dutyLocalSave(t);
+  return added;
+}
+async function dutyInsert(t, row, label) {
+  const r = await dutyInsertRows(t, [row], label);
+  return r ? r[0] : null;
+}
+async function dutyUpdate(t, id, patch) {
+  const item = dutyGet(t).find(x => x.id === id);
+  if (!item) return false;
+  const prev = { ...item };
+  Object.assign(item, patch);
+  if (dutyRemote(t)) {
+    const { error } = await sbClient.from(t).update(patch).eq('id', id);
+    if (!error) return true;
+    if (!isMissingTableErr(error)) {
+      Object.assign(item, prev);
+      showToast('업무분장 수정 오류: ' + (error.message || ''), 'error');
+      return false;
+    }
+    dutyMarkDown(t, error);
+  }
+  dutyLocalSave(t);
+  return true;
+}
+async function dutyDeleteRows(t, ids) {
+  if (!ids.length) return true;
+  if (dutyRemote(t)) {
+    const { error } = await sbClient.from(t).delete().in('id', ids);
+    if (error) {
+      if (!isMissingTableErr(error)) { showToast('업무분장 삭제 오류: ' + (error.message || ''), 'error'); return false; }
+      dutyMarkDown(t, error);
+    }
+  }
+  const set = new Set(ids);
+  dutySet(t, dutyGet(t).filter(x => !set.has(x.id)));
+  if (!dutyRemote(t)) dutyLocalSave(t);
+  return true;
+}
+function dutyActor() { return currentUserName || myMember || '알 수 없음'; }
+async function dutyLog(action, detail) {
+  await dutyInsert(DUTY_T.hist, { actor: dutyActor(), action, detail }, '변경 이력 저장');
+  if (document.getElementById('dutyHistoryModal')?.classList.contains('open')) renderDutyHistory();
+}
+
+// ── 조회 헬퍼 ──
+function dutyOrder(a, b) { return (a.sort_order ?? a.id) - (b.sort_order ?? b.id); }
+function dutyCatsSorted() { return [...dutyCats].sort(dutyOrder); }
+function dutiesOfCat(catId) {
+  const known = new Set(dutyCats.map(c => c.id));
+  return duties.filter(d => catId === null ? !known.has(d.category_id) : d.category_id === catId).sort(dutyOrder);
+}
+function dutyAssigneeOf(dutyId, member) { return dutyAssignees.find(a => a.duty_id === dutyId && a.member === member); }
+function dutyMembersOf(dutyId, role) {
+  return dutyAssignees.filter(a => a.duty_id === dutyId && a.role === role).map(a => a.member);
+}
+function dutyColumns() {
+  const extra = [...new Set(dutyAssignees.map(a => a.member))].filter(m => !MEMBERS.includes(m));
+  return [...MEMBERS, ...extra];
+}
+function dutyMemberColor(m) { return (MEMBERS.includes(m) && memberColor(m)) || '#9ca3af'; }
+function dutyCatName(catId) { const c = dutyCats.find(x => x.id === catId); return c ? c.name : '미분류'; }
+function dutyMatchesSearch(d, q) {
+  if (!q) return true;
+  const hay = [d.title, d.note, dutyCatName(d.category_id), ...dutyAssignees.filter(a => a.duty_id === d.id).map(a => a.member)].join(' ').toLowerCase();
+  return hay.includes(q);
+}
+function dutyGapOf(d) {
+  return { noPrimary: !dutyMembersOf(d.id, 'primary').length, noBackup: !dutyMembersOf(d.id, 'backup').length };
+}
+
+// ── 기본 대분류 생성 (최초 1회) ──
+async function dutySeedDefaults() {
+  dutySeedTried = true;
+  try { if (localStorage.getItem('hr_duty_seeded') === '1') return; } catch {}
+  const rows = DUTY_DEFAULT_CATEGORIES.map((name, i) => ({ name, sort_order: i + 1 }));
+  const r = await dutyInsertRows(DUTY_T.cat, rows);
+  if (r) {
+    try { localStorage.setItem('hr_duty_seeded', '1'); } catch {}
+    await dutyLog('대분류 추가', `기본 대분류 ${r.length}개 생성`);
+  }
+  renderDutyTab();
+}
+
+// ── 렌더링 ──
+function dutyEditInputHtml(value, placeholder) {
+  return `<input type="text" id="dutyEditInput" class="duty-edit-input" data-token="${dutyEditing.token}" value="${escHtml(value || '')}" placeholder="${escHtml(placeholder || '')}" maxlength="100"
+    onclick="event.stopPropagation()" onkeydown="dutyEditKey(event,this)" onblur="commitDutyEdit(this,false)">`;
+}
+function dutyIsEditing(kind, id) { return !!dutyEditing && dutyEditing.kind === kind && dutyEditing.id === id; }
+
+function renderDutyTab() {
+  const table = document.getElementById('dutyTable');
+  if (!table) return;
+  if (dutyCatsLoaded && !dutySeedTried && !dutyCats.length && !duties.length) { dutySeedDefaults(); }
+
+  const prevEl = document.getElementById('dutyEditInput');
+  let keep = null;
+  if (prevEl && dutyEditing && prevEl.dataset.token === String(dutyEditing.token)) {
+    keep = { v: prevEl.value, f: document.activeElement === prevEl, s: prevEl.selectionStart, e: prevEl.selectionEnd };
+  }
+
+  const cols = dutyColumns();
+  const q = dutySearch.trim().toLowerCase();
+  const filtering = !!q || !!dutyGapFilter;
+  const colCount = cols.length + 4;
+
+  const groups = dutyCatsSorted().map(c => ({ cat: c, items: dutiesOfCat(c.id) }));
+  const orphans = dutiesOfCat(null);
+  if (orphans.length) groups.push({ cat: null, items: orphans });
+
+  let gapP = 0, gapB = 0;
+  duties.forEach(d => { const g = dutyGapOf(d); if (g.noPrimary) gapP++; if (g.noBackup) gapB++; });
+
+  let body = '';
+  groups.forEach(({ cat, items }) => {
+    const catId = cat ? cat.id : null;
+    const catMatch = q && cat && cat.name.toLowerCase().includes(q);
+    const visibleItems = items.filter(d => {
+      if (dutyGapFilter === 'primary' && !dutyGapOf(d).noPrimary) return false;
+      if (dutyGapFilter === 'backup' && !dutyGapOf(d).noBackup) return false;
+      return catMatch || dutyMatchesSearch(d, q);
+    });
+    if (filtering && !visibleItems.length) return;
+    const collapsed = !filtering && cat && dutyCollapsed.has(cat.id);
+    const catGapP = items.filter(d => dutyGapOf(d).noPrimary).length;
+    const catTitle = cat
+      ? (dutyIsEditing('cat', cat.id)
+          ? dutyEditInputHtml(cat.name, '대분류 이름')
+          : `<span class="duty-cat-name" onclick="event.stopPropagation();dutyOpenEdit('cat',${cat.id})" title="클릭해서 이름 수정">${escHtml(cat.name)}</span>`)
+      : `<span class="duty-cat-name static">미분류</span>`;
+    body += `<tr class="duty-cat-row" data-cat="${catId ?? ''}" ondragover="dutyDragOver(event,this)" ondragleave="this.classList.remove('drag-over')" ondrop="dutyDropOnCat(event,${catId})">
+      <td colspan="${colCount}">
+        <div class="duty-cat-inner">
+          ${cat ? `<button class="duty-cat-toggle" onclick="toggleDutyCat(${cat.id})">${collapsed ? '▸' : '▾'}</button>` : ''}
+          ${catTitle}
+          <span class="duty-cat-count">${items.length}</span>
+          ${catGapP ? `<span class="duty-gap-badge p">정 없음 ${catGapP}</span>` : ''}
+          ${cat ? `<span class="duty-cat-actions">
+            <button title="위로" onclick="moveDutyCat(${cat.id},-1)">▲</button>
+            <button title="아래로" onclick="moveDutyCat(${cat.id},1)">▼</button>
+            <button title="대분류 삭제" class="del" onclick="deleteDutyCat(${cat.id})">✕</button>
+          </span>` : ''}
+        </div>
+      </td>
+    </tr>`;
+    if (collapsed) return;
+    visibleItems.forEach(d => {
+      const g = dutyGapOf(d);
+      const freqOpts = (DUTY_FREQS.includes(d.frequency || '') || !d.frequency ? DUTY_FREQS : [d.frequency, ...DUTY_FREQS]);
+      body += `<tr class="duty-row ${g.noPrimary ? 'gap-p' : g.noBackup ? 'gap-b' : ''}" data-id="${d.id}" draggable="true"
+          ondragstart="dutyDragStart(event,${d.id})" ondragend="dutyDragEnd()" ondragover="dutyDragOver(event,this)" ondragleave="this.classList.remove('drag-over')" ondrop="dutyDropOnRow(event,${d.id})">
+        <td class="duty-title-cell">
+          <div class="duty-title-wrap">
+            <span class="duty-drag" title="드래그해서 순서·대분류 이동">⠿</span>
+            ${dutyIsEditing('title', d.id)
+              ? dutyEditInputHtml(d.title, '업무명')
+              : `<span class="duty-title" onclick="dutyOpenEdit('title',${d.id})" title="클릭해서 수정">${escHtml(d.title)}</span>`}
+            ${g.noPrimary ? '<span class="duty-gap-badge p">정 없음</span>' : g.noBackup ? '<span class="duty-gap-badge b">부 없음</span>' : ''}
+          </div>
+        </td>
+        <td class="duty-freq-cell">
+          <select class="duty-freq-select" onchange="setDutyFreq(${d.id},this.value)">
+            <option value="" ${!d.frequency ? 'selected' : ''}>-</option>
+            ${freqOpts.map(f => `<option value="${escHtml(f)}" ${d.frequency === f ? 'selected' : ''}>${escHtml(f)}</option>`).join('')}
+          </select>
+        </td>
+        ${cols.map(m => {
+          const a = dutyAssigneeOf(d.id, m);
+          const busy = dutyBusyCells.has(d.id + '|' + m);
+          const color = dutyMemberColor(m);
+          const mark = a ? `<span class="duty-mark ${a.role}" style="--mc:${color}">${DUTY_ROLE_LABEL[a.role] || '?'}</span>` : '<span class="duty-mark empty">+</span>';
+          return `<td class="duty-cell ${busy ? 'busy' : ''}" data-m="${escHtml(m)}" onclick="cycleDutyRole(${d.id}, this.dataset.m)" title="${escHtml(m)}: 클릭해서 변경">${mark}</td>`;
+        }).join('')}
+        <td class="duty-note-cell">
+          ${dutyIsEditing('note', d.id)
+            ? dutyEditInputHtml(d.note, '비고')
+            : `<span class="duty-note ${d.note ? '' : 'empty'}" onclick="dutyOpenEdit('note',${d.id})" title="클릭해서 수정">${d.note ? escHtml(d.note) : '비고 추가'}</span>`}
+        </td>
+        <td class="duty-del-cell"><button class="duty-del" title="업무 삭제" onclick="deleteDuty(${d.id})">✕</button></td>
+      </tr>`;
+    });
+    if (cat && !filtering) {
+      body += dutyIsEditing('newDuty', cat.id)
+        ? `<tr class="duty-add-row"><td colspan="${colCount}"><div class="duty-add-inner">${dutyEditInputHtml('', '업무명 입력 후 Enter (연속 입력 가능, 빈칸에서 Enter로 마침)')}</div></td></tr>`
+        : `<tr class="duty-add-row"><td colspan="${colCount}"><button class="duty-add-btn" onclick="dutyOpenEdit('newDuty',${cat.id})">+ 업무 추가</button></td></tr>`;
+    }
+  });
+  if (dutyIsEditing('newCat', 0)) {
+    body += `<tr class="duty-cat-row"><td colspan="${colCount}"><div class="duty-cat-inner">${dutyEditInputHtml('', '새 대분류 이름 입력 후 Enter')}</div></td></tr>`;
+  }
+  if (!body) {
+    body = `<tr><td colspan="${colCount}" class="duty-empty">${filtering ? '조건에 맞는 업무가 없습니다.' : '대분류를 추가하거나 엑셀에서 붙여넣어 시작하세요.'}</td></tr>`;
+  }
+
+  const head = `<thead><tr>
+    <th class="duty-th-title">업무</th>
+    <th class="duty-th-freq">주기</th>
+    ${cols.map(m => `<th class="duty-th-member"><span class="duty-member-dot" style="background:${dutyMemberColor(m)}"></span>${escHtml(m)}${MEMBERS.includes(m) ? '' : ' <span class="duty-ex-member" title="팀원 목록에 없는 이름">?</span>'}</th>`).join('')}
+    <th class="duty-th-note">비고</th>
+    <th class="duty-th-del"></th>
+  </tr></thead>`;
+  const foot = `<tfoot><tr>
+    <td class="duty-title-cell duty-foot-label">담당 합계</td><td></td>
+    ${cols.map(m => {
+      const p = dutyAssignees.filter(a => a.member === m && a.role === 'primary').length;
+      const b = dutyAssignees.filter(a => a.member === m && a.role === 'backup').length;
+      return `<td class="duty-foot-cell"><b>정 ${p}</b><span>부 ${b}</span></td>`;
+    }).join('')}
+    <td colspan="2"></td>
+  </tr></tfoot>`;
+
+  dutyRendering = true;
+  try { table.innerHTML = head + `<tbody>${body}</tbody>` + foot; }
+  finally { dutyRendering = false; }
+
+  const label = document.getElementById('dutyCountLabel');
+  if (label) label.textContent = duties.length ? ` (${duties.length})` : '';
+  const summary = document.getElementById('dutySummary');
+  if (summary) {
+    summary.innerHTML = `<span>업무 <b>${duties.length}</b>개</span>
+      <button class="duty-chip warn-p ${dutyGapFilter === 'primary' ? 'active' : ''}" onclick="setDutyGapFilter('primary')">정 담당 없음 ${gapP}</button>
+      <button class="duty-chip warn-b ${dutyGapFilter === 'backup' ? 'active' : ''}" onclick="setDutyGapFilter('backup')">부 담당 없음 ${gapB}</button>`;
+  }
+  const notice = document.getElementById('dutyNotice');
+  if (notice) {
+    const down = [...dutyDownTables];
+    notice.innerHTML = (!useLocal && sbClient && down.length)
+      ? `<div class="duty-notice">⚠ Supabase에 업무분장 테이블(${down.map(escHtml).join(', ')})이 아직 없어 이 기기에만 저장됩니다. 관리자에게 테이블 생성을 요청하세요.</div>`
+      : '';
+  }
+
+  if (dutyEditing) {
+    const el = document.getElementById('dutyEditInput');
+    if (el) {
+      if (keep) {
+        el.value = keep.v;
+        if (keep.f) { el.focus(); try { el.setSelectionRange(keep.s, keep.e); } catch {} }
+      } else if (dutyEditing.fresh) { el.focus(); el.select(); }
+      dutyEditing.fresh = false;
+    }
+  }
+}
+
+function setDutyGapFilter(kind) {
+  dutyGapFilter = dutyGapFilter === kind ? null : kind;
+  renderDutyTab();
+}
+function toggleDutyCat(catId) {
+  if (dutyCollapsed.has(catId)) dutyCollapsed.delete(catId); else dutyCollapsed.add(catId);
+  renderDutyTab();
+}
+
+// ── 인라인 편집 ──
+function dutyOpenEdit(kind, id) {
+  dutyEditing = { kind, id, token: ++dutyEditSeq, fresh: true };
+  renderDutyTab();
+  if (kind === 'newCat') document.getElementById('dutyEditInput')?.scrollIntoView({ block:'nearest', behavior:'smooth' });
+}
+function dutyEditKey(e, el) {
+  if (e.isComposing || e.keyCode === 229) return; // 한글 조합 중 Enter는 무시 (중복 입력 방지)
+  if (e.key === 'Enter') { e.preventDefault(); commitDutyEdit(el, true); }
+  else if (e.key === 'Escape') { e.preventDefault(); cancelDutyEdit(); }
+}
+function cancelDutyEdit() {
+  dutyEditing = null;
+  renderDutyTab();
+}
+async function commitDutyEdit(el, viaEnter) {
+  if (dutyRendering) return;
+  const ed = dutyEditing;
+  // 다른 편집 세션의(이미 화면에서 사라진) 입력창에서 온 blur는 무시
+  if (!ed || !el || !el.isConnected || String(ed.token) !== el.dataset.token) return;
+  const val = el.value.trim();
+  dutyEditing = null;
+
+  if (ed.kind === 'newDuty') {
+    if (val && viaEnter) dutyOpenEdit('newDuty', ed.id); // 연속 입력
+    else renderDutyTab();
+    if (val) await addDuty(ed.id, val);
+  } else if (ed.kind === 'newCat') {
+    renderDutyTab();
+    if (val) await addDutyCat(val);
+  } else if (ed.kind === 'cat') {
+    const c = dutyCats.find(x => x.id === ed.id);
+    if (c && val && val !== c.name) {
+      const prev = c.name;
+      const p = dutyUpdate(DUTY_T.cat, c.id, { name: val });
+      renderDutyTab();
+      if (await p) await dutyLog('대분류 수정', `'${prev}' → '${val}'`);
+    }
+  } else if (ed.kind === 'title') {
+    const d = duties.find(x => x.id === ed.id);
+    if (d && val && val !== d.title) {
+      const prev = d.title;
+      const p = dutyUpdate(DUTY_T.duty, d.id, { title: val });
+      renderDutyTab();
+      if (await p) await dutyLog('업무 수정', `[${dutyCatName(d.category_id)}] '${prev}' → '${val}'`);
+    }
+  } else if (ed.kind === 'note') {
+    const d = duties.find(x => x.id === ed.id);
+    if (d && val !== (d.note || '')) {
+      const prev = d.note || '';
+      const p = dutyUpdate(DUTY_T.duty, d.id, { note: val });
+      renderDutyTab();
+      if (await p) await dutyLog('비고 수정', `[${d.title}] '${prev || '없음'}' → '${val || '없음'}'`);
+    }
+  }
+  renderDutyTab();
+}
+
+// ── 추가/수정/삭제 ──
+async function addDutyCat(name) {
+  if (dutyCats.some(c => c.name === name)) { showToast(`'${name}' 대분류가 이미 있습니다.`, 'error'); return; }
+  const maxOrder = dutyCats.reduce((m, c) => Math.max(m, c.sort_order ?? c.id ?? 0), 0);
+  const r = await dutyInsert(DUTY_T.cat, { name, sort_order: maxOrder + 1 });
+  renderDutyTab();
+  if (r) await dutyLog('대분류 추가', `'${name}'`);
+}
+async function addDuty(catId, title) {
+  const maxOrder = dutiesOfCat(catId).reduce((m, d) => Math.max(m, d.sort_order ?? d.id ?? 0), 0);
+  const r = await dutyInsert(DUTY_T.duty, { category_id: catId, title, frequency: '', note: '', sort_order: maxOrder + 1 });
+  renderDutyTab();
+  if (r) await dutyLog('업무 추가', `[${dutyCatName(catId)}] '${title}'`);
+}
+async function setDutyFreq(dutyId, freq) {
+  const d = duties.find(x => x.id === dutyId);
+  if (!d || (d.frequency || '') === freq) return;
+  const prev = d.frequency || '';
+  const ok = await dutyUpdate(DUTY_T.duty, dutyId, { frequency: freq });
+  renderDutyTab();
+  if (ok) await dutyLog('주기 변경', `[${d.title}] ${prev || '-'} → ${freq || '-'}`);
+}
+async function cycleDutyRole(dutyId, member) {
+  const d = duties.find(x => x.id === dutyId);
+  const key = dutyId + '|' + member;
+  if (!d || dutyBusyCells.has(key)) return;
+  const cur = dutyAssigneeOf(dutyId, member);
+  const from = cur ? cur.role : null;
+  const to = from === null ? 'primary' : from === 'primary' ? 'backup' : null;
+  dutyBusyCells.add(key);
+  renderDutyTab();
+  let ok;
+  try {
+    if (!cur) ok = !!(await dutyInsert(DUTY_T.asg, { duty_id: dutyId, member, role: to }));
+    else if (to) ok = await dutyUpdate(DUTY_T.asg, cur.id, { role: to });
+    else ok = await dutyDeleteRows(DUTY_T.asg, [cur.id]);
+  } finally {
+    dutyBusyCells.delete(key);
+  }
+  renderDutyTab();
+  if (ok) await dutyLog('담당 변경', `[${d.title}] ${member}: ${DUTY_ROLE_LABEL[from] || '없음'} → ${DUTY_ROLE_LABEL[to] || '없음'}`);
+}
+async function deleteDuty(dutyId) {
+  const d = duties.find(x => x.id === dutyId);
+  if (!d || !confirm(`'${d.title}' 업무를 삭제할까요?`)) return;
+  const asg = dutyAssignees.filter(a => a.duty_id === dutyId);
+  const who = asg.map(a => `${a.member}(${DUTY_ROLE_LABEL[a.role]})`).join(', ');
+  if (!(await dutyDeleteRows(DUTY_T.asg, asg.map(a => a.id)))) { renderDutyTab(); return; }
+  const ok = await dutyDeleteRows(DUTY_T.duty, [dutyId]);
+  renderDutyTab();
+  if (ok) await dutyLog('업무 삭제', `[${dutyCatName(d.category_id)}] '${d.title}'${who ? ' · 담당: ' + who : ''}`);
+}
+async function deleteDutyCat(catId) {
+  const c = dutyCats.find(x => x.id === catId);
+  if (!c) return;
+  const items = dutiesOfCat(catId);
+  const msg = items.length
+    ? `'${c.name}' 대분류와 그 안의 업무 ${items.length}개가 모두 삭제됩니다. 계속할까요?`
+    : `'${c.name}' 대분류를 삭제할까요?`;
+  if (!confirm(msg)) return;
+  const ids = new Set(items.map(d => d.id));
+  if (!(await dutyDeleteRows(DUTY_T.asg, dutyAssignees.filter(a => ids.has(a.duty_id)).map(a => a.id)))) { renderDutyTab(); return; }
+  if (!(await dutyDeleteRows(DUTY_T.duty, [...ids]))) { renderDutyTab(); return; }
+  const ok = await dutyDeleteRows(DUTY_T.cat, [catId]);
+  renderDutyTab();
+  if (ok) await dutyLog('대분류 삭제', `'${c.name}'${items.length ? ` (업무 ${items.length}개 포함: ${items.map(d => d.title).join(', ')})` : ''}`);
+}
+async function moveDutyCat(catId, dir) {
+  const list = dutyCatsSorted();
+  const i = list.findIndex(c => c.id === catId);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];
+  const changes = list.map((c, idx) => ({ c, order: idx + 1 })).filter(x => x.c.sort_order !== x.order);
+  await Promise.all(changes.map(x => dutyUpdate(DUTY_T.cat, x.c.id, { sort_order: x.order })));
+  renderDutyTab();
+}
+
+// ── 드래그로 순서/대분류 이동 ──
+function dutyDragStart(e, id) {
+  if (dutyEditing) { e.preventDefault(); return; }
+  dutyDragId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  try { e.dataTransfer.setData('text/plain', String(id)); } catch {}
+  e.currentTarget.classList.add('dragging');
+}
+function dutyDragEnd() {
+  dutyDragId = null;
+  document.querySelectorAll('.duty-table .dragging, .duty-table .drag-over').forEach(el => el.classList.remove('dragging', 'drag-over'));
+}
+function dutyDragOver(e, el) {
+  if (dutyDragId === null) return;
+  e.preventDefault();
+  el.classList.add('drag-over');
+}
+async function dutyMoveTo(dragId, catId, beforeId) {
+  const d = duties.find(x => x.id === dragId);
+  if (!d) return;
+  const fromCat = d.category_id;
+  const list = dutiesOfCat(catId).filter(x => x.id !== dragId);
+  const idx = beforeId === null ? list.length : Math.max(0, list.findIndex(x => x.id === beforeId));
+  list.splice(idx, 0, d);
+  const jobs = [];
+  list.forEach((x, i) => {
+    const patch = {};
+    if (x.sort_order !== i + 1) patch.sort_order = i + 1;
+    if (x.id === dragId && x.category_id !== catId) patch.category_id = catId;
+    if (Object.keys(patch).length) jobs.push(dutyUpdate(DUTY_T.duty, x.id, patch));
+  });
+  renderDutyTab();
+  await Promise.all(jobs);
+  renderDutyTab();
+  if (fromCat !== catId) await dutyLog('업무 이동', `'${d.title}': ${dutyCatName(fromCat)} → ${dutyCatName(catId)}`);
+}
+function dutyDropOnRow(e, targetId) {
+  e.preventDefault();
+  const dragId = dutyDragId;
+  dutyDragEnd();
+  if (dragId === null || dragId === targetId) return;
+  const target = duties.find(x => x.id === targetId);
+  if (!target) return;
+  const known = dutyCats.some(c => c.id === target.category_id);
+  if (!known) return;
+  dutyMoveTo(dragId, target.category_id, targetId);
+}
+function dutyDropOnCat(e, catId) {
+  e.preventDefault();
+  const dragId = dutyDragId;
+  dutyDragEnd();
+  if (dragId === null || catId === null) return;
+  dutyMoveTo(dragId, catId, null);
+}
+
+// ── 엑셀 내보내기 ──
+function dutyExportRows() {
+  const out = [];
+  const groups = dutyCatsSorted().map(c => ({ name: c.name, items: dutiesOfCat(c.id) }));
+  const orphans = dutiesOfCat(null);
+  if (orphans.length) groups.push({ name: '미분류', items: orphans });
+  groups.forEach(g => g.items.forEach(d => out.push({ cat: g.name, d })));
+  return out;
+}
+function exportDutyExcel() {
+  if (typeof XLSX === 'undefined') { showToast('엑셀 라이브러리를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.', 'error'); return; }
+  const rows = dutyExportRows();
+  if (!rows.length) { showToast('내보낼 업무가 없습니다.', 'error'); return; }
+  const list = [['대분류', '업무명', '정 담당', '부 담당', '주기', '비고']];
+  rows.forEach(({ cat, d }) => list.push([cat, d.title, dutyMembersOf(d.id, 'primary').join(', '), dutyMembersOf(d.id, 'backup').join(', '), d.frequency || '', d.note || '']));
+  const cols = dutyColumns();
+  const matrix = [['대분류', '업무명', ...cols]];
+  rows.forEach(({ cat, d }) => matrix.push([cat, d.title, ...cols.map(m => { const a = dutyAssigneeOf(d.id, m); return a ? DUTY_ROLE_LABEL[a.role] : ''; })]));
+  const ws1 = XLSX.utils.aoa_to_sheet(list);
+  ws1['!cols'] = [{ wch:16 }, { wch:34 }, { wch:16 }, { wch:16 }, { wch:8 }, { wch:30 }];
+  const ws2 = XLSX.utils.aoa_to_sheet(matrix);
+  ws2['!cols'] = [{ wch:16 }, { wch:34 }, ...cols.map(() => ({ wch:8 }))];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws1, '업무분장');
+  XLSX.utils.book_append_sheet(wb, ws2, '매트릭스');
+  const n = new Date();
+  XLSX.writeFile(wb, `업무분장_${n.getFullYear()}${String(n.getMonth() + 1).padStart(2, '0')}${String(n.getDate()).padStart(2, '0')}.xlsx`);
+}
+
+// ── 붙여넣기로 가져오기 ──
+const DUTY_PASTE_HEADERS = {
+  cat:     ['대분류', '분류', '구분', '카테고리', '업무분류'],
+  title:   ['업무명', '업무', '세부업무', '업무내용', '담당업무'],
+  primary: ['정', '정담당', '주담당', '담당자', '담당', '정담당자'],
+  backup:  ['부', '부담당', '대체', '대체자', '백업', '대행', '부담당자'],
+  freq:    ['주기', '빈도', '수행주기'],
+  note:    ['비고', '메모', '설명', '참고'],
+};
+function dutyNormFreq(s) {
+  const v = (s || '').trim();
+  if (!v) return '';
+  if (/상시/.test(v)) return '상시';
+  if (/수시/.test(v)) return '수시';
+  if (/분기/.test(v)) return '분기';
+  if (/반기/.test(v)) return '반기';
+  if (/^(매)?월|월간|월별|monthly/i.test(v)) return '월';
+  if (/^(매)?년|연간|연$|년$|매년|yearly|annual/i.test(v)) return '연';
+  return v;
+}
+function dutySplitNames(s) {
+  return [...new Set((s || '').replace(/\([^)]*\)/g, '').split(/[,\/·;、\n]+|\s{1,}/).map(x => x.trim()).filter(Boolean))];
+}
+function parseDutyPaste(text) {
+  const lines = (text || '').replace(/\r/g, '').split('\n').filter(l => l.trim());
+  if (!lines.length) return { rows: [] };
+  const cells = lines.map(l => l.split('\t').map(c => c.trim().replace(/^"|"$/g, '')));
+  const norm = s => s.replace(/\s+/g, '');
+  let map = null;
+  const first = cells[0].map(norm);
+  const hdr = {};
+  first.forEach((c, i) => {
+    for (const [k, names] of Object.entries(DUTY_PASTE_HEADERS)) {
+      if (hdr[k] === undefined && names.includes(c)) { hdr[k] = i; break; }
+    }
+  });
+  let dataRows = cells;
+  if (Object.keys(hdr).length >= 2 && hdr.title !== undefined) { map = hdr; dataRows = cells.slice(1); }
+  else {
+    const maxCols = Math.max(...cells.map(r => r.length));
+    map = maxCols === 1 ? { title: 0 } : { cat: 0, title: 1, primary: 2, backup: 3, freq: 4, note: 5 };
+  }
+  const get = (r, k) => map[k] === undefined ? '' : (r[map[k]] || '');
+  let lastCat = '';
+  const rows = [];
+  dataRows.forEach(r => {
+    const title = get(r, 'title');
+    let cat = get(r, 'cat');
+    if (cat) lastCat = cat; else cat = lastCat;
+    if (!title) return;
+    const primary = dutySplitNames(get(r, 'primary'));
+    const backup = dutySplitNames(get(r, 'backup')).filter(m => !primary.includes(m));
+    rows.push({ cat: cat || '미분류', title, primary, backup, freq: dutyNormFreq(get(r, 'freq')), note: get(r, 'note') });
+  });
+  return { rows };
+}
+function openDutyPasteModal() {
+  document.getElementById('dutyPasteInput').value = '';
+  document.getElementById('dutyPastePreview').innerHTML = '';
+  document.getElementById('dutyPasteSubmit').disabled = true;
+  dutyPasteParsed = null;
+  document.getElementById('dutyPasteModal').classList.add('open');
+  setTimeout(() => document.getElementById('dutyPasteInput').focus(), 80);
+}
+function closeDutyPasteModal() {
+  document.getElementById('dutyPasteModal').classList.remove('open');
+  dutyPasteParsed = null;
+  rerenderCurrentView();
+}
+function previewDutyPaste() {
+  const { rows } = parseDutyPaste(document.getElementById('dutyPasteInput').value);
+  const existingKeys = new Set(duties.map(d => dutyCatName(d.category_id) + '\u0001' + d.title));
+  const seen = new Set();
+  const catNames = new Set(dutyCats.map(c => c.name));
+  const newCats = new Set();
+  const unknown = new Set();
+  rows.forEach(r => {
+    const key = r.cat + '\u0001' + r.title;
+    r.dup = existingKeys.has(key) || seen.has(key);
+    seen.add(key);
+    if (!r.dup && !catNames.has(r.cat)) newCats.add(r.cat);
+    [...r.primary, ...r.backup].forEach(m => { if (!MEMBERS.includes(m)) unknown.add(m); });
+  });
+  const valid = rows.filter(r => !r.dup);
+  dutyPasteParsed = { rows: valid, newCats: [...newCats] };
+  const box = document.getElementById('dutyPastePreview');
+  document.getElementById('dutyPasteSubmit').disabled = !valid.length;
+  if (!rows.length) { box.innerHTML = ''; return; }
+  const nameHtml = arr => arr.map(m => `<span class="${MEMBERS.includes(m) ? '' : 'duty-unknown'}">${escHtml(m)}</span>`).join(', ');
+  box.innerHTML = `
+    <div class="duty-paste-summary">
+      가져올 업무 <b>${valid.length}</b>개
+      ${newCats.size ? ` · 새 대분류 <b>${newCats.size}</b>개 (${[...newCats].map(escHtml).join(', ')})` : ''}
+      ${rows.length - valid.length ? ` · 중복 건너뜀 <b>${rows.length - valid.length}</b>개` : ''}
+      ${unknown.size ? `<div class="duty-unknown-note">⚠ 팀원 목록에 없는 이름: ${[...unknown].map(escHtml).join(', ')} — 그대로 저장되고 표에 별도 열로 표시됩니다.</div>` : ''}
+    </div>
+    <div class="duty-paste-table-wrap"><table class="duty-paste-table">
+      <thead><tr><th>대분류</th><th>업무명</th><th>정</th><th>부</th><th>주기</th><th>비고</th><th></th></tr></thead>
+      <tbody>${rows.slice(0, 200).map(r => `<tr class="${r.dup ? 'dup' : ''}">
+        <td>${escHtml(r.cat)}${!r.dup && newCats.has(r.cat) ? ' <span class="duty-new-badge">새</span>' : ''}</td>
+        <td>${escHtml(r.title)}</td><td>${nameHtml(r.primary)}</td><td>${nameHtml(r.backup)}</td>
+        <td>${escHtml(r.freq)}</td><td>${escHtml(r.note)}</td><td>${r.dup ? '중복' : ''}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+    ${rows.length > 200 ? `<div class="duty-paste-more">… 외 ${rows.length - 200}행</div>` : ''}`;
+}
+async function submitDutyPaste() {
+  if (!dutyPasteParsed || !dutyPasteParsed.rows.length) return;
+  const btn = document.getElementById('dutyPasteSubmit');
+  btn.disabled = true; btn.textContent = '가져오는 중...';
+  try {
+    const { rows, newCats } = dutyPasteParsed;
+    let maxCatOrder = dutyCats.reduce((m, c) => Math.max(m, c.sort_order ?? c.id ?? 0), 0);
+    const createdCats = await dutyInsertRows(DUTY_T.cat, newCats.map(name => ({ name, sort_order: ++maxCatOrder })));
+    if (createdCats === null) return;
+    const catIdByName = new Map(dutyCats.map(c => [c.name, c.id]));
+    const nextOrder = new Map();
+    const dutyRows = rows.map(r => {
+      const catId = catIdByName.get(r.cat);
+      if (!nextOrder.has(catId)) nextOrder.set(catId, dutiesOfCat(catId).reduce((m, d) => Math.max(m, d.sort_order ?? d.id ?? 0), 0));
+      const order = nextOrder.get(catId) + 1;
+      nextOrder.set(catId, order);
+      return { category_id: catId, title: r.title, frequency: r.freq, note: r.note, sort_order: order };
+    });
+    const createdDuties = await dutyInsertRows(DUTY_T.duty, dutyRows);
+    if (createdDuties === null) return;
+    const idByKey = new Map(createdDuties.map(d => [d.category_id + '\u0001' + d.title, d.id]));
+    const asgRows = [];
+    rows.forEach(r => {
+      const id = idByKey.get(catIdByName.get(r.cat) + '\u0001' + r.title);
+      if (!id) return;
+      r.primary.forEach(m => asgRows.push({ duty_id: id, member: m, role: 'primary' }));
+      r.backup.forEach(m => asgRows.push({ duty_id: id, member: m, role: 'backup' }));
+    });
+    await dutyInsertRows(DUTY_T.asg, asgRows);
+    await dutyLog('붙여넣기 가져오기', `업무 ${createdDuties.length}개${createdCats.length ? `, 대분류 ${createdCats.length}개` : ''} 추가`);
+    showToast(`업무 ${createdDuties.length}개를 가져왔습니다.`);
+    closeDutyPasteModal();
+  } finally {
+    btn.textContent = '가져오기';
+    btn.disabled = !(dutyPasteParsed && dutyPasteParsed.rows.length);
+    renderDutyTab();
+  }
+}
+
+// ── 변경 이력 ──
+function openDutyHistoryModal() {
+  document.getElementById('dutyHistorySearch').value = '';
+  document.getElementById('dutyHistoryModal').classList.add('open');
+  renderDutyHistory();
+}
+function closeDutyHistoryModal() { document.getElementById('dutyHistoryModal').classList.remove('open'); }
+function renderDutyHistory() {
+  const box = document.getElementById('dutyHistoryList');
+  if (!box) return;
+  const q = (document.getElementById('dutyHistorySearch').value || '').trim().toLowerCase();
+  const list = [...dutyHistory]
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)) || (b.id - a.id))
+    .filter(h => !q || [h.actor, h.action, h.detail].join(' ').toLowerCase().includes(q))
+    .slice(0, 300);
+  if (!list.length) { box.innerHTML = `<div class="duty-history-empty">${q ? '검색 결과가 없습니다.' : '아직 변경 이력이 없습니다.'}</div>`; return; }
+  const fmt = s => {
+    const d = new Date(s);
+    if (isNaN(d)) return '';
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  };
+  box.innerHTML = list.map(h => `<div class="duty-history-item">
+    <div class="duty-history-meta"><span class="duty-history-time">${fmt(h.created_at)}</span><span class="duty-history-actor">${escHtml(h.actor || '')}</span><span class="duty-history-action">${escHtml(h.action || '')}</span></div>
+    <div class="duty-history-detail">${escHtml(h.detail || '')}</div>
+  </div>`).join('');
+}
+
 function isEditingOpen() {
   const tm = document.getElementById('taskModal');
   const em = document.getElementById('execEventModal');
@@ -9366,6 +10303,8 @@ function isEditingOpen() {
       || (pm && pm.classList.contains('open'))
       || (im && im.classList.contains('open'))
       || (idm && idm.classList.contains('open'))
+      || dutyEditing !== null
+      || document.getElementById('dutyPasteModal')?.classList.contains('open')
       || document.querySelector('.master-inline-form.open') !== null;
 }
 
@@ -9387,6 +10326,10 @@ function subscribeRealtime() {
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_routine_steps' },       scheduleRemoteRefresh)
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_routine_step_checks' }, scheduleRemoteRefresh)
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_routine_groups' },      scheduleRemoteRefresh)
+      .on('postgres_changes', { event:'*', schema:'public', table:'hr_duty_categories' },     scheduleRemoteRefresh)
+      .on('postgres_changes', { event:'*', schema:'public', table:'hr_duties' },              scheduleRemoteRefresh)
+      .on('postgres_changes', { event:'*', schema:'public', table:'hr_duty_assignees' },      scheduleRemoteRefresh)
+      .on('postgres_changes', { event:'*', schema:'public', table:'hr_duty_history' },        scheduleRemoteRefresh)
       .subscribe();
   } catch (err) { console.warn('[realtime] 구독 실패:', err); }
 }
@@ -9400,7 +10343,7 @@ async function remoteRefresh() {
   if (useLocal || !sbClient) return;
   try {
     const [t, ex, me, nt, pl, lv, cm, ix, rt, rc, rs, rsc, rg] = await Promise.all([
-      dbLoad(), loadExecEvents(), loadMasterEvents(), loadNotes(), loadPolicies(), loadLeaves(), loadComments(), loadInteractionsSafe(), loadRoutinesSafe(), loadRoutineChecksSafe(), loadRoutineStepsSafe(), loadRoutineStepChecksSafe(), loadRoutineGroupsSafe()
+      dbLoad(), loadExecEvents(), loadMasterEvents(), loadNotes(), loadPolicies(), loadLeaves(), loadComments(), loadInteractionsSafe(), loadRoutinesSafe(), loadRoutineChecksSafe(), loadRoutineStepsSafe(), loadRoutineStepChecksSafe(), loadRoutineGroupsSafe(), loadDutyData()
     ]);
     tasks = t; execEvents = ex; masterEvents = me; notes = nt; policies = pl; leaves = lv; noteComments = cm; interactions = ix; routines = rt; routineChecks = rc; routineSteps = rs; routineStepChecks = rsc; routineGroups = rg;
     rerenderCurrentView();
@@ -9418,6 +10361,8 @@ function rerenderCurrentView() {
   if (visible('view-memo')) renderMemoTab();
   if (visible('view-policy')) renderPolicyTab();
   if (visible('view-network')) renderInteractionTab();
+  if (visible('view-duty')) renderDutyTab();
+  if (document.getElementById('dutyHistoryModal')?.classList.contains('open')) renderDutyHistory();
   const mc = document.getElementById('masterCalModal');
   if (mc && mc.style.display !== 'none') renderMasterCalPage();
   renderRoutinePanel();
