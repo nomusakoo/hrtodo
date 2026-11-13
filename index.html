@@ -1526,10 +1526,10 @@
   .duty-table td.focus{background:#f6f8fc;}
   .duty-table .dim{opacity:.35;}
   .duty-title-cell.has-memo::after{content:'';position:absolute;top:0;right:0;width:0;height:0;border-style:solid;border-width:0 9px 9px 0;border-color:transparent #e5484d transparent transparent;}
-  .duty-memo-btn{background:none;border:none;cursor:pointer;font-size:12px;padding:1px 3px;border-radius:4px;opacity:0;filter:grayscale(1);transition:opacity .15s,filter .15s,background .15s;margin-left:auto;flex-shrink:0;}
-  .duty-memo-btn.on{opacity:.9;filter:none;}
+  .duty-memo-btn{display:inline-flex;align-items:center;justify-content:center;gap:3px;min-width:58px;padding:3px 12px;margin-left:auto;flex-shrink:0;background:#fff;border:1px solid var(--border);border-radius:999px;cursor:pointer;font-size:11.5px;font-weight:600;font-family:var(--font);color:var(--gray-500);white-space:nowrap;opacity:0;transition:opacity .15s,background .15s,border-color .15s,color .15s;}
+  .duty-memo-btn.on{opacity:1;background:#fffbe6;border-color:#e9d27a;color:#7a5c00;}
   .duty-row:hover .duty-memo-btn{opacity:1;}
-  .duty-memo-btn:hover{background:var(--gray-100);filter:none;}
+  .duty-memo-btn:hover{background:#fff3c4;border-color:#d4b84a;color:#7a5c00;}
   .duty-memo-tip{position:fixed;z-index:400;max-width:320px;min-width:180px;background:#fffbe6;border:1px solid #e9d27a;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:9px 12px 8px;pointer-events:none;opacity:0;transform:translateY(3px);transition:opacity .14s ease,transform .14s ease;visibility:hidden;}
   .duty-memo-tip.show{opacity:1;transform:none;visibility:visible;}
   .duty-memo-tip-head{font-size:11.5px;font-weight:700;color:#7a5c00;margin-bottom:5px;padding-bottom:5px;border-bottom:1px dashed #e9d27a;}
@@ -9992,7 +9992,7 @@ function renderDutyTab() {
               ? dutyEditInputHtml(d.title, '업무명')
               : `<span class="duty-title" onclick="dutyOpenEdit('title',${d.id})" title="클릭해서 수정">${escHtml(d.title)}</span>`}
             ${g.noPrimary ? '<span class="duty-gap-badge p">정 없음</span>' : g.noBackup ? '<span class="duty-gap-badge b">부 없음</span>' : ''}
-            <button class="duty-memo-btn ${d.memo ? 'on' : ''}" title="${d.memo ? '메모 보기·수정' : '메모 추가'}" onclick="event.stopPropagation();openDutyMemo(${d.id},this)">📝</button>
+            <button class="duty-memo-btn ${d.memo ? 'on' : ''}" title="${d.memo ? '메모 보기·수정' : '메모 추가'}" onclick="event.stopPropagation();openDutyMemo(${d.id},this)">📝 메모</button>
           </div>
         </td>
         <td class="duty-freq-cell">
