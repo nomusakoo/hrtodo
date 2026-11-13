@@ -66,10 +66,15 @@
   .main-content{flex:1;padding:28px 32px;min-width:0;}
 
   /* TABS */
-  .tab-bar{display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:24px;position:sticky;top:58px;z-index:90;background:var(--gray-50);padding-top:6px;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
-  .tab-btn{padding:9px 20px;background:none;border:none;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--gray-500);position:relative;bottom:-2px;border-bottom:2px solid transparent;font-family:var(--font);transition:color 0.15s;display:flex;align-items:center;gap:7px;}
-  .tab-btn:hover{color:var(--gray-800);}
-  .tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .tab-bar{display:flex;gap:2px;margin-bottom:24px;position:sticky;top:58px;z-index:90;background:rgba(255,255,255,0.94);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);padding:5px;border:1px solid var(--border);border-radius:12px;box-shadow:0 4px 16px rgba(26,26,46,0.07);}
+  .tab-btn{padding:8px 18px;background:none;border:none;border-radius:9px;cursor:pointer;font-size:13.5px;font-weight:500;color:var(--gray-500);position:relative;z-index:1;font-family:var(--font);transition:color .28s ease,background .15s ease;display:flex;align-items:center;gap:7px;white-space:nowrap;}
+  .tab-btn:hover{color:var(--gray-800);background:var(--gray-100);}
+  .tab-btn.active,.tab-btn.active:hover{color:#fff;font-weight:600;background:transparent;}
+  .tab-bar:not(.has-indicator) .tab-btn.active{background:var(--primary);}
+  .tab-indicator{position:absolute;top:0;left:0;width:0;height:0;border-radius:9px;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-mid) 100%);box-shadow:0 4px 12px rgba(26,26,46,0.28),inset 0 1px 0 rgba(255,255,255,0.12);z-index:0;pointer-events:none;opacity:0;
+    transition:transform .42s cubic-bezier(.34,1.32,.64,1),width .42s cubic-bezier(.34,1.32,.64,1),height .3s ease,opacity .2s ease;}
+  .tab-indicator::after{content:'';position:absolute;left:50%;bottom:-6px;width:5px;height:5px;margin-left:-2.5px;border-radius:50%;background:var(--accent);opacity:.9;}
+  .tab-indicator.no-anim{transition:none;}
 
   /* PAGE HEADER */
   .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
@@ -794,8 +799,10 @@
     .app-header{padding:0 14px;}
     .app-header .brand{font-size:13px;}
     .today-badge{display:none;}
-    .tab-bar{gap:0;overflow-x:auto;padding-bottom:2px;top:48px;}
-    .tab-btn{padding:8px 14px;font-size:12px;white-space:nowrap;}
+    .tab-bar{gap:0;overflow-x:auto;padding:4px;top:48px;border-radius:10px;scrollbar-width:none;}
+    .tab-bar::-webkit-scrollbar{display:none;}
+    .tab-btn{padding:7px 13px;font-size:12px;white-space:nowrap;}
+    .tab-indicator::after{display:none;}
     .toolbar{flex-wrap:wrap;gap:6px;}
     .toolbar input{width:100%;min-width:0;}
     .toolbar select{flex:1;min-width:0;}
@@ -1497,6 +1504,27 @@
   .duty-tl-cell.on:hover{opacity:1;}
   .duty-tl-cell.now::after{content:'';position:absolute;top:-3px;bottom:-3px;left:50%;width:2px;margin-left:-1px;background:var(--danger);border-radius:1px;opacity:.75;}
   .duty-tl-grid.painting{cursor:crosshair;}
+  .duty-people{margin:-2px 0 12px;}
+  .duty-people-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .duty-people-label{font-size:12px;font-weight:600;color:var(--gray-500);margin-right:2px;}
+  .duty-person{display:inline-flex;align-items:center;gap:6px;padding:4px 11px 4px 4px;border:1px solid var(--border);border-radius:999px;background:#fff;cursor:pointer;font-family:var(--font);font-size:12.5px;color:var(--gray-700);transition:all .18s ease;}
+  .duty-person.all{padding:5px 13px;font-weight:600;}
+  .duty-person:hover{border-color:var(--pc,var(--gray-400));box-shadow:0 2px 8px rgba(0,0,0,.06);}
+  .duty-person-avatar{width:22px;height:22px;border-radius:50%;background:var(--pc);color:#fff;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;}
+  .duty-person-name{font-weight:600;}
+  .duty-person-count{font-size:11px;color:var(--gray-400);}
+  .duty-person.active{background:var(--pc,var(--primary));border-color:var(--pc,var(--primary));color:#fff;box-shadow:0 3px 10px rgba(0,0,0,.14);}
+  .duty-person.all.active{background:var(--primary);border-color:var(--primary);}
+  .duty-person.active .duty-person-avatar{background:#fff;color:var(--pc);}
+  .duty-person.active .duty-person-count{color:rgba(255,255,255,.8);}
+  .duty-person-detail{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:8px;padding-left:2px;}
+  .duty-role-seg{display:inline-flex;background:var(--gray-100);border-radius:8px;padding:2px;}
+  .duty-role-seg button{border:none;background:none;padding:4px 12px;font-size:12px;font-family:var(--font);color:var(--gray-500);border-radius:6px;cursor:pointer;transition:all .15s;}
+  .duty-role-seg button.active{background:#fff;color:var(--gray-800);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.1);}
+  .duty-person-stat{font-size:12.5px;color:var(--gray-600);}
+  .duty-table th.focus{color:var(--gray-800);background:#eef2f8;}
+  .duty-table td.focus{background:#f6f8fc;}
+  .duty-table .dim{opacity:.35;}
   .duty-paste-modal{width:760px;}
   .duty-paste-help{font-size:12px;color:var(--gray-600);background:var(--gray-50);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;line-height:1.7;}
   .duty-paste-summary{font-size:12.5px;color:var(--gray-700);margin:10px 0 6px;}
@@ -1923,6 +1951,7 @@
         <div class="duty-summary" id="dutySummary"></div>
         <div class="duty-legend"><span class="duty-mark primary sample">정</span>정 담당 <span class="duty-mark backup sample">부</span>부 담당 · 칸을 클릭하면 없음 → 정 → 부 순으로 바뀝니다</div>
       </div>
+      <div class="duty-people" id="dutyPeople"></div>
       <div id="dutyNotice"></div>
       <div class="duty-table-wrap"><table class="duty-table" id="dutyTable"></table></div>
     </div><!-- /view-duty -->
@@ -3232,8 +3261,28 @@ function renderTabBar() {
     const m = TAB_META.find(x => x.id === t.id);
     if (!m) return '';
     return `<button class="tab-btn" id="tab-${t.id}" onclick="switchTab('${t.id}')">${labels[t.id]||m.label}</button>`;
-  }).join('');
+  }).join('') + '<span class="tab-indicator no-anim" id="tabIndicator"></span>';
+  bar.classList.add('has-indicator');
+  // 설정 저장 등으로 탭바를 다시 그려도 현재 탭 표시가 사라지지 않게 유지
+  const cur = typeof _lastTabId !== 'undefined' && _lastTabId && document.getElementById('tab-' + _lastTabId);
+  if (cur) { cur.classList.add('active'); positionTabIndicator(false); }
 }
+
+// 선택된 탭 뒤로 미끄러지는 알약 표시
+function positionTabIndicator(animate = true) {
+  const bar = document.querySelector('.tab-bar');
+  const ind = document.getElementById('tabIndicator');
+  if (!bar || !ind) return;
+  const btn = bar.querySelector('.tab-btn.active');
+  if (!btn || !btn.offsetWidth) { ind.style.opacity = '0'; return; }
+  ind.classList.toggle('no-anim', !animate || !ind.dataset.placed);
+  ind.style.width = btn.offsetWidth + 'px';
+  ind.style.height = btn.offsetHeight + 'px';
+  ind.style.transform = `translate(${btn.offsetLeft}px, ${btn.offsetTop}px)`;
+  ind.style.opacity = '1';
+  ind.dataset.placed = '1';
+}
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => positionTabIndicator(false));
 
 // ── 모바일 네비 동적 렌더링 ──
 function renderMobileNav() {
@@ -3279,6 +3328,7 @@ function switchTab(tab, animate = true) {
     const mnav = document.getElementById('mnav-' + t);
     if (mnav) mnav.className = 'mobile-nav-btn' + (t === tab ? ' active' : '');
   });
+  positionTabIndicator(animate);
 
   // 방향 계산 (이전 탭 대비)
   const prevIdx = _lastTabId ? visibleIds.indexOf(_lastTabId) : -1;
@@ -9818,7 +9868,8 @@ function renderDutyTab() {
 
   const cols = dutyColumns();
   const q = dutySearch.trim().toLowerCase();
-  const filtering = !!q || !!dutyGapFilter;
+  const focusM = dutyMemberFilter && dutyColumns().includes(dutyMemberFilter) ? dutyMemberFilter : null;
+  const filtering = !!q || !!dutyGapFilter || !!focusM;
   const colCount = cols.length + 4;
 
   const groups = dutyCatsSorted().map(c => ({ cat: c, items: dutiesOfCat(c.id) }));
@@ -9835,6 +9886,10 @@ function renderDutyTab() {
     const visibleItems = items.filter(d => {
       if (dutyGapFilter === 'primary' && !dutyGapOf(d).noPrimary) return false;
       if (dutyGapFilter === 'backup' && !dutyGapOf(d).noBackup) return false;
+      if (focusM) {
+        const a = dutyAssigneeOf(d.id, focusM);
+        if (!a || (dutyMemberRole !== 'all' && a.role !== dutyMemberRole)) return false;
+      }
       return catMatch || dutyMatchesSearch(d, q);
     });
     if (filtering && !visibleItems.length) return;
@@ -9886,7 +9941,7 @@ function renderDutyTab() {
           const busy = dutyBusyCells.has(d.id + '|' + m);
           const color = dutyMemberColor(m);
           const mark = a ? `<span class="duty-mark ${a.role}" style="--mc:${color}">${DUTY_ROLE_LABEL[a.role] || '?'}</span>` : '<span class="duty-mark empty">+</span>';
-          return `<td class="duty-cell ${busy ? 'busy' : ''}" data-m="${escHtml(m)}" onclick="cycleDutyRole(${d.id}, this.dataset.m)" title="${escHtml(m)}: 클릭해서 변경">${mark}</td>`;
+          return `<td class="duty-cell ${busy ? 'busy' : ''} ${focusM ? (m === focusM ? 'focus' : 'dim') : ''}" data-m="${escHtml(m)}" onclick="cycleDutyRole(${d.id}, this.dataset.m)" title="${escHtml(m)}: 클릭해서 변경">${mark}</td>`;
         }).join('')}
         <td class="duty-note-cell">
           ${dutyIsEditing('note', d.id)
@@ -9913,7 +9968,7 @@ function renderDutyTab() {
   const head = `<thead><tr>
     <th class="duty-th-title">업무</th>
     <th class="duty-th-freq">주기</th>
-    ${cols.map(m => `<th class="duty-th-member"><span class="duty-member-dot" style="background:${dutyMemberColor(m)}"></span>${escHtml(m)}${MEMBERS.includes(m) ? '' : ' <span class="duty-ex-member" title="팀원 목록에 없는 이름">?</span>'}</th>`).join('')}
+    ${cols.map(m => `<th class="duty-th-member ${focusM ? (m === focusM ? 'focus' : 'dim') : ''}"><span class="duty-member-dot" style="background:${dutyMemberColor(m)}"></span>${escHtml(m)}${MEMBERS.includes(m) ? '' : ' <span class="duty-ex-member" title="팀원 목록에 없는 이름">?</span>'}</th>`).join('')}
     <th class="duty-th-note">비고</th>
     <th class="duty-th-del"></th>
   </tr></thead>`;
@@ -9922,7 +9977,7 @@ function renderDutyTab() {
     ${cols.map(m => {
       const p = dutyAssignees.filter(a => a.member === m && a.role === 'primary').length;
       const b = dutyAssignees.filter(a => a.member === m && a.role === 'backup').length;
-      return `<td class="duty-foot-cell"><b>정 ${p}</b><span>부 ${b}</span></td>`;
+      return `<td class="duty-foot-cell ${focusM ? (m === focusM ? 'focus' : 'dim') : ''}"><b>정 ${p}</b><span>부 ${b}</span></td>`;
     }).join('')}
     <td colspan="2"></td>
   </tr></tfoot>`;
@@ -9936,6 +9991,7 @@ function renderDutyTab() {
 
   const label = document.getElementById('dutyCountLabel');
   if (label) label.textContent = duties.length ? ` (${duties.length})` : '';
+  renderDutyPeople(cols, focusM);
   const summary = document.getElementById('dutySummary');
   if (summary) {
     summary.innerHTML = `<span>업무 <b>${duties.length}</b>개</span>
@@ -9960,6 +10016,49 @@ function renderDutyTab() {
       dutyEditing.fresh = false;
     }
   }
+}
+
+// ── 사람별 보기 ──
+let dutyMemberFilter = null;  // 선택한 팀원 이름
+let dutyMemberRole = 'all';   // 'all' | 'primary' | 'backup'
+function setDutyMemberFilter(name) {
+  dutyMemberFilter = (name && dutyMemberFilter !== name) ? name : null;
+  dutyMemberRole = 'all';
+  renderDutyTab();
+}
+function setDutyMemberRole(role) { dutyMemberRole = role; renderDutyTab(); }
+function renderDutyPeople(cols, focusM) {
+  const box = document.getElementById('dutyPeople');
+  if (!box) return;
+  const nowM = new Date().getMonth() + 1;
+  const chips = cols.map(m => {
+    const mine = dutyAssignees.filter(a => a.member === m);
+    const p = mine.filter(a => a.role === 'primary').length;
+    const b = mine.filter(a => a.role === 'backup').length;
+    const color = dutyMemberColor(m);
+    return `<button class="duty-person ${focusM === m ? 'active' : ''}" style="--pc:${color}" data-m="${escHtml(m)}" onclick="setDutyMemberFilter(this.dataset.m)">
+      <span class="duty-person-avatar">${escHtml(m.charAt(0))}</span>
+      <span class="duty-person-name">${escHtml(m)}</span>
+      <span class="duty-person-count">정 ${p} · 부 ${b}</span>
+    </button>`;
+  }).join('');
+  let detail = '';
+  if (focusM) {
+    const mine = dutyAssignees.filter(a => a.member === focusM);
+    const ids = new Set(mine.filter(a => dutyMemberRole === 'all' || a.role === dutyMemberRole).map(a => a.duty_id));
+    const thisMonth = duties.filter(d => ids.has(d.id) && dutyMonthsOf(d).includes(nowM)).length;
+    detail = `<div class="duty-person-detail">
+      <div class="duty-role-seg">
+        ${[['all', '정+부'], ['primary', '정만'], ['backup', '부만']].map(([k, l]) => `<button class="${dutyMemberRole === k ? 'active' : ''}" onclick="setDutyMemberRole('${k}')">${l}</button>`).join('')}
+      </div>
+      <span class="duty-person-stat"><b>${escHtml(focusM)}</b>님 업무 ${ids.size}개 · 이번 달(${nowM}월) 진행 ${thisMonth}개</span>
+    </div>`;
+  }
+  box.innerHTML = `<div class="duty-people-row">
+      <span class="duty-people-label">👤 사람별 보기</span>
+      <button class="duty-person all ${focusM ? '' : 'active'}" onclick="setDutyMemberFilter(null)">전체</button>
+      ${chips}
+    </div>${detail}`;
 }
 
 function setDutyGapFilter(kind) {
