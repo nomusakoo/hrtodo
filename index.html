@@ -1475,6 +1475,28 @@
   .duty-foot-label{font-weight:600;color:var(--gray-600);}
   .duty-foot-cell{text-align:center;white-space:nowrap;color:var(--gray-600);}
   .duty-foot-cell b{color:var(--gray-800);margin-right:5px;}
+  .duty-tl-toggle.active{background:var(--accent-bg);border-color:var(--accent);color:var(--accent);}
+  .duty-table.with-tl .duty-row td{border-bottom:none;}
+  .duty-tl-row td{padding:0 8px 7px;}
+  .duty-tl-label-cell{padding-left:34px !important;white-space:nowrap;}
+  .duty-tl-label{font-size:11.5px;color:var(--gray-600);}
+  .duty-tl-label.empty{color:var(--gray-300);}
+  .duty-tl-row:hover .duty-tl-label.empty{color:var(--gray-400);}
+  .duty-tl-clear{background:none;border:none;cursor:pointer;font-size:11px;color:var(--gray-300);font-family:var(--font);margin-left:4px;opacity:0;}
+  .duty-tl-row:hover .duty-tl-clear{opacity:1;}
+  .duty-tl-clear:hover{color:var(--danger);}
+  .duty-tl-grid{display:grid;grid-template-columns:repeat(12,minmax(22px,1fr));height:18px;background:var(--gray-50);border-radius:5px;cursor:pointer;user-select:none;touch-action:none;min-width:300px;}
+  .duty-tl-cell{position:relative;display:flex;align-items:center;justify-content:center;border-left:1px solid #fff;}
+  .duty-tl-cell:first-child{border-left:none;}
+  .duty-tl-cell span{font-size:9.5px;color:var(--gray-300);pointer-events:none;position:relative;z-index:1;}
+  .duty-tl-cell:hover{background:var(--gray-200);}
+  .duty-tl-cell.on{background:var(--tc);border-left-color:transparent;opacity:.85;}
+  .duty-tl-cell.on span{color:#fff;font-weight:600;}
+  .duty-tl-cell.on.start{border-top-left-radius:5px;border-bottom-left-radius:5px;}
+  .duty-tl-cell.on.end{border-top-right-radius:5px;border-bottom-right-radius:5px;}
+  .duty-tl-cell.on:hover{opacity:1;}
+  .duty-tl-cell.now::after{content:'';position:absolute;top:-3px;bottom:-3px;left:50%;width:2px;margin-left:-1px;background:var(--danger);border-radius:1px;opacity:.75;}
+  .duty-tl-grid.painting{cursor:crosshair;}
   .duty-paste-modal{width:760px;}
   .duty-paste-help{font-size:12px;color:var(--gray-600);background:var(--gray-50);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;line-height:1.7;}
   .duty-paste-summary{font-size:12.5px;color:var(--gray-700);margin:10px 0 6px;}
@@ -1889,6 +1911,7 @@
       <div class="page-header">
         <div class="page-title">업무분장<span id="dutyCountLabel"></span></div>
         <div class="duty-header-actions">
+          <button class="btn btn-sm duty-tl-toggle" id="dutyTlToggle" onclick="toggleDutyTimeline()">&#128202; 시기 보기</button>
           <button class="btn btn-sm" onclick="openDutyHistoryModal()">&#128337; 변경 이력</button>
           <button class="btn btn-sm" onclick="exportDutyExcel()">&#11015; 엑셀 내보내기</button>
           <button class="btn btn-sm" onclick="openDutyPasteModal()">&#128203; 붙여넣기로 가져오기</button>
@@ -2082,7 +2105,7 @@
     </div>
     <div class="duty-paste-help">
       엑셀에서 표를 복사(Ctrl+C)해서 아래에 붙여넣으세요.<br>
-      열 순서: <b>대분류 · 업무명 · 정 담당 · 부 담당 · 주기 · 비고</b> (첫 줄에 머리글이 있으면 머리글 이름으로 자동 인식)<br>
+      열 순서: <b>대분류 · 업무명 · 정 담당 · 부 담당 · 주기 · 비고 · 시기</b> (시기 예: 3~4월, 12월 / 비워두면 주기에 맞춰 자동) (첫 줄에 머리글이 있으면 머리글 이름으로 자동 인식)<br>
       담당자가 여러 명이면 쉼표(,)나 슬래시(/)로 구분하세요. 대분류 칸이 비어 있으면 바로 위 행의 대분류를 이어 씁니다.
     </div>
     <textarea class="form-textarea" id="dutyPasteInput" rows="7" oninput="previewDutyPaste()" placeholder="대분류	업무명	정 담당	부 담당	주기	비고&#10;급여·4대보험	월 급여 계산 및 지급	구우회	이호동	월	매월 25일"></textarea>
@@ -9626,17 +9649,51 @@ async function loadDutyData() {
   try {
     const [c, d, a, h] = await Promise.all([DUTY_T.cat, DUTY_T.duty, DUTY_T.asg, DUTY_T.hist].map(dutyLoadTable));
     if (c) { dutyCats = c; dutyCatsLoaded = true; }
-    if (d) duties = d;
+    if (d) { duties = d; dutyApplyMonthsOverlay(); }
     if (a) dutyAssignees = a;
     if (h) dutyHistory = h;
   } catch (e) { console.warn('[duty] 로드 예외:', e); }
 }
 
+// ── 업무 시기(months) 컬럼이 아직 없을 때: 이 기기에만 보관하는 보조 저장소 ──
+let dutyMonthsColMissing = false;
+const DUTY_MONTHS_LOCAL_KEY = 'hr_duty_months_local';
+function dutyMonthsOverlay() {
+  try { const o = JSON.parse(localStorage.getItem(DUTY_MONTHS_LOCAL_KEY)); return o && typeof o === 'object' ? o : {}; } catch { return {}; }
+}
+function dutyMonthsOverlaySave(id, months) {
+  const o = dutyMonthsOverlay(); o[id] = months || '';
+  try { localStorage.setItem(DUTY_MONTHS_LOCAL_KEY, JSON.stringify(o)); } catch {}
+}
+function dutyApplyMonthsOverlay() {
+  const o = dutyMonthsOverlay();
+  duties.forEach(d => { if (d.months === undefined && o[d.id] !== undefined) d.months = o[d.id]; });
+}
+function dutyMarkMonthsMissing(error) {
+  console.warn('[duty] hr_duties.months 컬럼 없음 — 업무 시기는 이 기기에만 저장:', error && error.message);
+  if (!dutyMonthsColMissing) showToast("'업무 시기' 컬럼이 아직 Supabase에 없어 시기 표시는 이 기기에만 저장됩니다.", 'error');
+  dutyMonthsColMissing = true;
+}
+function dutyStripMonths(obj) { const { months, ...rest } = obj; return rest; }
+
 async function dutyInsertRows(t, rows, label = '업무분장 저장') {
   if (!rows.length) return [];
   if (dutyRemote(t)) {
-    const { data, error } = await sbClient.from(t).insert(rows).select();
-    if (!error && Array.isArray(data)) { dutySet(t, dutyGet(t).concat(data)); return data; }
+    const hasMonths = t === DUTY_T.duty && rows.some(r => 'months' in r);
+    const send = (hasMonths && dutyMonthsColMissing) ? rows.map(dutyStripMonths) : rows;
+    let { data, error } = await sbClient.from(t).insert(send).select();
+    if (error && hasMonths && !dutyMonthsColMissing && isMissingColumnErr(error, 'months')) {
+      dutyMarkMonthsMissing(error);
+      ({ data, error } = await sbClient.from(t).insert(rows.map(dutyStripMonths)).select());
+    }
+    if (!error && Array.isArray(data)) {
+      if (hasMonths && dutyMonthsColMissing) {
+        const byKey = new Map(rows.map(r => [r.category_id + '\u0001' + r.title, r.months || '']));
+        data.forEach(d => { const m = byKey.get(d.category_id + '\u0001' + d.title); if (m !== undefined) { d.months = m; dutyMonthsOverlaySave(d.id, m); } });
+      }
+      dutySet(t, dutyGet(t).concat(data));
+      return data;
+    }
     if (!isMissingTableErr(error)) { showToast(`${label} 오류: ` + ((error && error.message) || ''), 'error'); return null; }
     dutyMarkDown(t, error);
   }
@@ -9657,7 +9714,20 @@ async function dutyUpdate(t, id, patch) {
   const prev = { ...item };
   Object.assign(item, patch);
   if (dutyRemote(t)) {
-    const { error } = await sbClient.from(t).update(patch).eq('id', id);
+    let send = patch;
+    if (t === DUTY_T.duty && 'months' in patch && dutyMonthsColMissing) {
+      dutyMonthsOverlaySave(id, patch.months);
+      send = dutyStripMonths(patch);
+      if (!Object.keys(send).length) return true;
+    }
+    let { error } = await sbClient.from(t).update(send).eq('id', id);
+    if (error && t === DUTY_T.duty && 'months' in send && isMissingColumnErr(error, 'months')) {
+      dutyMarkMonthsMissing(error);
+      dutyMonthsOverlaySave(id, patch.months);
+      send = dutyStripMonths(send);
+      if (!Object.keys(send).length) return true;
+      ({ error } = await sbClient.from(t).update(send).eq('id', id));
+    }
     if (!error) return true;
     if (!isMissingTableErr(error)) {
       Object.assign(item, prev);
@@ -9825,6 +9895,7 @@ function renderDutyTab() {
         </td>
         <td class="duty-del-cell"><button class="duty-del" title="업무 삭제" onclick="deleteDuty(${d.id})">✕</button></td>
       </tr>`;
+      if (dutyShowTimeline) body += dutyTimelineRowHtml(d, g, cols.length + 3);
     });
     if (cat && !filtering) {
       body += dutyIsEditing('newDuty', cat.id)
@@ -9859,6 +9930,9 @@ function renderDutyTab() {
   dutyRendering = true;
   try { table.innerHTML = head + `<tbody>${body}</tbody>` + foot; }
   finally { dutyRendering = false; }
+  table.classList.toggle('with-tl', dutyShowTimeline);
+  const tlBtn = document.getElementById('dutyTlToggle');
+  if (tlBtn) tlBtn.classList.toggle('active', dutyShowTimeline);
 
   const label = document.getElementById('dutyCountLabel');
   if (label) label.textContent = duties.length ? ` (${duties.length})` : '';
@@ -9973,9 +10047,142 @@ async function setDutyFreq(dutyId, freq) {
   const d = duties.find(x => x.id === dutyId);
   if (!d || (d.frequency || '') === freq) return;
   const prev = d.frequency || '';
-  const ok = await dutyUpdate(DUTY_T.duty, dutyId, { frequency: freq });
+  const patch = { frequency: freq };
+  // 시기가 아직 비어 있을 때만 주기에 맞춰 자동으로 채움(직접 칠한 시기는 덮어쓰지 않음)
+  const auto = !dutyMonthsOf(d).length ? dutyAutoMonths(freq) : [];
+  if (auto.length) patch.months = dutyMonthsStr(auto);
+  const ok = await dutyUpdate(DUTY_T.duty, dutyId, patch);
   renderDutyTab();
-  if (ok) await dutyLog('주기 변경', `[${d.title}] ${prev || '-'} → ${freq || '-'}`);
+  if (ok) await dutyLog('주기 변경', `[${d.title}] ${prev || '-'} → ${freq || '-'}${auto.length ? ` (시기 자동: ${dutyMonthsLabel(auto)})` : ''}`);
+}
+
+// ── 업무 시기(월 단위 간트) ──
+let dutyShowTimeline = (() => { try { return localStorage.getItem('hr_duty_show_tl') !== '0'; } catch { return true; } })();
+let dutyPaint = null; // { id, mode:'add'|'remove', start, base:Set, cur:Set, grid }
+function toggleDutyTimeline() {
+  dutyShowTimeline = !dutyShowTimeline;
+  try { localStorage.setItem('hr_duty_show_tl', dutyShowTimeline ? '1' : '0'); } catch {}
+  renderDutyTab();
+}
+function dutyMonthsOf(d) {
+  return [...new Set(String(d.months || '').split(',').map(x => parseInt(x, 10)).filter(m => m >= 1 && m <= 12))].sort((a, b) => a - b);
+}
+function dutyMonthsStr(arr) { return [...new Set(arr)].sort((a, b) => a - b).join(','); }
+function dutyAutoMonths(freq) {
+  if (freq === '월') return [1,2,3,4,5,6,7,8,9,10,11,12];
+  if (freq === '분기') return [3,6,9,12];
+  if (freq === '반기') return [6,12];
+  return [];
+}
+function dutyMonthsLabel(arr) {
+  const ms = [...new Set(arr)].sort((a, b) => a - b);
+  if (!ms.length) return '';
+  if (ms.length === 12) return '연중';
+  const parts = [];
+  let s = ms[0], prev = ms[0];
+  for (let i = 1; i <= ms.length; i++) {
+    const m = ms[i];
+    if (m === prev + 1) { prev = m; continue; }
+    parts.push(s === prev ? `${s}월` : `${s}~${prev}월`);
+    s = prev = m;
+  }
+  return parts.join(', ');
+}
+function dutyParseMonths(str) {
+  const v = String(str || '').trim();
+  if (!v) return [];
+  if (/연중|매월|상시|전체/.test(v)) return [1,2,3,4,5,6,7,8,9,10,11,12];
+  const out = [];
+  v.replace(/월/g, ' ').replace(/[~∼–—]/g, '-').split(/[,\s\/·]+/).filter(Boolean).forEach(tok => {
+    const m = tok.match(/^(\d{1,2})(?:-(\d{1,2}))?$/);
+    if (!m) return;
+    const a = parseInt(m[1], 10), b = m[2] ? parseInt(m[2], 10) : a;
+    if (a < 1 || a > 12 || b < 1 || b > 12) return;
+    if (a <= b) { for (let i = a; i <= b; i++) out.push(i); }
+    else { for (let i = a; i <= 12; i++) out.push(i); for (let i = 1; i <= b; i++) out.push(i); } // 11~2월처럼 해를 넘기는 구간
+  });
+  return [...new Set(out)].sort((x, y) => x - y);
+}
+function dutyTimelineRowHtml(d, g, span) {
+  const months = new Set(dutyMonthsOf(d));
+  const primary = dutyMembersOf(d.id, 'primary')[0];
+  const color = primary ? dutyMemberColor(primary) : 'var(--accent)';
+  const nowM = new Date().getMonth() + 1;
+  const label = dutyMonthsLabel([...months]);
+  const cells = Array.from({ length: 12 }, (_, i) => {
+    const m = i + 1;
+    const on = months.has(m);
+    const cls = ['duty-tl-cell', on ? 'on' : '', on && !months.has(m - 1) ? 'start' : '', on && !months.has(m + 1) ? 'end' : '', m === nowM ? 'now' : ''].filter(Boolean).join(' ');
+    return `<div class="${cls}" data-m="${m}"><span>${m}</span></div>`;
+  }).join('');
+  return `<tr class="duty-tl-row ${g.noPrimary ? 'gap-p' : g.noBackup ? 'gap-b' : ''}" data-tl="${d.id}" ondragover="dutyDragOver(event,this)" ondragleave="this.classList.remove('drag-over')" ondrop="dutyDropOnRow(event,${d.id})">
+    <td class="duty-title-cell duty-tl-label-cell">
+      <span class="duty-tl-label ${label ? '' : 'empty'}">${label ? '⏱ ' + escHtml(label) : '⏱ 시기 미지정 · 오른쪽 칸을 클릭/드래그'}</span>
+      ${label ? `<button class="duty-tl-clear" title="시기 지우기" onclick="clearDutyMonths(${d.id})">지우기</button>` : ''}
+    </td>
+    <td colspan="${span}" class="duty-tl-td">
+      <div class="duty-tl-grid" data-id="${d.id}" style="--tc:${color}" onpointerdown="dutyPaintStart(event,this)">${cells}</div>
+    </td>
+  </tr>`;
+}
+function dutyPaintApply() {
+  const p = dutyPaint;
+  if (!p) return;
+  p.grid.querySelectorAll('.duty-tl-cell').forEach(c => {
+    const m = +c.dataset.m;
+    const on = p.cur.has(m);
+    c.classList.toggle('on', on);
+    c.classList.toggle('start', on && !p.cur.has(m - 1));
+    c.classList.toggle('end', on && !p.cur.has(m + 1));
+  });
+}
+function dutyPaintRange(m) {
+  const p = dutyPaint;
+  const lo = Math.min(p.start, m), hi = Math.max(p.start, m);
+  p.cur = new Set(p.base);
+  for (let i = lo; i <= hi; i++) { if (p.mode === 'add') p.cur.add(i); else p.cur.delete(i); }
+  dutyPaintApply();
+}
+function dutyPaintStart(e, grid) {
+  const cell = e.target.closest('.duty-tl-cell');
+  if (!cell || dutyEditing || (e.button !== undefined && e.button !== 0)) return;
+  e.preventDefault();
+  const d = duties.find(x => x.id === +grid.dataset.id);
+  if (!d) return;
+  const m = +cell.dataset.m;
+  const base = new Set(dutyMonthsOf(d));
+  dutyPaint = { id: d.id, mode: base.has(m) ? 'remove' : 'add', start: m, base, cur: new Set(base), grid };
+  grid.classList.add('painting');
+  try { grid.setPointerCapture(e.pointerId); } catch {}
+  grid.onpointermove = ev => {
+    if (!dutyPaint) return;
+    const el = document.elementFromPoint(ev.clientX, ev.clientY);
+    const c = el && el.closest('.duty-tl-cell');
+    if (c && grid.contains(c)) dutyPaintRange(+c.dataset.m);
+  };
+  grid.onpointerup = grid.onpointercancel = () => dutyPaintEnd();
+  dutyPaintRange(m);
+}
+async function dutyPaintEnd() {
+  const p = dutyPaint;
+  if (!p) return;
+  dutyPaint = null;
+  p.grid.classList.remove('painting');
+  p.grid.onpointermove = p.grid.onpointerup = p.grid.onpointercancel = null;
+  const before = dutyMonthsStr([...p.base]), after = dutyMonthsStr([...p.cur]);
+  if (before === after) return;
+  await dutySaveMonths(p.id, [...p.base], [...p.cur]);
+}
+async function dutySaveMonths(id, beforeArr, afterArr) {
+  const d = duties.find(x => x.id === id);
+  if (!d) return;
+  const ok = await dutyUpdate(DUTY_T.duty, id, { months: dutyMonthsStr(afterArr) });
+  renderDutyTab();
+  if (ok) await dutyLog('시기 변경', `[${d.title}] ${dutyMonthsLabel(beforeArr) || '없음'} → ${dutyMonthsLabel(afterArr) || '없음'}`);
+}
+function clearDutyMonths(id) {
+  const d = duties.find(x => x.id === id);
+  if (d) dutySaveMonths(id, dutyMonthsOf(d), []);
 }
 async function cycleDutyRole(dutyId, member) {
   const d = duties.find(x => x.id === dutyId);
@@ -10101,17 +10308,22 @@ function exportDutyExcel() {
   if (typeof XLSX === 'undefined') { showToast('엑셀 라이브러리를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.', 'error'); return; }
   const rows = dutyExportRows();
   if (!rows.length) { showToast('내보낼 업무가 없습니다.', 'error'); return; }
-  const list = [['대분류', '업무명', '정 담당', '부 담당', '주기', '비고']];
-  rows.forEach(({ cat, d }) => list.push([cat, d.title, dutyMembersOf(d.id, 'primary').join(', '), dutyMembersOf(d.id, 'backup').join(', '), d.frequency || '', d.note || '']));
+  const list = [['대분류', '업무명', '정 담당', '부 담당', '주기', '비고', '시기']];
+  rows.forEach(({ cat, d }) => list.push([cat, d.title, dutyMembersOf(d.id, 'primary').join(', '), dutyMembersOf(d.id, 'backup').join(', '), d.frequency || '', d.note || '', dutyMonthsLabel(dutyMonthsOf(d))]));
   const cols = dutyColumns();
   const matrix = [['대분류', '업무명', ...cols]];
   rows.forEach(({ cat, d }) => matrix.push([cat, d.title, ...cols.map(m => { const a = dutyAssigneeOf(d.id, m); return a ? DUTY_ROLE_LABEL[a.role] : ''; })]));
   const ws1 = XLSX.utils.aoa_to_sheet(list);
-  ws1['!cols'] = [{ wch:16 }, { wch:34 }, { wch:16 }, { wch:16 }, { wch:8 }, { wch:30 }];
+  ws1['!cols'] = [{ wch:16 }, { wch:34 }, { wch:16 }, { wch:16 }, { wch:8 }, { wch:30 }, { wch:18 }];
   const ws2 = XLSX.utils.aoa_to_sheet(matrix);
   ws2['!cols'] = [{ wch:16 }, { wch:34 }, ...cols.map(() => ({ wch:8 }))];
+  const gantt = [['대분류', '업무명', '정 담당', ...Array.from({ length: 12 }, (_, i) => `${i + 1}월`)]];
+  rows.forEach(({ cat, d }) => { const ms = new Set(dutyMonthsOf(d)); gantt.push([cat, d.title, dutyMembersOf(d.id, 'primary').join(', '), ...Array.from({ length: 12 }, (_, i) => ms.has(i + 1) ? '■' : '')]); });
+  const ws3 = XLSX.utils.aoa_to_sheet(gantt);
+  ws3['!cols'] = [{ wch:16 }, { wch:34 }, { wch:14 }, ...Array.from({ length: 12 }, () => ({ wch:5 }))];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws1, '업무분장');
+  XLSX.utils.book_append_sheet(wb, ws3, '연간 시기');
   XLSX.utils.book_append_sheet(wb, ws2, '매트릭스');
   const n = new Date();
   XLSX.writeFile(wb, `업무분장_${n.getFullYear()}${String(n.getMonth() + 1).padStart(2, '0')}${String(n.getDate()).padStart(2, '0')}.xlsx`);
@@ -10125,6 +10337,7 @@ const DUTY_PASTE_HEADERS = {
   backup:  ['부', '부담당', '대체', '대체자', '백업', '대행', '부담당자'],
   freq:    ['주기', '빈도', '수행주기'],
   note:    ['비고', '메모', '설명', '참고'],
+  months:  ['시기', '업무시기', '수행시기', '시기(월)', '수행월', '월'],
 };
 function dutyNormFreq(s) {
   const v = (s || '').trim();
@@ -10157,7 +10370,7 @@ function parseDutyPaste(text) {
   if (Object.keys(hdr).length >= 2 && hdr.title !== undefined) { map = hdr; dataRows = cells.slice(1); }
   else {
     const maxCols = Math.max(...cells.map(r => r.length));
-    map = maxCols === 1 ? { title: 0 } : { cat: 0, title: 1, primary: 2, backup: 3, freq: 4, note: 5 };
+    map = maxCols === 1 ? { title: 0 } : { cat: 0, title: 1, primary: 2, backup: 3, freq: 4, note: 5, months: 6 };
   }
   const get = (r, k) => map[k] === undefined ? '' : (r[map[k]] || '');
   let lastCat = '';
@@ -10169,7 +10382,10 @@ function parseDutyPaste(text) {
     if (!title) return;
     const primary = dutySplitNames(get(r, 'primary'));
     const backup = dutySplitNames(get(r, 'backup')).filter(m => !primary.includes(m));
-    rows.push({ cat: cat || '미분류', title, primary, backup, freq: dutyNormFreq(get(r, 'freq')), note: get(r, 'note') });
+    const freq = dutyNormFreq(get(r, 'freq'));
+    let months = dutyParseMonths(get(r, 'months'));
+    if (!months.length) months = dutyAutoMonths(freq);
+    rows.push({ cat: cat || '미분류', title, primary, backup, freq, note: get(r, 'note'), months });
   });
   return { rows };
 }
@@ -10214,11 +10430,11 @@ function previewDutyPaste() {
       ${unknown.size ? `<div class="duty-unknown-note">⚠ 팀원 목록에 없는 이름: ${[...unknown].map(escHtml).join(', ')} — 그대로 저장되고 표에 별도 열로 표시됩니다.</div>` : ''}
     </div>
     <div class="duty-paste-table-wrap"><table class="duty-paste-table">
-      <thead><tr><th>대분류</th><th>업무명</th><th>정</th><th>부</th><th>주기</th><th>비고</th><th></th></tr></thead>
+      <thead><tr><th>대분류</th><th>업무명</th><th>정</th><th>부</th><th>주기</th><th>비고</th><th>시기</th><th></th></tr></thead>
       <tbody>${rows.slice(0, 200).map(r => `<tr class="${r.dup ? 'dup' : ''}">
         <td>${escHtml(r.cat)}${!r.dup && newCats.has(r.cat) ? ' <span class="duty-new-badge">새</span>' : ''}</td>
         <td>${escHtml(r.title)}</td><td>${nameHtml(r.primary)}</td><td>${nameHtml(r.backup)}</td>
-        <td>${escHtml(r.freq)}</td><td>${escHtml(r.note)}</td><td>${r.dup ? '중복' : ''}</td>
+        <td>${escHtml(r.freq)}</td><td>${escHtml(r.note)}</td><td>${escHtml(dutyMonthsLabel(r.months))}</td><td>${r.dup ? '중복' : ''}</td>
       </tr>`).join('')}</tbody>
     </table></div>
     ${rows.length > 200 ? `<div class="duty-paste-more">… 외 ${rows.length - 200}행</div>` : ''}`;
@@ -10239,7 +10455,9 @@ async function submitDutyPaste() {
       if (!nextOrder.has(catId)) nextOrder.set(catId, dutiesOfCat(catId).reduce((m, d) => Math.max(m, d.sort_order ?? d.id ?? 0), 0));
       const order = nextOrder.get(catId) + 1;
       nextOrder.set(catId, order);
-      return { category_id: catId, title: r.title, frequency: r.freq, note: r.note, sort_order: order };
+      const row = { category_id: catId, title: r.title, frequency: r.freq, note: r.note, sort_order: order };
+      row.months = dutyMonthsStr(r.months);
+      return row;
     });
     const createdDuties = await dutyInsertRows(DUTY_T.duty, dutyRows);
     if (createdDuties === null) return;
@@ -10304,6 +10522,7 @@ function isEditingOpen() {
       || (im && im.classList.contains('open'))
       || (idm && idm.classList.contains('open'))
       || dutyEditing !== null
+      || dutyPaint !== null
       || document.getElementById('dutyPasteModal')?.classList.contains('open')
       || document.querySelector('.master-inline-form.open') !== null;
 }
