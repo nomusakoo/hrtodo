@@ -1525,6 +1525,31 @@
   .duty-table th.focus{color:var(--gray-800);background:#eef2f8;}
   .duty-table td.focus{background:#f6f8fc;}
   .duty-table .dim{opacity:.35;}
+  .duty-title-cell.has-memo::after{content:'';position:absolute;top:0;right:0;width:0;height:0;border-style:solid;border-width:0 9px 9px 0;border-color:transparent #e5484d transparent transparent;}
+  .duty-memo-btn{background:none;border:none;cursor:pointer;font-size:12px;padding:1px 3px;border-radius:4px;opacity:0;filter:grayscale(1);transition:opacity .15s,filter .15s,background .15s;margin-left:auto;flex-shrink:0;}
+  .duty-memo-btn.on{opacity:.9;filter:none;}
+  .duty-row:hover .duty-memo-btn{opacity:1;}
+  .duty-memo-btn:hover{background:var(--gray-100);filter:none;}
+  .duty-memo-tip{position:fixed;z-index:400;max-width:320px;min-width:180px;background:#fffbe6;border:1px solid #e9d27a;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:9px 12px 8px;pointer-events:none;opacity:0;transform:translateY(3px);transition:opacity .14s ease,transform .14s ease;visibility:hidden;}
+  .duty-memo-tip.show{opacity:1;transform:none;visibility:visible;}
+  .duty-memo-tip-head{font-size:11.5px;font-weight:700;color:#7a5c00;margin-bottom:5px;padding-bottom:5px;border-bottom:1px dashed #e9d27a;}
+  .duty-memo-tip-body{font-size:12.5px;line-height:1.6;color:#3f3a26;white-space:pre-wrap;word-break:break-word;max-height:260px;overflow:hidden;}
+  .duty-memo-tip-foot{font-size:10.5px;color:#a8902f;margin-top:6px;}
+  .duty-memo-pop{position:fixed;z-index:410;width:360px;max-width:calc(100vw - 16px);background:#fffbe6;border:1px solid #e9d27a;border-radius:10px;box-shadow:0 16px 40px rgba(0,0,0,.18);padding:10px 12px 10px;display:none;}
+  .duty-memo-pop.open{display:block;animation:dutyPopIn .16s ease;}
+  @keyframes dutyPopIn{from{opacity:0;transform:translateY(4px) scale(.98);}to{opacity:1;transform:none;}}
+  .duty-memo-pop-head{display:flex;align-items:center;gap:6px;margin-bottom:8px;font-size:12.5px;font-weight:700;color:#7a5c00;}
+  .duty-memo-pop-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .duty-memo-pop .modal-close{font-size:14px;}
+  .duty-memo-text{width:100%;min-height:140px;resize:vertical;border:1px solid #ecdc9c;border-radius:6px;background:#fffef7;padding:9px 10px;font-size:13px;line-height:1.6;font-family:var(--font);color:#3f3a26;outline:none;}
+  .duty-memo-text:focus{border-color:#d4b84a;box-shadow:0 0 0 3px rgba(233,210,122,.3);}
+  .duty-memo-pop-foot{display:flex;align-items:center;gap:6px;margin-top:8px;}
+  .duty-memo-hint{flex:1;font-size:11px;color:#a8902f;}
+  .duty-add-inner{gap:8px;align-items:flex-start;max-width:760px !important;}
+  .duty-add-inner .duty-edit-input{flex:0 0 320px;}
+  .duty-edit-memo{flex:1;min-width:200px;padding:4px 8px;border:1px dashed #e0c96a;border-radius:6px;background:#fffdf3;font-size:12.5px;line-height:1.5;font-family:var(--font);resize:none;outline:none;overflow:hidden;}
+  .duty-edit-memo:focus{border-style:solid;border-color:#d4b84a;background:#fffbe6;}
+  .duty-paste-memo{color:#7a5c00;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .duty-paste-modal{width:760px;}
   .duty-paste-help{font-size:12px;color:var(--gray-600);background:var(--gray-50);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;line-height:1.7;}
   .duty-paste-summary{font-size:12.5px;color:var(--gray-700);margin:10px 0 6px;}
@@ -1551,6 +1576,9 @@
     .duty-search{width:100% !important;}
     .duty-table th.duty-th-title{min-width:170px;}
     .duty-cat-actions,.duty-del{opacity:1;}
+    .duty-memo-btn{opacity:.6;}
+    .duty-add-inner{flex-direction:column;}
+    .duty-add-inner .duty-edit-input{flex:none;width:100%;}
   }
 </style>
 </head>
@@ -2126,6 +2154,20 @@
 </div>
 
 <!-- POLICY EDIT MODAL (제도 항목 추가/수정) -->
+<div class="duty-memo-pop" id="dutyMemoPop" onkeydown="dutyMemoPopKey(event)">
+  <div class="duty-memo-pop-head">
+    <span>📝</span><span class="duty-memo-pop-title" id="dutyMemoPopTitle"></span>
+    <button class="modal-close" onclick="closeDutyMemo(false)">&#10005;</button>
+  </div>
+  <textarea id="dutyMemoText" class="duty-memo-text" placeholder="주요사항, 근거 규정, 유의사항, 자료 위치 등을 적어두세요"></textarea>
+  <div class="duty-memo-pop-foot">
+    <span class="duty-memo-hint">Ctrl+Enter 저장 · Esc 취소</span>
+    <button class="btn btn-sm btn-danger" id="dutyMemoDelBtn" onclick="deleteDutyMemo()">삭제</button>
+    <button class="btn btn-sm" onclick="closeDutyMemo(false)">취소</button>
+    <button class="btn btn-sm btn-primary" onclick="closeDutyMemo(true)">저장</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="dutyPasteModal">
   <div class="modal duty-paste-modal">
     <div class="modal-header" style="margin-bottom:12px;">
@@ -2134,7 +2176,7 @@
     </div>
     <div class="duty-paste-help">
       엑셀에서 표를 복사(Ctrl+C)해서 아래에 붙여넣으세요.<br>
-      열 순서: <b>대분류 · 업무명 · 정 담당 · 부 담당 · 주기 · 비고 · 시기</b> (시기 예: 3~4월, 12월 / 비워두면 주기에 맞춰 자동) (첫 줄에 머리글이 있으면 머리글 이름으로 자동 인식)<br>
+      열 순서: <b>대분류 · 업무명 · 정 담당 · 부 담당 · 주기 · 비고 · 시기 · 메모</b> (시기 예: 3~4월, 12월 / 비워두면 주기에 맞춰 자동, 메모는 여러 줄도 가능) (첫 줄에 머리글이 있으면 머리글 이름으로 자동 인식)<br>
       담당자가 여러 명이면 쉼표(,)나 슬래시(/)로 구분하세요. 대분류 칸이 비어 있으면 바로 위 행의 대분류를 이어 씁니다.
     </div>
     <textarea class="form-textarea" id="dutyPasteInput" rows="7" oninput="previewDutyPaste()" placeholder="대분류	업무명	정 담당	부 담당	주기	비고&#10;급여·4대보험	월 급여 계산 및 지급	구우회	이호동	월	매월 25일"></textarea>
@@ -9699,47 +9741,65 @@ async function loadDutyData() {
   try {
     const [c, d, a, h] = await Promise.all([DUTY_T.cat, DUTY_T.duty, DUTY_T.asg, DUTY_T.hist].map(dutyLoadTable));
     if (c) { dutyCats = c; dutyCatsLoaded = true; }
-    if (d) { duties = d; dutyApplyMonthsOverlay(); }
+    if (d) { duties = d; dutyApplyOverlays(); }
     if (a) dutyAssignees = a;
     if (h) dutyHistory = h;
   } catch (e) { console.warn('[duty] 로드 예외:', e); }
 }
 
-// ── 업무 시기(months) 컬럼이 아직 없을 때: 이 기기에만 보관하는 보조 저장소 ──
-let dutyMonthsColMissing = false;
-const DUTY_MONTHS_LOCAL_KEY = 'hr_duty_months_local';
-function dutyMonthsOverlay() {
-  try { const o = JSON.parse(localStorage.getItem(DUTY_MONTHS_LOCAL_KEY)); return o && typeof o === 'object' ? o : {}; } catch { return {}; }
+// ── 선택 컬럼(시기 months / 메모 memo)이 Supabase에 아직 없을 때: 그 값만 이 기기에 보관 ──
+const DUTY_OPT_COLS = { months: '업무 시기', memo: '업무 메모' };
+let dutyMissingCols = new Set();
+function dutyOverlay(col) {
+  try { const o = JSON.parse(localStorage.getItem(`hr_duty_${col}_local`)); return o && typeof o === 'object' ? o : {}; } catch { return {}; }
 }
-function dutyMonthsOverlaySave(id, months) {
-  const o = dutyMonthsOverlay(); o[id] = months || '';
-  try { localStorage.setItem(DUTY_MONTHS_LOCAL_KEY, JSON.stringify(o)); } catch {}
+function dutyOverlaySave(col, id, val) {
+  const o = dutyOverlay(col); o[id] = val || '';
+  try { localStorage.setItem(`hr_duty_${col}_local`, JSON.stringify(o)); } catch {}
 }
-function dutyApplyMonthsOverlay() {
-  const o = dutyMonthsOverlay();
-  duties.forEach(d => { if (d.months === undefined && o[d.id] !== undefined) d.months = o[d.id]; });
+function dutyApplyOverlays() {
+  Object.keys(DUTY_OPT_COLS).forEach(col => {
+    const o = dutyOverlay(col);
+    duties.forEach(d => { if (d[col] === undefined && o[d.id] !== undefined) d[col] = o[d.id]; });
+  });
 }
-function dutyMarkMonthsMissing(error) {
-  console.warn('[duty] hr_duties.months 컬럼 없음 — 업무 시기는 이 기기에만 저장:', error && error.message);
-  if (!dutyMonthsColMissing) showToast("'업무 시기' 컬럼이 아직 Supabase에 없어 시기 표시는 이 기기에만 저장됩니다.", 'error');
-  dutyMonthsColMissing = true;
+function dutyMarkColMissing(col, error) {
+  console.warn(`[duty] hr_duties.${col} 컬럼 없음 — 이 기기에만 저장:`, error && error.message);
+  if (!dutyMissingCols.has(col)) showToast(`'${DUTY_OPT_COLS[col]}' 컬럼이 아직 Supabase에 없어 이 항목은 이 기기에만 저장됩니다.`, 'error');
+  dutyMissingCols.add(col);
 }
-function dutyStripMonths(obj) { const { months, ...rest } = obj; return rest; }
+function dutyStripCols(obj) {
+  const out = { ...obj };
+  dutyMissingCols.forEach(c => delete out[c]);
+  return out;
+}
+// 오류가 '선택 컬럼 없음'이면 그 컬럼을 표시하고 true (재시도 필요)
+function dutyHandleMissingCol(error, sent) {
+  if (!error) return false;
+  const col = Object.keys(DUTY_OPT_COLS).find(c => !dutyMissingCols.has(c) && sent.some(r => c in r) && isMissingColumnErr(error, c));
+  if (!col) return false;
+  dutyMarkColMissing(col, error);
+  return true;
+}
 
 async function dutyInsertRows(t, rows, label = '업무분장 저장') {
   if (!rows.length) return [];
   if (dutyRemote(t)) {
-    const hasMonths = t === DUTY_T.duty && rows.some(r => 'months' in r);
-    const send = (hasMonths && dutyMonthsColMissing) ? rows.map(dutyStripMonths) : rows;
+    const isDuty = t === DUTY_T.duty;
+    let send = isDuty ? rows.map(dutyStripCols) : rows;
     let { data, error } = await sbClient.from(t).insert(send).select();
-    if (error && hasMonths && !dutyMonthsColMissing && isMissingColumnErr(error, 'months')) {
-      dutyMarkMonthsMissing(error);
-      ({ data, error } = await sbClient.from(t).insert(rows.map(dutyStripMonths)).select());
+    for (let i = 0; isDuty && i < 2 && dutyHandleMissingCol(error, send); i++) {
+      send = rows.map(dutyStripCols);
+      ({ data, error } = await sbClient.from(t).insert(send).select());
     }
     if (!error && Array.isArray(data)) {
-      if (hasMonths && dutyMonthsColMissing) {
-        const byKey = new Map(rows.map(r => [r.category_id + '\u0001' + r.title, r.months || '']));
-        data.forEach(d => { const m = byKey.get(d.category_id + '\u0001' + d.title); if (m !== undefined) { d.months = m; dutyMonthsOverlaySave(d.id, m); } });
+      if (isDuty && dutyMissingCols.size) {
+        const byKey = new Map(rows.map(r => [r.category_id + '\u0001' + r.title, r]));
+        data.forEach(d => {
+          const src = byKey.get(d.category_id + '\u0001' + d.title);
+          if (!src) return;
+          dutyMissingCols.forEach(c => { if (c in src) { d[c] = src[c] || ''; dutyOverlaySave(c, d.id, d[c]); } });
+        });
       }
       dutySet(t, dutyGet(t).concat(data));
       return data;
@@ -9764,19 +9824,17 @@ async function dutyUpdate(t, id, patch) {
   const prev = { ...item };
   Object.assign(item, patch);
   if (dutyRemote(t)) {
-    let send = patch;
-    if (t === DUTY_T.duty && 'months' in patch && dutyMonthsColMissing) {
-      dutyMonthsOverlaySave(id, patch.months);
-      send = dutyStripMonths(patch);
-      if (!Object.keys(send).length) return true;
-    }
-    let { error } = await sbClient.from(t).update(send).eq('id', id);
-    if (error && t === DUTY_T.duty && 'months' in send && isMissingColumnErr(error, 'months')) {
-      dutyMarkMonthsMissing(error);
-      dutyMonthsOverlaySave(id, patch.months);
-      send = dutyStripMonths(send);
-      if (!Object.keys(send).length) return true;
-      ({ error } = await sbClient.from(t).update(send).eq('id', id));
+    const isDuty = t === DUTY_T.duty;
+    const saveOverlays = () => dutyMissingCols.forEach(c => { if (c in patch) dutyOverlaySave(c, id, patch[c]); });
+    let send = isDuty ? dutyStripCols(patch) : patch;
+    if (isDuty) saveOverlays();
+    let error = null;
+    if (Object.keys(send).length) ({ error } = await sbClient.from(t).update(send).eq('id', id));
+    for (let i = 0; isDuty && i < 2 && dutyHandleMissingCol(error, [send]); i++) {
+      saveOverlays();
+      send = dutyStripCols(patch);
+      error = null;
+      if (Object.keys(send).length) ({ error } = await sbClient.from(t).update(send).eq('id', id));
     }
     if (!error) return true;
     if (!isMissingTableErr(error)) {
@@ -9828,7 +9886,7 @@ function dutyMemberColor(m) { return (MEMBERS.includes(m) && memberColor(m)) || 
 function dutyCatName(catId) { const c = dutyCats.find(x => x.id === catId); return c ? c.name : '미분류'; }
 function dutyMatchesSearch(d, q) {
   if (!q) return true;
-  const hay = [d.title, d.note, dutyCatName(d.category_id), ...dutyAssignees.filter(a => a.duty_id === d.id).map(a => a.member)].join(' ').toLowerCase();
+  const hay = [d.title, d.note, d.memo, dutyCatName(d.category_id), ...dutyAssignees.filter(a => a.duty_id === d.id).map(a => a.member)].join(' ').toLowerCase();
   return hay.includes(q);
 }
 function dutyGapOf(d) {
@@ -9851,7 +9909,7 @@ async function dutySeedDefaults() {
 // ── 렌더링 ──
 function dutyEditInputHtml(value, placeholder) {
   return `<input type="text" id="dutyEditInput" class="duty-edit-input" data-token="${dutyEditing.token}" value="${escHtml(value || '')}" placeholder="${escHtml(placeholder || '')}" maxlength="100"
-    onclick="event.stopPropagation()" onkeydown="dutyEditKey(event,this)" onblur="commitDutyEdit(this,false)">`;
+    onclick="event.stopPropagation()" onkeydown="dutyEditKey(event,this)" onblur="commitDutyEdit(this,false,event)">`;
 }
 function dutyIsEditing(kind, id) { return !!dutyEditing && dutyEditing.kind === kind && dutyEditing.id === id; }
 
@@ -9865,6 +9923,12 @@ function renderDutyTab() {
   if (prevEl && dutyEditing && prevEl.dataset.token === String(dutyEditing.token)) {
     keep = { v: prevEl.value, f: document.activeElement === prevEl, s: prevEl.selectionStart, e: prevEl.selectionEnd };
   }
+  const prevMemo = document.getElementById('dutyEditMemo');
+  let keepMemo = null;
+  if (prevMemo && dutyEditing && prevMemo.dataset.token === String(dutyEditing.token)) {
+    keepMemo = { v: prevMemo.value, f: document.activeElement === prevMemo, s: prevMemo.selectionStart, e: prevMemo.selectionEnd };
+  }
+  dutyMemoTipHide();
 
   const cols = dutyColumns();
   const q = dutySearch.trim().toLowerCase();
@@ -9921,13 +9985,14 @@ function renderDutyTab() {
       const freqOpts = (DUTY_FREQS.includes(d.frequency || '') || !d.frequency ? DUTY_FREQS : [d.frequency, ...DUTY_FREQS]);
       body += `<tr class="duty-row ${g.noPrimary ? 'gap-p' : g.noBackup ? 'gap-b' : ''}" data-id="${d.id}" draggable="true"
           ondragstart="dutyDragStart(event,${d.id})" ondragend="dutyDragEnd()" ondragover="dutyDragOver(event,this)" ondragleave="this.classList.remove('drag-over')" ondrop="dutyDropOnRow(event,${d.id})">
-        <td class="duty-title-cell">
+        <td class="duty-title-cell ${d.memo ? 'has-memo' : ''}" onmouseenter="dutyMemoTipShow(${d.id},this)" onmouseleave="dutyMemoTipHide()">
           <div class="duty-title-wrap">
             <span class="duty-drag" title="드래그해서 순서·대분류 이동">⠿</span>
             ${dutyIsEditing('title', d.id)
               ? dutyEditInputHtml(d.title, '업무명')
               : `<span class="duty-title" onclick="dutyOpenEdit('title',${d.id})" title="클릭해서 수정">${escHtml(d.title)}</span>`}
             ${g.noPrimary ? '<span class="duty-gap-badge p">정 없음</span>' : g.noBackup ? '<span class="duty-gap-badge b">부 없음</span>' : ''}
+            <button class="duty-memo-btn ${d.memo ? 'on' : ''}" title="${d.memo ? '메모 보기·수정' : '메모 추가'}" onclick="event.stopPropagation();openDutyMemo(${d.id},this)">📝</button>
           </div>
         </td>
         <td class="duty-freq-cell">
@@ -9954,7 +10019,11 @@ function renderDutyTab() {
     });
     if (cat && !filtering) {
       body += dutyIsEditing('newDuty', cat.id)
-        ? `<tr class="duty-add-row"><td colspan="${colCount}"><div class="duty-add-inner">${dutyEditInputHtml('', '업무명 입력 후 Enter (연속 입력 가능, 빈칸에서 Enter로 마침)')}</div></td></tr>`
+        ? `<tr class="duty-add-row"><td colspan="${colCount}"><div class="duty-add-inner">
+            ${dutyEditInputHtml('', '업무명 입력 후 Enter (연속 입력 가능, 빈칸에서 Enter로 마침)')}
+            <textarea id="dutyEditMemo" class="duty-edit-memo" data-token="${dutyEditing.token}" rows="1" placeholder="📝 메모 (선택) — 주요사항·유의사항 등, Ctrl+Enter로 저장"
+              onclick="event.stopPropagation()" onkeydown="dutyMemoKey(event,this)" oninput="dutyAutoGrow(this)" onblur="commitDutyEdit(this,false,event)"></textarea>
+          </div></td></tr>`
         : `<tr class="duty-add-row"><td colspan="${colCount}"><button class="duty-add-btn" onclick="dutyOpenEdit('newDuty',${cat.id})">+ 업무 추가</button></td></tr>`;
     }
   });
@@ -10014,6 +10083,12 @@ function renderDutyTab() {
         if (keep.f) { el.focus(); try { el.setSelectionRange(keep.s, keep.e); } catch {} }
       } else if (dutyEditing.fresh) { el.focus(); el.select(); }
       dutyEditing.fresh = false;
+    }
+    const memoEl = document.getElementById('dutyEditMemo');
+    if (memoEl && keepMemo) {
+      memoEl.value = keepMemo.v;
+      dutyAutoGrow(memoEl);
+      if (keepMemo.f) { memoEl.focus(); try { memoEl.setSelectionRange(keepMemo.s, keepMemo.e); } catch {} }
     }
   }
 }
@@ -10085,18 +10160,39 @@ function cancelDutyEdit() {
   dutyEditing = null;
   renderDutyTab();
 }
-async function commitDutyEdit(el, viaEnter) {
+function dutyMemoKey(e, el) {
+  if (e.isComposing || e.keyCode === 229) return;
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); commitDutyEdit(el, true); }
+  else if (e.key === 'Escape') { e.preventDefault(); cancelDutyEdit(); }
+}
+function dutyAutoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+}
+async function commitDutyEdit(el, viaEnter, ev) {
   if (dutyRendering) return;
   const ed = dutyEditing;
   // 다른 편집 세션의(이미 화면에서 사라진) 입력창에서 온 blur는 무시
   if (!ed || !el || !el.isConnected || String(ed.token) !== el.dataset.token) return;
-  const val = el.value.trim();
+  // 같은 입력 묶음 안에서 업무명 ↔ 메모 칸으로 포커스만 옮긴 경우는 저장하지 않음
+  const to = ev && ev.relatedTarget;
+  if (to && to.dataset && to.dataset.token === el.dataset.token) return;
+  const titleEl = ed.kind === 'newDuty' ? document.getElementById('dutyEditInput') : el;
+  const val = (titleEl ? titleEl.value : el.value).trim();
+  const memoEl = document.getElementById('dutyEditMemo');
+  const memo = ed.kind === 'newDuty' && memoEl ? memoEl.value.trim() : '';
+
+  if (ed.kind === 'newDuty' && !val && memo) {
+    // 메모만 쓰고 업무명이 비어 있으면 입력 내용을 지우지 않고 그대로 둠
+    if (viaEnter) { showToast('업무명을 먼저 입력해 주세요.', 'error'); titleEl && titleEl.focus(); }
+    return;
+  }
   dutyEditing = null;
 
   if (ed.kind === 'newDuty') {
     if (val && viaEnter) dutyOpenEdit('newDuty', ed.id); // 연속 입력
     else renderDutyTab();
-    if (val) await addDuty(ed.id, val);
+    if (val) await addDuty(ed.id, val, memo);
   } else if (ed.kind === 'newCat') {
     renderDutyTab();
     if (val) await addDutyCat(val);
@@ -10136,12 +10232,112 @@ async function addDutyCat(name) {
   renderDutyTab();
   if (r) await dutyLog('대분류 추가', `'${name}'`);
 }
-async function addDuty(catId, title) {
+async function addDuty(catId, title, memo = '') {
   const maxOrder = dutiesOfCat(catId).reduce((m, d) => Math.max(m, d.sort_order ?? d.id ?? 0), 0);
-  const r = await dutyInsert(DUTY_T.duty, { category_id: catId, title, frequency: '', note: '', sort_order: maxOrder + 1 });
+  const row = { category_id: catId, title, frequency: '', note: '', sort_order: maxOrder + 1 };
+  if (memo) row.memo = memo;
+  const r = await dutyInsert(DUTY_T.duty, row);
   renderDutyTab();
-  if (r) await dutyLog('업무 추가', `[${dutyCatName(catId)}] '${title}'`);
+  if (r) await dutyLog('업무 추가', `[${dutyCatName(catId)}] '${title}'${memo ? ` · 메모: ${dutyShort(memo)}` : ''}`);
 }
+
+// ── 업무 메모 (엑셀 메모처럼 마우스를 올리면 보임) ──
+let dutyMemoEditId = null;
+let dutyMemoTipTimer = null;
+function dutyShort(s, n = 30) {
+  const t = String(s || '').replace(/\s+/g, ' ').trim();
+  return t.length > n ? t.slice(0, n) + '…' : t;
+}
+function dutyMemoTipShow(id, cell) {
+  clearTimeout(dutyMemoTipTimer);
+  const d = duties.find(x => x.id === id);
+  if (!d || !d.memo || dutyMemoEditId !== null || dutyEditing || dutyPaint) return;
+  dutyMemoTipTimer = setTimeout(() => {
+    let tip = document.getElementById('dutyMemoTip');
+    if (!tip) { tip = document.createElement('div'); tip.id = 'dutyMemoTip'; tip.className = 'duty-memo-tip'; document.body.appendChild(tip); }
+    tip.innerHTML = `<div class="duty-memo-tip-head">📝 ${escHtml(d.title)}</div><div class="duty-memo-tip-body">${escHtml(d.memo)}</div><div class="duty-memo-tip-foot">📝 버튼을 눌러 수정</div>`;
+    tip.classList.add('show');
+    const r = cell.getBoundingClientRect();
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    let left = r.right + 10, top = r.top - 2;
+    if (left + w > window.innerWidth - 8) left = Math.max(8, r.left + 24);
+    if (top + h > window.innerHeight - 8) top = Math.max(8, window.innerHeight - h - 8);
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+  }, 120);
+}
+function dutyMemoTipHide() {
+  clearTimeout(dutyMemoTipTimer);
+  const tip = document.getElementById('dutyMemoTip');
+  if (tip) tip.classList.remove('show');
+}
+function openDutyMemo(id, anchor) {
+  const d = duties.find(x => x.id === id);
+  const pop = document.getElementById('dutyMemoPop');
+  if (!d || !pop) return;
+  if (dutyMemoEditId !== null && dutyMemoEditId !== id) closeDutyMemo(true);
+  dutyMemoTipHide();
+  dutyMemoEditId = id;
+  document.getElementById('dutyMemoPopTitle').textContent = d.title;
+  const ta = document.getElementById('dutyMemoText');
+  ta.value = d.memo || '';
+  document.getElementById('dutyMemoDelBtn').style.display = d.memo ? '' : 'none';
+  pop.classList.add('open');
+  const r = (anchor || document.querySelector(`.duty-row[data-id="${id}"] .duty-title-cell`)).getBoundingClientRect();
+  const w = pop.offsetWidth, h = pop.offsetHeight;
+  let left = r.right + 8, top = r.top - 8;
+  if (left + w > window.innerWidth - 8) left = Math.max(8, window.innerWidth - w - 8);
+  if (top + h > window.innerHeight - 8) top = Math.max(8, window.innerHeight - h - 8);
+  pop.style.left = left + 'px';
+  pop.style.top = top + 'px';
+  setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 0);
+}
+async function closeDutyMemo(save) {
+  const pop = document.getElementById('dutyMemoPop');
+  const id = dutyMemoEditId;
+  if (id === null) return;
+  const val = document.getElementById('dutyMemoText').value.replace(/\s+$/, '');
+  dutyMemoEditId = null;
+  pop.classList.remove('open');
+  const d = duties.find(x => x.id === id);
+  if (!save || !d || val === (d.memo || '')) { renderDutyTab(); return; }
+  const prev = d.memo || '';
+  const p = dutyUpdate(DUTY_T.duty, id, { memo: val });
+  renderDutyTab();
+  if (await p) {
+    const action = !prev ? '메모 추가' : !val ? '메모 삭제' : '메모 수정';
+    let detail;
+    if (prev && val) {
+      // 긴 메모는 앞부분이 같으면 잘린 내용이 똑같아 보이므로, 달라진 부분부터 보여줌
+      const a = prev.replace(/\s+/g, ' '), b = val.replace(/\s+/g, ' ');
+      let i = 0;
+      while (i < a.length && i < b.length && a[i] === b[i]) i++;
+      const from = Math.max(0, i - 6);
+      const cut = x => (from > 0 ? '…' : '') + dutyShort(x.slice(from), 34);
+      detail = `[${d.title}] ${cut(a) || '(끝부분)'} → ${cut(b) || '(끝부분 삭제)'}`;
+    } else {
+      detail = `[${d.title}] ${prev ? dutyShort(prev) : '없음'} → ${val ? dutyShort(val) : '없음'}`;
+    }
+    await dutyLog(action, detail);
+  }
+  renderDutyTab();
+}
+function deleteDutyMemo() {
+  document.getElementById('dutyMemoText').value = '';
+  closeDutyMemo(true);
+}
+function dutyMemoPopKey(e) {
+  if (e.isComposing || e.keyCode === 229) return;
+  if (e.key === 'Escape') { e.preventDefault(); closeDutyMemo(false); }
+  else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); closeDutyMemo(true); }
+}
+// 메모 창 바깥을 누르면 저장하고 닫기 (다른 칸 편집처럼 바깥 클릭 = 저장)
+document.addEventListener('mousedown', e => {
+  if (dutyMemoEditId === null) return;
+  const pop = document.getElementById('dutyMemoPop');
+  if (pop && !pop.contains(e.target) && !e.target.closest('.duty-memo-btn')) closeDutyMemo(true);
+}, true);
+document.addEventListener('scroll', () => dutyMemoTipHide(), true);
 async function setDutyFreq(dutyId, freq) {
   const d = duties.find(x => x.id === dutyId);
   if (!d || (d.frequency || '') === freq) return;
@@ -10407,13 +10603,13 @@ function exportDutyExcel() {
   if (typeof XLSX === 'undefined') { showToast('엑셀 라이브러리를 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.', 'error'); return; }
   const rows = dutyExportRows();
   if (!rows.length) { showToast('내보낼 업무가 없습니다.', 'error'); return; }
-  const list = [['대분류', '업무명', '정 담당', '부 담당', '주기', '비고', '시기']];
-  rows.forEach(({ cat, d }) => list.push([cat, d.title, dutyMembersOf(d.id, 'primary').join(', '), dutyMembersOf(d.id, 'backup').join(', '), d.frequency || '', d.note || '', dutyMonthsLabel(dutyMonthsOf(d))]));
+  const list = [['대분류', '업무명', '정 담당', '부 담당', '주기', '비고', '시기', '메모']];
+  rows.forEach(({ cat, d }) => list.push([cat, d.title, dutyMembersOf(d.id, 'primary').join(', '), dutyMembersOf(d.id, 'backup').join(', '), d.frequency || '', d.note || '', dutyMonthsLabel(dutyMonthsOf(d)), d.memo || '']));
   const cols = dutyColumns();
   const matrix = [['대분류', '업무명', ...cols]];
   rows.forEach(({ cat, d }) => matrix.push([cat, d.title, ...cols.map(m => { const a = dutyAssigneeOf(d.id, m); return a ? DUTY_ROLE_LABEL[a.role] : ''; })]));
   const ws1 = XLSX.utils.aoa_to_sheet(list);
-  ws1['!cols'] = [{ wch:16 }, { wch:34 }, { wch:16 }, { wch:16 }, { wch:8 }, { wch:30 }, { wch:18 }];
+  ws1['!cols'] = [{ wch:16 }, { wch:34 }, { wch:16 }, { wch:16 }, { wch:8 }, { wch:30 }, { wch:18 }, { wch:50 }];
   const ws2 = XLSX.utils.aoa_to_sheet(matrix);
   ws2['!cols'] = [{ wch:16 }, { wch:34 }, ...cols.map(() => ({ wch:8 }))];
   const gantt = [['대분류', '업무명', '정 담당', ...Array.from({ length: 12 }, (_, i) => `${i + 1}월`)]];
@@ -10435,7 +10631,8 @@ const DUTY_PASTE_HEADERS = {
   primary: ['정', '정담당', '주담당', '담당자', '담당', '정담당자'],
   backup:  ['부', '부담당', '대체', '대체자', '백업', '대행', '부담당자'],
   freq:    ['주기', '빈도', '수행주기'],
-  note:    ['비고', '메모', '설명', '참고'],
+  note:    ['비고', '설명', '참고'],
+  memo:    ['메모', '업무메모', '주요사항', '유의사항', '메모사항'],
   months:  ['시기', '업무시기', '수행시기', '시기(월)', '수행월', '월'],
 };
 function dutyNormFreq(s) {
@@ -10452,10 +10649,27 @@ function dutyNormFreq(s) {
 function dutySplitNames(s) {
   return [...new Set((s || '').replace(/\([^)]*\)/g, '').split(/[,\/·;、\n]+|\s{1,}/).map(x => x.trim()).filter(Boolean))];
 }
+// 엑셀 복사 형식(TSV) 파싱 — 줄바꿈이 들어간 칸은 "..."로 감싸져 오므로 따옴표를 존중해서 나눔
+function dutyParseTsv(text) {
+  const src = text.replace(/\r\n?/g, '\n');
+  const rows = [];
+  let row = [], field = '', q = false;
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (q) {
+      if (c === '"') { if (src[i + 1] === '"') { field += '"'; i++; } else q = false; }
+      else field += c;
+    } else if (c === '"' && field === '') q = true;
+    else if (c === '\t') { row.push(field); field = ''; }
+    else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+    else field += c;
+  }
+  row.push(field); rows.push(row);
+  return rows.map(r => r.map(x => x.trim())).filter(r => r.some(x => x));
+}
 function parseDutyPaste(text) {
-  const lines = (text || '').replace(/\r/g, '').split('\n').filter(l => l.trim());
-  if (!lines.length) return { rows: [] };
-  const cells = lines.map(l => l.split('\t').map(c => c.trim().replace(/^"|"$/g, '')));
+  const cells = dutyParseTsv(text || '');
+  if (!cells.length) return { rows: [] };
   const norm = s => s.replace(/\s+/g, '');
   let map = null;
   const first = cells[0].map(norm);
@@ -10469,7 +10683,7 @@ function parseDutyPaste(text) {
   if (Object.keys(hdr).length >= 2 && hdr.title !== undefined) { map = hdr; dataRows = cells.slice(1); }
   else {
     const maxCols = Math.max(...cells.map(r => r.length));
-    map = maxCols === 1 ? { title: 0 } : { cat: 0, title: 1, primary: 2, backup: 3, freq: 4, note: 5, months: 6 };
+    map = maxCols === 1 ? { title: 0 } : { cat: 0, title: 1, primary: 2, backup: 3, freq: 4, note: 5, months: 6, memo: 7 };
   }
   const get = (r, k) => map[k] === undefined ? '' : (r[map[k]] || '');
   let lastCat = '';
@@ -10484,7 +10698,7 @@ function parseDutyPaste(text) {
     const freq = dutyNormFreq(get(r, 'freq'));
     let months = dutyParseMonths(get(r, 'months'));
     if (!months.length) months = dutyAutoMonths(freq);
-    rows.push({ cat: cat || '미분류', title, primary, backup, freq, note: get(r, 'note'), months });
+    rows.push({ cat: cat || '미분류', title, primary, backup, freq, note: get(r, 'note'), months, memo: get(r, 'memo') });
   });
   return { rows };
 }
@@ -10529,11 +10743,11 @@ function previewDutyPaste() {
       ${unknown.size ? `<div class="duty-unknown-note">⚠ 팀원 목록에 없는 이름: ${[...unknown].map(escHtml).join(', ')} — 그대로 저장되고 표에 별도 열로 표시됩니다.</div>` : ''}
     </div>
     <div class="duty-paste-table-wrap"><table class="duty-paste-table">
-      <thead><tr><th>대분류</th><th>업무명</th><th>정</th><th>부</th><th>주기</th><th>비고</th><th>시기</th><th></th></tr></thead>
+      <thead><tr><th>대분류</th><th>업무명</th><th>정</th><th>부</th><th>주기</th><th>비고</th><th>시기</th><th>메모</th><th></th></tr></thead>
       <tbody>${rows.slice(0, 200).map(r => `<tr class="${r.dup ? 'dup' : ''}">
         <td>${escHtml(r.cat)}${!r.dup && newCats.has(r.cat) ? ' <span class="duty-new-badge">새</span>' : ''}</td>
         <td>${escHtml(r.title)}</td><td>${nameHtml(r.primary)}</td><td>${nameHtml(r.backup)}</td>
-        <td>${escHtml(r.freq)}</td><td>${escHtml(r.note)}</td><td>${escHtml(dutyMonthsLabel(r.months))}</td><td>${r.dup ? '중복' : ''}</td>
+        <td>${escHtml(r.freq)}</td><td>${escHtml(r.note)}</td><td>${escHtml(dutyMonthsLabel(r.months))}</td><td class="duty-paste-memo" title="${escHtml(r.memo)}">${escHtml(dutyShort(r.memo, 20))}</td><td>${r.dup ? '중복' : ''}</td>
       </tr>`).join('')}</tbody>
     </table></div>
     ${rows.length > 200 ? `<div class="duty-paste-more">… 외 ${rows.length - 200}행</div>` : ''}`;
@@ -10556,6 +10770,7 @@ async function submitDutyPaste() {
       nextOrder.set(catId, order);
       const row = { category_id: catId, title: r.title, frequency: r.freq, note: r.note, sort_order: order };
       row.months = dutyMonthsStr(r.months);
+      if (r.memo) row.memo = r.memo;
       return row;
     });
     const createdDuties = await dutyInsertRows(DUTY_T.duty, dutyRows);
@@ -10622,6 +10837,7 @@ function isEditingOpen() {
       || (idm && idm.classList.contains('open'))
       || dutyEditing !== null
       || dutyPaint !== null
+      || dutyMemoEditId !== null
       || document.getElementById('dutyPasteModal')?.classList.contains('open')
       || document.querySelector('.master-inline-form.open') !== null;
 }
