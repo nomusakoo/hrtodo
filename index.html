@@ -2887,21 +2887,33 @@ const TAB_META = [
   { id:'exec',      label:'임원 대시보드', icon:'💼' },
   { id:'memo',      label:'메모',          icon:'🗒' },
   { id:'policy',    label:'제도',          icon:'📚' },
-  { id:'network',   label:'상호작용',      icon:'🕸' },
+  { id:'network',   label:'상호작용',      icon:'🕸', defaultHidden:true }, // 기본 숨김 — 설정 > 탭 표시에서 켤 수 있음
   { id:'duty',      label:'업무분장',      icon:'🧩' },
 ];
 const TAB_ORDER_KEY = 'hr_tab_order_v1';
+const TAB_HIDE_MIGRATION_KEY = 'hr_tab_hide_network_v1';
 function loadTabConfig() {
+  let config = null;
   try {
     const saved = JSON.parse(localStorage.getItem(TAB_ORDER_KEY));
     if (Array.isArray(saved) && saved.length) {
       // 새 탭이 추가돼도 기존 순서/표시 설정은 유지하고, 새 탭만 끝에 붙임
       const known = saved.filter(t => t && TAB_META.some(m => m.id === t.id));
-      const missing = TAB_META.filter(m => !known.some(t => t.id === m.id)).map(m => ({ id: m.id, visible: true }));
-      if (known.length) return known.concat(missing);
+      const missing = TAB_META.filter(m => !known.some(t => t.id === m.id)).map(m => ({ id: m.id, visible: !m.defaultHidden }));
+      if (known.length) config = known.concat(missing);
     }
   } catch {}
-  return TAB_META.map(t => ({ id: t.id, visible: true }));
+  if (!config) config = TAB_META.map(t => ({ id: t.id, visible: !t.defaultHidden }));
+  // 이미 쓰던 기기도 한 번만 기본 숨김 탭을 숨김 처리(이후 사용자가 다시 켜면 그대로 유지)
+  try {
+    if (localStorage.getItem(TAB_HIDE_MIGRATION_KEY) !== '1') {
+      config.forEach(t => { if (TAB_META.find(m => m.id === t.id)?.defaultHidden) t.visible = false; });
+      if (!config.some(t => t.visible)) config[0].visible = true;
+      localStorage.setItem(TAB_ORDER_KEY, JSON.stringify(config));
+      localStorage.setItem(TAB_HIDE_MIGRATION_KEY, '1');
+    }
+  } catch {}
+  return config;
 }
 function saveTabConfig() { localStorage.setItem(TAB_ORDER_KEY, JSON.stringify(tabConfig)); }
 let tabConfig = loadTabConfig();
