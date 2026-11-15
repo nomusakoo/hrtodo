@@ -1550,6 +1550,93 @@
   .duty-edit-memo{flex:1;min-width:200px;padding:4px 8px;border:1px dashed #e0c96a;border-radius:6px;background:#fffdf3;font-size:12.5px;line-height:1.5;font-family:var(--font);resize:none;outline:none;overflow:hidden;}
   .duty-edit-memo:focus{border-style:solid;border-color:#d4b84a;background:#fffbe6;}
   .duty-paste-memo{color:#7a5c00;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .duty-title-group{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+  .duty-view-seg{display:inline-flex;background:var(--gray-100);border-radius:10px;padding:3px;}
+  .duty-view-seg button{display:inline-flex;align-items:center;gap:5px;border:none;background:none;padding:6px 14px;font-size:12.5px;font-weight:500;font-family:var(--font);color:var(--gray-500);border-radius:8px;cursor:pointer;transition:all .15s;}
+  .duty-view-seg button.active{background:#fff;color:var(--primary);font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.12);}
+  .duty-view-badge{min-width:17px;height:17px;border-radius:999px;background:var(--danger);color:#fff;font-size:10.5px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;padding:0 5px;}
+  #view-duty:not(.ho-mode) .duty-ho-only{display:none !important;}
+  #view-duty.ho-mode .duty-matrix-only{display:none !important;}
+  .duty-ho-badge{font-size:10.5px;font-weight:600;background:#ede9fe;color:#6d28d9;border-radius:4px;padding:1px 6px;white-space:nowrap;cursor:pointer;}
+  .ho-empty{text-align:center;padding:56px 20px;background:#fff;border:1px dashed var(--border);border-radius:var(--radius-lg);}
+  .ho-empty-icon{font-size:34px;margin-bottom:8px;}
+  .ho-empty-title{font-size:15px;font-weight:700;color:var(--gray-800);margin-bottom:6px;}
+  .ho-empty-desc{font-size:12.5px;color:var(--gray-500);line-height:1.7;margin-bottom:16px;}
+  .ho-start{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow-sm);}
+  .ho-start-title{font-size:14px;font-weight:700;color:var(--primary);margin-bottom:12px;}
+  .ho-start-grid{display:grid;grid-template-columns:1fr 1fr 180px;gap:10px 14px;}
+  .ho-start-grid label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600;color:var(--gray-600);}
+  .ho-start-grid label.wide{grid-column:1 / -1;}
+  .ho-start-preview{margin-top:12px;font-size:12.5px;color:var(--gray-600);background:var(--gray-50);border-radius:var(--radius);padding:10px 12px;line-height:1.6;}
+  .ho-start-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}
+  .ho-chip{font-size:11.5px;background:#fff;border:1px solid var(--border);border-radius:999px;padding:2px 9px;color:var(--gray-700);}
+  .ho-chip.primary{border-color:#c7d2fe;}
+  .ho-start-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:12px;}
+  .ho-warn{color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 10px;font-size:12.5px;margin:6px 0;}
+  .ho-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:16px;box-shadow:var(--shadow-sm);}
+  .ho-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  .ho-card-who{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .ho-person{font-size:15px;font-weight:700;padding:4px 12px;border-radius:999px;}
+  .ho-person.from{background:var(--gray-100);color:var(--gray-700);}
+  .ho-person.to{background:var(--primary);color:#fff;}
+  .ho-arrow{color:var(--gray-400);font-size:16px;}
+  .ho-dday{font-size:12px;font-weight:600;color:var(--gray-500);background:var(--gray-50);border:1px solid var(--border);border-radius:999px;padding:2px 10px;}
+  .ho-dday.soon{color:#b45309;border-color:#fcd34d;background:#fffbeb;}
+  .ho-dday.over{color:var(--danger);border-color:#fca5a5;background:var(--danger-bg);}
+  .ho-card-actions{display:flex;gap:6px;}
+  .ho-card-note{font-size:12.5px;color:var(--gray-600);margin-top:8px;}
+  .ho-progress{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0 10px;}
+  .ho-progress-bar{flex:0 0 220px;height:8px;background:var(--gray-100);border-radius:999px;overflow:hidden;}
+  .ho-progress-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#16a34a);border-radius:999px;transition:width .4s ease;}
+  .ho-progress-txt{font-size:12.5px;color:var(--gray-600);}
+  .ho-tag{display:inline-flex;align-items:center;font-size:10.5px;font-weight:600;border-radius:4px;padding:1px 6px;border:none;font-family:var(--font);white-space:nowrap;margin-left:4px;}
+  button.ho-tag{cursor:pointer;}
+  .ho-tag.new{background:#dcfce7;color:#15803d;}
+  .ho-tag.chg{background:#fef3c7;color:#b45309;}
+  .ho-tag.ex{background:var(--gray-100);color:var(--gray-500);}
+  .ho-tag.now{background:var(--danger-bg);color:var(--danger);margin:0 0 2px;}
+  .ho-table-wrap{overflow-x:auto;border:1px solid var(--gray-100);border-radius:var(--radius);}
+  .ho-table{width:100%;border-collapse:collapse;font-size:13px;}
+  .ho-table th{background:var(--gray-50);color:var(--gray-600);font-size:12px;font-weight:600;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+  .ho-table td{padding:9px 10px;border-bottom:1px solid var(--gray-100);vertical-align:middle;}
+  .ho-row.done td{background:#f6fdf8;}
+  .ho-row.excluded td{background:var(--gray-50);color:var(--gray-400);}
+  .ho-ex-title{text-decoration:line-through;margin-right:4px;}
+  .ho-ex-stage{font-size:11px;margin-left:8px;}
+  .ho-duty-cell{position:relative;min-width:240px;}
+  .ho-duty-cell.has-memo::after{content:'';position:absolute;top:0;right:0;border-style:solid;border-width:0 9px 9px 0;border-color:transparent #e5484d transparent transparent;}
+  .ho-duty-cat{font-size:11px;color:var(--gray-400);}
+  .ho-duty-title{font-weight:600;color:var(--gray-800);}
+  .ho-duty-memo{font-size:11.5px;color:#7a5c00;margin-top:2px;}
+  .ho-duty-memo.empty{color:var(--gray-300);}
+  .ho-month-cell{font-size:12px;color:var(--gray-600);white-space:nowrap;}
+  .ho-recv-select{border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12.5px;font-family:var(--font);background:#fff;}
+  .ho-recv-select.custom{border-color:#a78bfa;background:#f5f3ff;}
+  .ho-steps{display:flex;align-items:center;}
+  .ho-step{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--border);background:#fff;border-radius:999px;padding:3px 10px 3px 4px;font-size:11.5px;font-family:var(--font);color:var(--gray-500);cursor:pointer;white-space:nowrap;transition:all .15s;}
+  .ho-step:hover{border-color:var(--accent);color:var(--accent);}
+  .ho-step-num{width:18px;height:18px;border-radius:50%;background:var(--gray-100);display:inline-flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;}
+  .ho-step.on{background:#ecfdf3;border-color:#86efac;color:#15803d;font-weight:600;}
+  .ho-step.on .ho-step-num{background:#16a34a;color:#fff;}
+  .ho-step-line{width:10px;height:1px;background:var(--gray-300);}
+  .ho-none{text-align:center;color:var(--gray-400);padding:20px !important;}
+  .ho-sub{font-size:11.5px;color:var(--gray-400);}
+  .ho-past{margin-top:10px;}
+  .ho-past-title{font-size:13px;font-weight:700;color:var(--gray-600);margin-bottom:8px;}
+  .ho-past-item{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:9px 12px;margin-bottom:6px;font-size:13px;}
+  .ho-past-item summary{cursor:pointer;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .ho-past-item ul{margin:8px 0 2px 18px;font-size:12.5px;color:var(--gray-700);line-height:1.8;}
+  .ho-past-status{font-size:11px;font-weight:700;border-radius:4px;padding:1px 6px;}
+  .ho-past-status.done{background:#dcfce7;color:#15803d;}
+  .ho-past-status.cancelled{background:var(--gray-100);color:var(--gray-500);}
+  .ho-past-meta{font-size:11.5px;color:var(--gray-400);}
+  .ho-past-none{font-size:12px;color:var(--gray-400);margin-top:6px;}
+  .ho-complete-modal{width:820px;}
+  .ho-cm-summary{font-size:13px;color:var(--gray-700);margin-bottom:8px;}
+  .ho-cm-table td{font-size:12.5px;}
+  .ho-backup-select{border:1px solid var(--border);border-radius:6px;padding:4px 6px;font-size:12px;font-family:var(--font);}
+  .ho-cm-options{display:flex;flex-direction:column;gap:6px;margin-top:12px;font-size:13px;color:var(--gray-700);}
+  .ho-cm-options input{margin-right:6px;}
   .duty-paste-modal{width:760px;}
   .duty-paste-help{font-size:12px;color:var(--gray-600);background:var(--gray-50);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px;line-height:1.7;}
   .duty-paste-summary{font-size:12.5px;color:var(--gray-700);margin:10px 0 6px;}
@@ -1577,6 +1664,9 @@
     .duty-table th.duty-th-title{min-width:170px;}
     .duty-cat-actions,.duty-del{opacity:1;}
     .duty-memo-btn{opacity:.6;}
+    .ho-start-grid{grid-template-columns:1fr;}
+    .ho-progress-bar{flex:1 1 100%;}
+    .ho-card-actions{width:100%;justify-content:flex-end;}
     .duty-add-inner{flex-direction:column;}
     .duty-add-inner .duty-edit-input{flex:none;width:100%;}
   }
@@ -1965,23 +2055,33 @@
     <!-- DUTY TAB (업무분장) -->
     <div id="view-duty" style="display:none">
       <div class="page-header">
-        <div class="page-title">업무분장<span id="dutyCountLabel"></span></div>
+        <div class="duty-title-group">
+          <div class="page-title">업무분장<span id="dutyCountLabel"></span></div>
+          <div class="duty-view-seg">
+            <button id="dutyViewBtnMatrix" class="active" onclick="setDutyView('matrix')">&#129513; 업무표</button>
+            <button id="dutyViewBtnHandover" onclick="setDutyView('handover')">&#128257; 인수인계<span class="duty-view-badge" id="dutyHoBadge"></span></button>
+          </div>
+        </div>
         <div class="duty-header-actions">
-          <button class="btn btn-sm duty-tl-toggle" id="dutyTlToggle" onclick="toggleDutyTimeline()">&#128202; 시기 보기</button>
+          <button class="btn btn-sm duty-tl-toggle duty-matrix-only" id="dutyTlToggle" onclick="toggleDutyTimeline()">&#128202; 시기 보기</button>
           <button class="btn btn-sm" onclick="openDutyHistoryModal()">&#128337; 변경 이력</button>
-          <button class="btn btn-sm" onclick="exportDutyExcel()">&#11015; 엑셀 내보내기</button>
-          <button class="btn btn-sm" onclick="openDutyPasteModal()">&#128203; 붙여넣기로 가져오기</button>
-          <button class="btn btn-green" onclick="dutyOpenEdit('newCat', 0)">+ 대분류 추가</button>
+          <button class="btn btn-sm duty-matrix-only" onclick="exportDutyExcel()">&#11015; 엑셀 내보내기</button>
+          <button class="btn btn-sm duty-matrix-only" onclick="openDutyPasteModal()">&#128203; 붙여넣기로 가져오기</button>
+          <button class="btn btn-green duty-matrix-only" onclick="dutyOpenEdit('newCat', 0)">+ 대분류 추가</button>
+          <button class="btn btn-green duty-ho-only" onclick="openHoStart()">+ 인수인계 시작</button>
         </div>
       </div>
+      <div id="dutyNotice"></div>
+      <div id="dutyHandoverView" class="duty-ho-only"></div>
+      <div class="duty-matrix-only">
       <div class="duty-toolbar">
         <input type="text" class="form-input duty-search" id="dutySearchInput" placeholder="업무명·담당자 검색" oninput="dutySearch=this.value;renderDutyTab()">
         <div class="duty-summary" id="dutySummary"></div>
         <div class="duty-legend"><span class="duty-mark primary sample">정</span>정 담당 <span class="duty-mark backup sample">부</span>부 담당 · 칸을 클릭하면 없음 → 정 → 부 순으로 바뀝니다</div>
       </div>
       <div class="duty-people" id="dutyPeople"></div>
-      <div id="dutyNotice"></div>
       <div class="duty-table-wrap"><table class="duty-table" id="dutyTable"></table></div>
+      </div>
     </div><!-- /view-duty -->
 
     <!-- EXEC DASHBOARD TAB (임원 대시보드) -->
@@ -2165,6 +2265,20 @@
     <button class="btn btn-sm btn-danger" id="dutyMemoDelBtn" onclick="deleteDutyMemo()">삭제</button>
     <button class="btn btn-sm" onclick="closeDutyMemo(false)">취소</button>
     <button class="btn btn-sm btn-primary" onclick="closeDutyMemo(true)">저장</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="hoCompleteModal">
+  <div class="modal ho-complete-modal">
+    <div class="modal-header" style="margin-bottom:10px;">
+      <div class="modal-title">&#128257; 인수인계 완료 처리 — 변경 내용 확인</div>
+      <button class="modal-close" onclick="closeHoComplete()">&#10005;</button>
+    </div>
+    <div id="hoCompleteBody"></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px;">
+      <button class="btn" onclick="closeHoComplete()">취소</button>
+      <button class="btn btn-primary" id="hoCompleteSubmit" onclick="applyHoComplete()">완료 처리</button>
+    </div>
   </div>
 </div>
 
@@ -9702,8 +9816,9 @@ let _remoteRefreshTimer = null;
 const DUTY_DEFAULT_CATEGORIES = ['인사기획·조직','채용·온보딩','발령·승진','평가·보상','급여·4대보험','근태·휴가','노무·노사관계','복리후생','교육·육성','퇴직·퇴직연금','제증명·인사시스템'];
 const DUTY_FREQS = ['상시','수시','월','분기','반기','연'];
 const DUTY_ROLE_LABEL = { primary:'정', backup:'부' };
-const DUTY_T = { cat:'hr_duty_categories', duty:'hr_duties', asg:'hr_duty_assignees', hist:'hr_duty_history' };
+const DUTY_T = { cat:'hr_duty_categories', duty:'hr_duties', asg:'hr_duty_assignees', hist:'hr_duty_history', ho:'hr_handovers', hoi:'hr_handover_items' };
 let dutyCats = [], duties = [], dutyAssignees = [], dutyHistory = [];
+let handovers = [], handoverItems = [];
 let dutyDownTables = new Set();
 let dutyCatsLoaded = false, dutySeedTried = false;
 let dutySearch = '';
@@ -9716,11 +9831,16 @@ let dutyBusyCells = new Set();
 let dutyDragId = null;
 let dutyPasteParsed = null;
 
-function dutyGet(t) { return t === DUTY_T.cat ? dutyCats : t === DUTY_T.duty ? duties : t === DUTY_T.asg ? dutyAssignees : dutyHistory; }
+function dutyGet(t) {
+  return t === DUTY_T.cat ? dutyCats : t === DUTY_T.duty ? duties : t === DUTY_T.asg ? dutyAssignees
+    : t === DUTY_T.ho ? handovers : t === DUTY_T.hoi ? handoverItems : dutyHistory;
+}
 function dutySet(t, arr) {
   if (t === DUTY_T.cat) dutyCats = arr;
   else if (t === DUTY_T.duty) duties = arr;
   else if (t === DUTY_T.asg) dutyAssignees = arr;
+  else if (t === DUTY_T.ho) handovers = arr;
+  else if (t === DUTY_T.hoi) handoverItems = arr;
   else dutyHistory = arr;
 }
 function dutyLocalLoad(t) {
@@ -9751,7 +9871,9 @@ async function dutyLoadTable(t) {
 }
 async function loadDutyData() {
   try {
-    const [c, d, a, h] = await Promise.all([DUTY_T.cat, DUTY_T.duty, DUTY_T.asg, DUTY_T.hist].map(dutyLoadTable));
+    const [c, d, a, h, ho, hoi] = await Promise.all([DUTY_T.cat, DUTY_T.duty, DUTY_T.asg, DUTY_T.hist, DUTY_T.ho, DUTY_T.hoi].map(dutyLoadTable));
+    if (ho) handovers = ho;
+    if (hoi) handoverItems = hoi;
     if (c) { dutyCats = c; dutyCatsLoaded = true; }
     if (d) { duties = d; dutyApplyOverlays(); }
     if (a) dutyAssignees = a;
@@ -9929,6 +10051,10 @@ function renderDutyTab() {
   const table = document.getElementById('dutyTable');
   if (!table) return;
   if (dutyCatsLoaded && !dutySeedTried && !dutyCats.length && !duties.length) { dutySeedDefaults(); }
+  dutyApplyViewMode();
+  dutyRenderNotice();
+  if (dutyView === 'handover') { renderHandoverView(); return; }
+  const hoBadges = hoDutyBadgeMap();
 
   const prevEl = document.getElementById('dutyEditInput');
   let keep = null;
@@ -10004,6 +10130,7 @@ function renderDutyTab() {
               ? dutyEditInputHtml(d.title, '업무명')
               : `<span class="duty-title" onclick="dutyOpenEdit('title',${d.id})" title="클릭해서 수정">${escHtml(d.title)}</span>`}
             ${g.noPrimary ? '<span class="duty-gap-badge p">정 없음</span>' : g.noBackup ? '<span class="duty-gap-badge b">부 없음</span>' : ''}
+            ${hoBadges.has(d.id) ? `<span class="duty-ho-badge" title="${escHtml(hoBadges.get(d.id))}" onclick="event.stopPropagation();setDutyView('handover')">🔁 인수인계 중</span>` : ''}
             <button class="duty-memo-btn ${d.memo ? 'on' : ''}" title="${d.memo ? '메모 보기·수정' : '메모 추가'}" onclick="event.stopPropagation();openDutyMemo(${d.id},this)">📝 메모</button>
           </div>
         </td>
@@ -10079,13 +10206,7 @@ function renderDutyTab() {
       <button class="duty-chip warn-p ${dutyGapFilter === 'primary' ? 'active' : ''}" onclick="setDutyGapFilter('primary')">정 담당 없음 ${gapP}</button>
       <button class="duty-chip warn-b ${dutyGapFilter === 'backup' ? 'active' : ''}" onclick="setDutyGapFilter('backup')">부 담당 없음 ${gapB}</button>`;
   }
-  const notice = document.getElementById('dutyNotice');
-  if (notice) {
-    const down = [...dutyDownTables];
-    notice.innerHTML = (!useLocal && sbClient && down.length)
-      ? `<div class="duty-notice">⚠ Supabase에 업무분장 테이블(${down.map(escHtml).join(', ')})이 아직 없어 이 기기에만 저장됩니다. 관리자에게 테이블 생성을 요청하세요.</div>`
-      : '';
-  }
+
 
   if (dutyEditing) {
     const el = document.getElementById('dutyEditInput');
@@ -10146,6 +10267,15 @@ function renderDutyPeople(cols, focusM) {
       <button class="duty-person all ${focusM ? '' : 'active'}" onclick="setDutyMemberFilter(null)">전체</button>
       ${chips}
     </div>${detail}`;
+}
+
+function dutyRenderNotice() {
+  const notice = document.getElementById('dutyNotice');
+  if (!notice) return;
+  const down = [...dutyDownTables];
+  notice.innerHTML = (!useLocal && sbClient && down.length)
+    ? `<div class="duty-notice">⚠ Supabase에 업무분장 테이블(${down.map(escHtml).join(', ')})이 아직 없어 이 기기에만 저장됩니다. 관리자에게 테이블 생성을 요청하세요.</div>`
+    : '';
 }
 
 function setDutyGapFilter(kind) {
@@ -10834,6 +10964,408 @@ function renderDutyHistory() {
   </div>`).join('');
 }
 
+
+// ══════════════════════════════════════════════
+//  인수인계 (업무분장 위에서 진행 상태만 관리 — 업무분장이 원본)
+// ══════════════════════════════════════════════
+let dutyView = 'matrix';           // 'matrix' | 'handover'
+let hoStartOpen = false;
+let hoCompleteId = null;
+const HO_STAGES = ['설명 완료', '같이 해보기', '혼자 수행 확인'];
+
+function setDutyView(v) {
+  dutyView = v;
+  dutyMemoTipHide();
+  renderDutyTab();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function dutyApplyViewMode() {
+  const view = document.getElementById('view-duty');
+  if (view) view.classList.toggle('ho-mode', dutyView === 'handover');
+  document.getElementById('dutyViewBtnMatrix')?.classList.toggle('active', dutyView === 'matrix');
+  document.getElementById('dutyViewBtnHandover')?.classList.toggle('active', dutyView === 'handover');
+  const badge = document.getElementById('dutyHoBadge');
+  if (badge) { const n = hoActive().length; badge.textContent = n ? n : ''; badge.style.display = n ? '' : 'none'; }
+}
+function hoActive() { return handovers.filter(h => h.status === 'active').sort((a, b) => a.id - b.id); }
+function hoItemsOf(h) { return handoverItems.filter(i => i.handover_id === h.id); }
+function hoSnap(d) { return (d.title || '') + '\u0001' + (d.memo || ''); }
+function hoReceiverOf(h, item) { return (item && item.receiver) || h.to_member; }
+function hoDutyOrder(d) {
+  const cats = dutyCatsSorted();
+  const ci = cats.findIndex(c => c.id === d.category_id);
+  return (ci < 0 ? 9999 : ci) * 100000 + (d.sort_order ?? d.id);
+}
+// 업무분장의 '지금' 상태를 기준으로 인수인계 목록을 만든다 (중간에 담당이 바뀌어도 어긋나지 않도록)
+function hoRows(h) {
+  const items = hoItemsOf(h);
+  const byDuty = new Map(items.map(i => [i.duty_id, i]));
+  const nowM = new Date().getMonth() + 1;
+  const rows = [];
+  const live = new Set();
+  dutyAssignees.filter(a => a.member === h.from_member).forEach(a => {
+    const d = duties.find(x => x.id === a.duty_id);
+    if (!d || live.has(d.id)) return;
+    live.add(d.id);
+    const item = byDuty.get(d.id) || null;
+    rows.push({ d, role: a.role, item, isNew: !item, changed: !!(item && item.snap && item.snap !== hoSnap(d)), excluded: false, thisMonth: dutyMonthsOf(d).includes(nowM) });
+  });
+  items.forEach(item => {
+    if (live.has(item.duty_id)) return;
+    rows.push({ d: duties.find(x => x.id === item.duty_id) || null, role: null, item, isNew: false, changed: false, excluded: true, thisMonth: false });
+  });
+  rows.sort((a, b) => (a.excluded - b.excluded) || (b.thisMonth - a.thisMonth) || ((a.d ? hoDutyOrder(a.d) : 1e9) - (b.d ? hoDutyOrder(b.d) : 1e9)));
+  return rows;
+}
+function hoProgress(rows) {
+  const inc = rows.filter(r => !r.excluded);
+  const total = inc.length * HO_STAGES.length;
+  const sum = inc.reduce((s, r) => s + Math.min(HO_STAGES.length, (r.item && r.item.stage) || 0), 0);
+  return { pct: total ? Math.round(sum / total * 100) : 0, done: inc.filter(r => r.item && r.item.stage >= HO_STAGES.length).length, n: inc.length };
+}
+function hoDutyBadgeMap() {
+  const map = new Map();
+  hoActive().forEach(h => {
+    const items = hoItemsOf(h);
+    dutyAssignees.filter(a => a.member === h.from_member).forEach(a => {
+      const item = items.find(i => i.duty_id === a.duty_id);
+      map.set(a.duty_id, `인수인계 중: ${h.from_member} → ${hoReceiverOf(h, item)}`);
+    });
+  });
+  return map;
+}
+function hoMemberOptions(exclude) {
+  const names = [...new Set([...MEMBERS, ...dutyAssignees.map(a => a.member)])].filter(m => m && m !== exclude);
+  return names;
+}
+function hoFmtDate(s) {
+  const d = new Date(s);
+  if (isNaN(d)) return '';
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())}`;
+}
+
+function renderHandoverView() {
+  const box = document.getElementById('dutyHandoverView');
+  if (!box) return;
+  const active = hoActive();
+  let html = '';
+  if (hoStartOpen) html += hoStartFormHtml();
+  if (!active.length && !hoStartOpen) {
+    html += `<div class="ho-empty">
+      <div class="ho-empty-icon">🔁</div>
+      <div class="ho-empty-title">진행 중인 인수인계가 없습니다</div>
+      <div class="ho-empty-desc">팀원이 바뀔 때 넘기는 사람의 업무(정·부 담당)가 자동으로 목록이 되고,<br>업무 메모가 그대로 인수인계서가 됩니다.</div>
+      <button class="btn btn-green" onclick="openHoStart()">+ 인수인계 시작</button>
+    </div>`;
+  }
+  active.forEach(h => { html += hoCardHtml(h); });
+  const past = handovers.filter(h => h.status !== 'active').sort((a, b) => String(b.completed_at || b.created_at).localeCompare(String(a.completed_at || a.created_at)));
+  if (past.length) {
+    html += `<div class="ho-past"><div class="ho-past-title">지난 인수인계</div>${past.map(h => {
+      const items = hoItemsOf(h).filter(i => i.result);
+      return `<details class="ho-past-item">
+        <summary><span class="ho-past-status ${h.status}">${h.status === 'done' ? '완료' : '취소'}</span>
+          <b>${escHtml(h.from_member)}</b> → <b>${escHtml(h.to_member)}</b>
+          <span class="ho-past-meta">${hoFmtDate(h.created_at)} 시작${h.completed_at ? ` · ${hoFmtDate(h.completed_at)} ${h.status === 'done' ? '완료' : '취소'}` : ''}${h.summary ? ' · ' + escHtml(h.summary) : ''}</span></summary>
+        ${items.length ? `<ul>${items.map(i => `<li><b>${escHtml(i.duty_title || '')}</b> — ${escHtml(i.result)}</li>`).join('')}</ul>` : '<div class="ho-past-none">기록된 업무 이관 내역이 없습니다.</div>'}
+      </details>`;
+    }).join('')}</div>`;
+  }
+  box.innerHTML = html;
+}
+
+function hoStartFormHtml() {
+  const froms = hoMemberOptions(null).filter(m => dutyAssignees.some(a => a.member === m));
+  const opts = hoMemberOptions(null);
+  const today = new Date();
+  const due = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 14);
+  const dueStr = `${due.getFullYear()}-${String(due.getMonth() + 1).padStart(2, '0')}-${String(due.getDate()).padStart(2, '0')}`;
+  return `<div class="ho-start">
+    <div class="ho-start-title">🔁 새 인수인계</div>
+    <div class="ho-start-grid">
+      <label>넘기는 사람<select class="form-select" id="hoFrom" onchange="hoStartPreview()">
+        <option value="">선택</option>${froms.map(m => `<option value="${escHtml(m)}">${escHtml(m)} (업무 ${new Set(dutyAssignees.filter(a => a.member === m).map(a => a.duty_id)).size}개)</option>`).join('')}
+      </select></label>
+      <label>받는 사람(기본)<input class="form-input" id="hoTo" list="hoMemberList" placeholder="이름 입력 또는 선택 (신규 입사자도 가능)"></label>
+      <label>기한<input type="date" class="form-input" id="hoDue" value="${dueStr}"></label>
+      <label class="wide">메모 (선택)<input class="form-input" id="hoNote" placeholder="예: 11/30 퇴사, 12/1 신규 입사자 합류" maxlength="200"></label>
+    </div>
+    <datalist id="hoMemberList">${opts.map(m => `<option value="${escHtml(m)}">`).join('')}</datalist>
+    <div class="ho-start-preview" id="hoStartPreview">넘기는 사람을 고르면 넘길 업무가 표시됩니다. 업무마다 받는 사람은 시작 후 따로 바꿀 수 있어요.</div>
+    <div class="ho-start-actions">
+      <button class="btn" onclick="hoStartOpen=false;renderDutyTab()">취소</button>
+      <button class="btn btn-primary" onclick="startHandover()">인수인계 시작</button>
+    </div>
+  </div>`;
+}
+function openHoStart() {
+  hoStartOpen = true;
+  if (dutyView !== 'handover') dutyView = 'handover';
+  renderDutyTab();
+  setTimeout(() => document.getElementById('hoFrom')?.focus(), 50);
+}
+function hoStartPreview() {
+  const from = document.getElementById('hoFrom').value;
+  const box = document.getElementById('hoStartPreview');
+  if (!box) return;
+  if (!from) { box.textContent = '넘기는 사람을 고르면 넘길 업무가 표시됩니다.'; return; }
+  const list = dutyAssignees.filter(a => a.member === from).map(a => ({ a, d: duties.find(x => x.id === a.duty_id) })).filter(x => x.d);
+  const p = list.filter(x => x.a.role === 'primary').length, b = list.length - p;
+  const dup = hoActive().find(h => h.from_member === from);
+  box.innerHTML = `<b>${escHtml(from)}</b>님의 업무 <b>${list.length}</b>개 (정 ${p} · 부 ${b})가 인수인계 목록이 됩니다.
+    ${dup ? `<div class="ho-warn">⚠ ${escHtml(from)}님은 이미 진행 중인 인수인계가 있습니다.</div>` : ''}
+    <div class="ho-start-chips">${list.slice(0, 30).map(x => `<span class="ho-chip ${x.a.role}">${DUTY_ROLE_LABEL[x.a.role]} · ${escHtml(x.d.title)}</span>`).join('')}${list.length > 30 ? `<span class="ho-chip">… 외 ${list.length - 30}개</span>` : ''}</div>`;
+}
+async function startHandover() {
+  const from = document.getElementById('hoFrom').value.trim();
+  const to = document.getElementById('hoTo').value.trim();
+  const due = document.getElementById('hoDue').value || null;
+  const note = document.getElementById('hoNote').value.trim();
+  if (!from) { showToast('넘기는 사람을 선택해 주세요.', 'error'); return; }
+  if (!to) { showToast('받는 사람을 입력해 주세요.', 'error'); return; }
+  if (from === to) { showToast('넘기는 사람과 받는 사람이 같습니다.', 'error'); return; }
+  if (hoActive().some(h => h.from_member === from) && !confirm(`${from}님은 이미 진행 중인 인수인계가 있습니다. 하나 더 시작할까요?`)) return;
+  const h = await dutyInsert(DUTY_T.ho, { from_member: from, to_member: to, due_date: due, note, status: 'active', created_by: dutyActor() });
+  if (!h) return;
+  const ids = [...new Set(dutyAssignees.filter(a => a.member === from).map(a => a.duty_id))];
+  const rows = ids.map(id => duties.find(d => d.id === id)).filter(Boolean)
+    .map(d => ({ handover_id: h.id, duty_id: d.id, duty_title: d.title, receiver: null, stage: 0, snap: hoSnap(d), result: '' }));
+  await dutyInsertRows(DUTY_T.hoi, rows);
+  hoStartOpen = false;
+  await dutyLog('인수인계 시작', `${from} → ${to} · 업무 ${rows.length}개${due ? ` · 기한 ${due}` : ''}${note ? ` · ${note}` : ''}`);
+  renderDutyTab();
+}
+
+function hoCardHtml(h) {
+  const rows = hoRows(h);
+  const pr = hoProgress(rows);
+  const dday = h.due_date ? getDdayDiff(h.due_date) : null;
+  const ddayTxt = dday === null ? '' : dday < 0 ? `D+${-dday}` : dday === 0 ? 'D-day' : `D-${dday}`;
+  const newCnt = rows.filter(r => r.isNew).length, chgCnt = rows.filter(r => r.changed).length, exCnt = rows.filter(r => r.excluded).length;
+  const receivers = hoMemberOptions(h.from_member);
+  const nowM = new Date().getMonth() + 1;
+  return `<div class="ho-card" data-ho="${h.id}">
+    <div class="ho-card-head">
+      <div class="ho-card-who">
+        <span class="ho-person from">${escHtml(h.from_member)}</span><span class="ho-arrow">→</span><span class="ho-person to">${escHtml(h.to_member)}</span>
+        ${ddayTxt ? `<span class="ho-dday ${dday < 0 ? 'over' : dday <= 3 ? 'soon' : ''}">${ddayTxt}${h.due_date ? ` · ${escHtml(h.due_date)}` : ''}</span>` : ''}
+      </div>
+      <div class="ho-card-actions">
+        <button class="btn btn-sm" onclick="exportHandover(${h.id})">⬇ 인수인계서</button>
+        <button class="btn btn-sm btn-danger" onclick="cancelHandover(${h.id})">취소</button>
+        <button class="btn btn-sm btn-primary" onclick="openHoComplete(${h.id})">완료 처리</button>
+      </div>
+    </div>
+    ${h.note ? `<div class="ho-card-note">📌 ${escHtml(h.note)}</div>` : ''}
+    <div class="ho-progress"><div class="ho-progress-bar"><span style="width:${pr.pct}%"></span></div>
+      <span class="ho-progress-txt"><b>${pr.pct}%</b> · ${pr.done}/${pr.n}개 업무 인수 완료</span>
+      ${newCnt ? `<span class="ho-tag new">🆕 새로 추가 ${newCnt}</span>` : ''}${chgCnt ? `<span class="ho-tag chg">✎ 내용 변경 ${chgCnt}</span>` : ''}${exCnt ? `<span class="ho-tag ex">제외 ${exCnt}</span>` : ''}
+    </div>
+    <div class="ho-table-wrap"><table class="ho-table">
+      <thead><tr><th>업무</th><th>역할</th><th>시기</th><th>받는 사람</th><th>진행 단계</th></tr></thead>
+      <tbody>${rows.map(r => {
+        if (r.excluded) {
+          return `<tr class="ho-row excluded"><td colspan="5"><span class="ho-ex-title">${escHtml(r.d ? r.d.title : (r.item.duty_title || '삭제된 업무'))}</span>
+            <span class="ho-tag ex">${r.d ? '제외됨 · 담당이 바뀌어 더 이상 넘길 업무가 아님' : '제외됨 · 업무가 삭제됨'}</span>${r.item.stage ? `<span class="ho-ex-stage">진행 기록: ${HO_STAGES[r.item.stage - 1]}</span>` : ''}</td></tr>`;
+        }
+        const d = r.d, stage = (r.item && r.item.stage) || 0;
+        const recv = hoReceiverOf(h, r.item);
+        const months = dutyMonthsOf(d);
+        return `<tr class="ho-row ${stage >= HO_STAGES.length ? 'done' : ''}">
+          <td class="ho-duty-cell ${d.memo ? 'has-memo' : ''}" onmouseenter="dutyMemoTipShow(${d.id},this)" onmouseleave="dutyMemoTipHide()">
+            <div class="ho-duty-cat">${escHtml(dutyCatName(d.category_id))}</div>
+            <div class="ho-duty-title">${escHtml(d.title)}
+              ${r.isNew ? `<button class="ho-tag new" title="인수인계 시작 후 새로 배정된 업무 — 눌러서 확인" onclick="hoAck(${h.id},${d.id})">🆕 새로 추가됨</button>` : ''}
+              ${r.changed ? `<button class="ho-tag chg" title="업무명이나 메모가 바뀌었습니다 — 확인하면 표시가 사라집니다" onclick="hoAck(${h.id},${d.id})">✎ 내용 변경됨 · 확인</button>` : ''}
+            </div>
+            ${d.memo ? `<div class="ho-duty-memo">📝 ${escHtml(dutyShort(d.memo, 60))}</div>` : '<div class="ho-duty-memo empty">메모 없음 — 업무표에서 📝 메모로 인수인계 내용을 적어두세요</div>'}
+          </td>
+          <td><span class="duty-mark ${r.role}" style="--mc:${dutyMemberColor(h.from_member)}">${DUTY_ROLE_LABEL[r.role]}</span></td>
+          <td class="ho-month-cell">${r.thisMonth ? `<span class="ho-tag now">이번 달(${nowM}월)</span>` : ''}<div>${escHtml(dutyMonthsLabel(months) || '-')}</div></td>
+          <td><select class="ho-recv-select ${recv !== h.to_member ? 'custom' : ''}" onchange="hoSetReceiver(${h.id},${d.id},this.value)">
+            ${[...new Set([h.to_member, ...receivers])].map(m => `<option value="${escHtml(m)}" ${m === recv ? 'selected' : ''}>${escHtml(m)}${m === h.to_member ? ' (기본)' : ''}</option>`).join('')}
+          </select></td>
+          <td><div class="ho-steps">${HO_STAGES.map((label, i) => `<button class="ho-step ${stage > i ? 'on' : ''}" onclick="hoSetStage(${h.id},${d.id},${i + 1})" title="${label}"><span class="ho-step-num">${stage > i ? '✓' : i + 1}</span>${label}</button>`).join('<span class="ho-step-line"></span>')}</div></td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="5" class="ho-none">넘길 업무가 없습니다.</td></tr>'}</tbody>
+    </table></div>
+  </div>`;
+}
+
+async function hoEnsureItem(h, d) {
+  let item = handoverItems.find(i => i.handover_id === h.id && i.duty_id === d.id);
+  if (item) return item;
+  return await dutyInsert(DUTY_T.hoi, { handover_id: h.id, duty_id: d.id, duty_title: d.title, receiver: null, stage: 0, snap: hoSnap(d), result: '' });
+}
+async function hoSetStage(hId, dutyId, stage) {
+  const h = handovers.find(x => x.id === hId), d = duties.find(x => x.id === dutyId);
+  if (!h || !d) return;
+  const item = await hoEnsureItem(h, d);
+  if (!item) return;
+  const next = item.stage === stage ? stage - 1 : stage; // 같은 단계를 다시 누르면 한 단계 되돌림
+  const p = dutyUpdate(DUTY_T.hoi, item.id, { stage: next, snap: hoSnap(d) });
+  renderDutyTab();
+  await p;
+  renderDutyTab();
+}
+async function hoSetReceiver(hId, dutyId, name) {
+  const h = handovers.find(x => x.id === hId), d = duties.find(x => x.id === dutyId);
+  if (!h || !d) return;
+  const item = await hoEnsureItem(h, d);
+  if (!item) return;
+  const prev = hoReceiverOf(h, item);
+  const ok = await dutyUpdate(DUTY_T.hoi, item.id, { receiver: name === h.to_member ? null : name });
+  renderDutyTab();
+  if (ok && prev !== name) await dutyLog('인수인계 받는 사람 변경', `[${d.title}] ${prev} → ${name}`);
+}
+async function hoAck(hId, dutyId) {
+  const h = handovers.find(x => x.id === hId), d = duties.find(x => x.id === dutyId);
+  if (!h || !d) return;
+  const item = await hoEnsureItem(h, d);
+  if (item && item.snap !== hoSnap(d)) await dutyUpdate(DUTY_T.hoi, item.id, { snap: hoSnap(d) });
+  renderDutyTab();
+}
+async function cancelHandover(hId) {
+  const h = handovers.find(x => x.id === hId);
+  if (!h || !confirm(`${h.from_member} → ${h.to_member} 인수인계를 취소할까요?\n(업무분장 담당은 바뀌지 않고, 진행 기록은 지난 인수인계에 남습니다)`)) return;
+  const ok = await dutyUpdate(DUTY_T.ho, hId, { status: 'cancelled', completed_at: new Date().toISOString() });
+  renderDutyTab();
+  if (ok) await dutyLog('인수인계 취소', `${h.from_member} → ${h.to_member}`);
+}
+
+// ── 완료 처리: 버튼을 누르는 순간의 업무분장을 기준으로 미리보기 → 확정 ──
+function hoBuildPlan(h) {
+  return hoRows(h).filter(r => !r.excluded).map(r => {
+    const recv = hoReceiverOf(h, r.item);
+    const recvA = dutyAssigneeOf(r.d.id, recv);
+    const newRole = (recvA && recvA.role === 'primary') ? 'primary' : r.role; // 받는 사람이 이미 정이면 정 유지
+    const after = dutyAssignees.filter(a => a.duty_id === r.d.id && a.member !== h.from_member && a.member !== recv).map(a => ({ member: a.member, role: a.role }));
+    after.push({ member: recv, role: newRole });
+    return { r, recv, newRole, recvBefore: recvA ? recvA.role : null, noBackup: !after.some(a => a.role === 'backup'), others: after.map(a => a.member) };
+  });
+}
+function hoOpenTasks(member) { return tasks.filter(t => t.member === member && t.status !== '완료'); }
+function hoRoutinesOf(member) { return routines.filter(r => r.member === member); }
+function openHoComplete(hId) {
+  const h = handovers.find(x => x.id === hId);
+  if (!h) return;
+  hoCompleteId = hId;
+  const plan = hoBuildPlan(h);
+  const incomplete = plan.filter(p => ((p.r.item && p.r.item.stage) || 0) < HO_STAGES.length).length;
+  const openTasks = hoOpenTasks(h.from_member), myRoutines = hoRoutinesOf(h.from_member);
+  const roleTxt = r => r ? DUTY_ROLE_LABEL[r] : '없음';
+  document.getElementById('hoCompleteBody').innerHTML = `
+    <div class="ho-cm-summary"><b>${escHtml(h.from_member)}</b>님의 업무 <b>${plan.length}</b>개를 아래처럼 바꿉니다. (지금 업무분장 기준)</div>
+    ${incomplete ? `<div class="ho-warn">⚠ 아직 '혼자 수행 확인'까지 끝나지 않은 업무가 ${incomplete}개 있습니다. 그래도 완료 처리할 수 있습니다.</div>` : ''}
+    <div class="ho-table-wrap"><table class="ho-table ho-cm-table">
+      <thead><tr><th>업무</th><th>변경 전</th><th>변경 후</th><th>부 담당이 비는 경우</th></tr></thead>
+      <tbody>${plan.map((p, i) => `<tr>
+        <td><b>${escHtml(p.r.d.title)}</b>${((p.r.item && p.r.item.stage) || 0) < HO_STAGES.length ? ' <span class="ho-tag chg">진행 중</span>' : ''}</td>
+        <td>${escHtml(h.from_member)} <span class="duty-gap-badge ${p.r.role === 'primary' ? 'p' : 'b'}">${roleTxt(p.r.role)}</span>${p.recvBefore ? `<br><span class="ho-sub">${escHtml(p.recv)} ${roleTxt(p.recvBefore)}</span>` : ''}</td>
+        <td><b>${escHtml(p.recv)}</b> <span class="duty-gap-badge ${p.newRole === 'primary' ? 'p' : 'b'}">${roleTxt(p.newRole)}</span></td>
+        <td>${p.noBackup ? `<select class="ho-backup-select" data-i="${i}"><option value="">부 담당 없이 두기</option>${hoMemberOptions(h.from_member).filter(m => !p.others.includes(m)).map(m => `<option value="${escHtml(m)}">${escHtml(m)}</option>`).join('')}</select>` : '<span class="ho-sub">-</span>'}</td>
+      </tr>`).join('') || '<tr><td colspan="4" class="ho-none">넘길 업무가 없습니다.</td></tr>'}</tbody>
+    </table></div>
+    <div class="ho-cm-options">
+      <label><input type="checkbox" id="hoMoveTasks" ${openTasks.length ? 'checked' : 'disabled'}> 완료되지 않은 할 일 <b>${openTasks.length}</b>건도 <b>${escHtml(h.to_member)}</b>님에게 넘기기</label>
+      <label><input type="checkbox" id="hoMoveRoutines" ${myRoutines.length ? '' : 'disabled'}> 루틴 업무 <b>${myRoutines.length}</b>개도 <b>${escHtml(h.to_member)}</b>님에게 넘기기</label>
+    </div>`;
+  document.getElementById('hoCompleteModal').classList.add('open');
+}
+function closeHoComplete() {
+  document.getElementById('hoCompleteModal').classList.remove('open');
+  hoCompleteId = null;
+  renderDutyTab();
+}
+async function applyHoComplete() {
+  const h = handovers.find(x => x.id === hoCompleteId);
+  if (!h) return;
+  const btn = document.getElementById('hoCompleteSubmit');
+  btn.disabled = true; btn.textContent = '처리 중...';
+  try {
+    const plan = hoBuildPlan(h);
+    const backups = {};
+    document.querySelectorAll('#hoCompleteBody .ho-backup-select').forEach(sel => { if (sel.value) backups[sel.dataset.i] = sel.value; });
+    const moveTasks = document.getElementById('hoMoveTasks')?.checked;
+    const moveRoutines = document.getElementById('hoMoveRoutines')?.checked;
+    const rt = r => DUTY_ROLE_LABEL[r] || '없음';
+    let moved = 0, fail = 0;
+    for (let i = 0; i < plan.length; i++) {
+      const p = plan[i], d = p.r.d;
+      const fromA = dutyAssigneeOf(d.id, h.from_member);
+      const recvA = dutyAssigneeOf(d.id, p.recv);
+      let ok = true;
+      if (recvA) { if (recvA.role !== p.newRole) ok = await dutyUpdate(DUTY_T.asg, recvA.id, { role: p.newRole }); }
+      else ok = !!(await dutyInsert(DUTY_T.asg, { duty_id: d.id, member: p.recv, role: p.newRole }));
+      if (ok && fromA) ok = await dutyDeleteRows(DUTY_T.asg, [fromA.id]);
+      let result = `${h.from_member}(${rt(p.r.role)}) → ${p.recv}(${rt(p.newRole)})`;
+      if (ok && backups[i] && !dutyAssigneeOf(d.id, backups[i])) {
+        if (await dutyInsert(DUTY_T.asg, { duty_id: d.id, member: backups[i], role: 'backup' })) result += `, 부 담당 ${backups[i]} 지정`;
+      }
+      if (!ok) { fail++; continue; }
+      moved++;
+      const item = await hoEnsureItem(h, d);
+      if (item) await dutyUpdate(DUTY_T.hoi, item.id, { result, duty_title: d.title });
+    }
+    let taskCnt = 0, routineCnt = 0;
+    if (moveTasks) {
+      for (const t of hoOpenTasks(h.from_member)) {
+        const r = await dbUpdate(t.id, { member: h.to_member });
+        if (r) { t.member = h.to_member; taskCnt++; }
+      }
+    }
+    if (moveRoutines) {
+      for (const r of hoRoutinesOf(h.from_member)) {
+        if (!useLocal && sbClient && !routineTableDown('hr_routines')) {
+          const { error } = await sbClient.from('hr_routines').update({ member: h.to_member, group_id: null }).eq('id', r.id);
+          if (error && !isMissingTableErr(error)) { console.warn('[handover] 루틴 이관 실패:', error.message); continue; }
+        }
+        r.member = h.to_member; r.group_id = null; routineCnt++;
+      }
+      routinesLocalSave();
+    }
+    const summary = `업무 ${moved}개${taskCnt ? `, 할 일 ${taskCnt}건` : ''}${routineCnt ? `, 루틴 ${routineCnt}개` : ''} 이관`;
+    if (fail) { showToast(`업무 ${fail}개는 저장 오류로 넘기지 못했습니다. 다시 시도해 주세요.`, 'error'); }
+    else {
+      await dutyUpdate(DUTY_T.ho, h.id, { status: 'done', completed_at: new Date().toISOString(), summary });
+      showToast(`인수인계 완료 — ${summary}`);
+    }
+    await dutyLog('인수인계 완료', `${h.from_member} → ${h.to_member} · ${summary}${fail ? ` (실패 ${fail}개)` : ''}`);
+    document.getElementById('hoCompleteModal').classList.remove('open');
+    hoCompleteId = null;
+    if (typeof renderTable === 'function') try { renderTable(); } catch {}
+    renderRoutinePanel();
+  } finally {
+    btn.disabled = false; btn.textContent = '완료 처리';
+    renderDutyTab();
+  }
+}
+
+// ── 인수인계서 엑셀 ──
+function exportHandover(hId) {
+  const h = handovers.find(x => x.id === hId);
+  if (!h) return;
+  if (typeof XLSX === 'undefined') { showToast('엑셀 라이브러리를 불러오지 못했습니다.', 'error'); return; }
+  const rows = hoRows(h).filter(r => !r.excluded);
+  const pr = hoProgress(rows);
+  const aoa = [
+    ['인수인계서'],
+    ['넘기는 사람', h.from_member, '받는 사람(기본)', h.to_member],
+    ['기한', h.due_date || '', '진행률', `${pr.pct}% (${pr.done}/${pr.n})`],
+    ['메모', h.note || ''],
+    [],
+    ['대분류', '업무명', '현재 역할', '받는 사람', '주기', '시기', '진행 단계', '업무 메모', '비고'],
+    ...rows.map(r => [dutyCatName(r.d.category_id), r.d.title, DUTY_ROLE_LABEL[r.role], hoReceiverOf(h, r.item), r.d.frequency || '', dutyMonthsLabel(dutyMonthsOf(r.d)),
+      ((r.item && r.item.stage) || 0) ? HO_STAGES[r.item.stage - 1] : '시작 전', r.d.memo || '', r.d.note || '']),
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{ wch:16 }, { wch:32 }, { wch:12 }, { wch:12 }, { wch:8 }, { wch:16 }, { wch:14 }, { wch:50 }, { wch:24 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, '인수인계서');
+  XLSX.writeFile(wb, `인수인계서_${h.from_member}_${h.to_member}.xlsx`);
+}
+
 function isEditingOpen() {
   const tm = document.getElementById('taskModal');
   const em = document.getElementById('execEventModal');
@@ -10850,6 +11382,8 @@ function isEditingOpen() {
       || dutyEditing !== null
       || dutyPaint !== null
       || dutyMemoEditId !== null
+      || document.getElementById('hoCompleteModal')?.classList.contains('open')
+      || !!document.activeElement?.closest?.('#dutyHandoverView input, #dutyHandoverView select, #dutyHandoverView textarea')
       || document.getElementById('dutyPasteModal')?.classList.contains('open')
       || document.querySelector('.master-inline-form.open') !== null;
 }
@@ -10876,6 +11410,8 @@ function subscribeRealtime() {
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_duties' },              scheduleRemoteRefresh)
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_duty_assignees' },      scheduleRemoteRefresh)
       .on('postgres_changes', { event:'*', schema:'public', table:'hr_duty_history' },        scheduleRemoteRefresh)
+      .on('postgres_changes', { event:'*', schema:'public', table:'hr_handovers' },           scheduleRemoteRefresh)
+      .on('postgres_changes', { event:'*', schema:'public', table:'hr_handover_items' },      scheduleRemoteRefresh)
       .subscribe();
   } catch (err) { console.warn('[realtime] 구독 실패:', err); }
 }
