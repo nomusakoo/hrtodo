@@ -1419,9 +1419,11 @@
   .duty-table-wrap{background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);overflow:auto;box-shadow:var(--shadow-sm);max-height:calc(100vh - 230px);}
   .duty-table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;}
   .duty-table th{position:sticky;top:0;z-index:2;background:var(--gray-50);border-bottom:1px solid var(--border);padding:9px 8px;font-size:12px;font-weight:600;color:var(--gray-600);text-align:center;white-space:nowrap;}
-  .duty-table th.duty-th-title{text-align:left;min-width:240px;left:0;z-index:3;padding-left:14px;}
+  /* 업무명 칸은 고정 폭, 남는 너비는 비고 칸(과 그 아래 시기 막대)이 가져가도록 */
+  .duty-table th.duty-th-title{text-align:left;width:380px;min-width:300px;left:0;z-index:3;padding-left:14px;}
+  .duty-table th.duty-th-freq{width:84px;}
   .duty-table th.duty-th-note{text-align:left;min-width:160px;}
-  .duty-table th.duty-th-member{min-width:64px;}
+  .duty-table th.duty-th-member{width:84px;min-width:64px;}
   .duty-member-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:1px;}
   .duty-ex-member{display:inline-block;font-size:10px;color:#b45309;background:#fef3c7;border-radius:4px;padding:0 4px;}
   .duty-table td{border-bottom:1px solid var(--gray-100);padding:5px 8px;vertical-align:middle;background:#fff;}
@@ -1446,7 +1448,7 @@
   .duty-title-wrap{display:flex;align-items:center;gap:6px;min-width:0;}
   .duty-drag{cursor:grab;color:var(--gray-300);font-size:13px;user-select:none;}
   .duty-drag:hover{color:var(--gray-600);}
-  .duty-title{cursor:pointer;color:var(--gray-800);font-weight:500;}
+  .duty-title{cursor:pointer;color:var(--gray-800);font-weight:500;word-break:keep-all;overflow-wrap:anywhere;}
   .duty-title:hover{color:var(--accent);text-decoration:underline;text-decoration-style:dotted;}
   .duty-gap-badge{font-size:10.5px;font-weight:600;border-radius:4px;padding:1px 6px;white-space:nowrap;}
   .duty-gap-badge.p{background:var(--danger-bg);color:var(--danger);}
@@ -1717,7 +1719,7 @@
   @media (max-width:900px){
     .duty-legend{margin-left:0;}
     .duty-search{width:100% !important;}
-    .duty-table th.duty-th-title{min-width:170px;}
+    .duty-table th.duty-th-title{width:220px;min-width:170px;}
     .duty-cat-actions,.duty-del{opacity:1;}
     .duty-memo-btn{opacity:.6;}
     .duty-link-btn,.ho-skip-btn,.ho-check-del{opacity:.6;}
